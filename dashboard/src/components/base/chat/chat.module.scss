@@ -1,0 +1,133 @@
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 8px;
+  background: var(--ant-color-bg-base);
+  overflow: auto;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 400px;
+  padding: 2rem;
+}
+
+.emptyStateContent {
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.emptyStateText {
+  font-size: 1.25rem;
+  color: var(--ant-color-text-base);
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+.emptyStateForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.emptyStateInput {
+  min-height: 100px !important;
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--ant-padding) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  scroll-behavior: smooth;
+}
+
+.messageWrapper {
+  display: flex;
+  margin-bottom: 0.5rem;
+  line-height: 1.4rem;
+
+  &.userMessage {
+    justify-content: flex-end;
+
+    .messageContent {
+      background: var(--ant-color-primary);
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+  }
+
+  &.assistantMessage {
+    justify-content: flex-start;
+
+    .messageContent {
+      background: var(--ant-color-bg-elevated);
+      color: var(--ant-color-text-base);
+      border-bottom-left-radius: 4px;
+    }
+    :global {
+      pre {
+        border: 1px solid var(--ant-color-border) !important;
+        width: fit-content;
+        padding: 1.5px 5px;
+        border-radius: var(--ant-border-radius);
+        color: var(--ant-color-primary) !important;
+      }
+      code {
+        color: var(--ant-color-primary) !important;
+      }
+      ul,
+      ol {
+        margin-left: var(--ant-margin);
+      }
+      hr {
+        margin: var(--ant-margin) 0;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 2.4rem;
+      }
+    }
+  }
+}
+
+.messageContent {
+  max-width: 80%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.messageText {
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.messageTimestamp {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-top: 0.25rem;
+}
+
+.inputForm {
+  padding: 1rem 20%;
+  border-top: 1px solid var(--ant-color-border);
+  width: 100%;
+  margin: auto;
+  box-shadow: 0 -1px 10px 0 var(--ant-color-border-light);
+  z-index: 1;
+}
+
+.sendButton {
+  min-height: 40px;
+  min-width: 50px;
+}

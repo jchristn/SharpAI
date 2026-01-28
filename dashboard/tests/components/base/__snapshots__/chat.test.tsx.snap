@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Chat Component should match snapshot 1`] = `
+<div>
+  <div>
+    <div
+      class="undefined undefined"
+    >
+      <div>
+        <div>
+          <div>
+            <b>
+              <small>
+                User
+              </small>
+            </b>
+          </div>
+          Hello
+        </div>
+        <div
+          style="display: flex; align-items: center; gap: 8px;"
+        >
+          5:30:00 pm
+        </div>
+      </div>
+    </div>
+    <div />
+  </div>
+  <form>
+    <div
+      data-testid="chat-flex"
+      gap="8"
+    >
+      <input
+        data-testid="chat-input"
+        placeholder="Type your message..."
+        value=""
+      />
+      <button
+        data-testid="chat-send-button"
+        disabled=""
+        htmltype="submit"
+        icon="[object Object]"
+        type="primary"
+      />
+    </div>
+  </form>
+</div>
+`;

@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFrameworks>net8.0</TargetFrameworks>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>SharpAI.Sdk</PackageId>
+		<Version>1.0.1</Version>
+		<Authors>Joel Christner</Authors>
+		<Description>C# SDK for SharpAI - Local AI inference with Ollama and OpenAI compatible APIs</Description>
+		<PackageProjectUrl>https://github.com/jchristn/sharpai-sdk-csharp</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/jchristn/sharpai-sdk-csharp</RepositoryUrl>
+		<PackageTags>ai;sharpai;ollama;openai;llm;chat;completion;embeddings;local;inference</PackageTags>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<DocumentationFile>SharpAI.Sdk.xml</DocumentationFile>
+		<ApplicationIcon>logo.ico</ApplicationIcon>
+		<Title>SharpAI.Sdk</Title>
+		<Copyright>(c)2025 Joel Christner</Copyright>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<RepositoryType>git</RepositoryType>
+		<PackageReleaseNotes>Initial release</PackageReleaseNotes>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <Content Include="logo.ico" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Include="..\..\assets\logo.png">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\..\LICENSE.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="SharpAI" Version="1.0.14" />
+		<PackageReference Include="RestWrapper" Version="3.1.8" />
+		<PackageReference Include="System.Text.Json" Version="9.0.9" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="SharpAI.Sdk.xml">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+</Project>

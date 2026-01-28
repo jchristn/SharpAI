@@ -32,6 +32,38 @@
 
 ---
 
+## 📁 Monorepo Structure
+
+SharpAI is organized as a monorepo containing the core library, server, dashboard, and client SDKs:
+
+```
+SharpAI/
+├── src/                    # Core .NET library and server
+│   ├── SharpAI/           # Core library (NuGet: SharpAI)
+│   ├── SharpAI.Server/    # REST API server
+│   └── Test.*/            # Test projects
+├── dashboard/              # Next.js 14 web interface
+├── sdk/
+│   ├── csharp/            # C# SDK (NuGet: SharpAI.Sdk)
+│   ├── python/            # Python SDK (coming soon)
+│   └── js/                # TypeScript/JavaScript SDK (npm: @sharpai/sdk)
+├── docker/                 # Docker assets
+└── README.md
+```
+
+### Sub-Projects
+
+| Project | Description | Documentation |
+|---------|-------------|---------------|
+| **SharpAI** | Core .NET library for local AI inference | This README |
+| **SharpAI.Server** | Ollama & OpenAI compatible REST API server | This README |
+| **Dashboard** | Next.js web interface for managing models | [dashboard/README.md](dashboard/README.md) |
+| **C# SDK** | SDK for .NET applications to connect to SharpAI server | [sdk/csharp/README.md](sdk/csharp/README.md) |
+| **TypeScript SDK** | SDK for Node.js/browser applications | [sdk/js/README.md](sdk/js/README.md) |
+| **Python SDK** | SDK for Python applications | [sdk/python/README.md](sdk/python/README.md) |
+
+---
+
 ## 🚀 Features
 
 - **Ollama and OpenAI Compatible REST API Server** - Provides endpoints compatible with API from Ollama and OpenAI
@@ -512,7 +544,7 @@ Before running the Docker container, ensure you have:
 
 ### Docker Image
 
-The official Docker image is available at: [`jchristn/sharpai`](https://hub.docker.com/r/jchristn/sharpai).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.
+The official Docker image is available at: [`jchristn77/sharpai`](https://hub.docker.com/r/jchristn77/sharpai).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.
 
 ### Volume Mappings
 
@@ -586,7 +618,7 @@ For production deployments, you can use Docker Compose. Create a `compose.yaml` 
 ```yaml
 services:
   sharpai:
-    image: jchristn/sharpai:v1.0.0
+    image: jchristn77/sharpai:v1.0.0
     ports:
       - "8000:8000"
     volumes:
@@ -618,7 +650,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn/sharpai:v1.0.0
+  jchristn77/sharpai:v1.0.0
 ```
 
 For Docker Compose, add:

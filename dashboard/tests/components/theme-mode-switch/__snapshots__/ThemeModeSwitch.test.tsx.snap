@@ -1,0 +1,21 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ThemeModeSwitch should match snapshot for dark theme 1`] = `
+<button
+  data-checked="true"
+  data-size="20"
+  data-testid="dark-mode-switch"
+>
+  Dark Mode
+</button>
+`;
+
+exports[`ThemeModeSwitch should match snapshot for light theme 1`] = `
+<button
+  data-checked="false"
+  data-size="20"
+  data-testid="dark-mode-switch"
+>
+  Light Mode
+</button>
+`;

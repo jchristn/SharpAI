@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ConfirmationModal Component should match snapshot 1`] = `
+<div
+  data-testid="confirmation-modal"
+>
+  <h2>
+    Delete Confirmation
+  </h2>
+  <p>
+    Are you sure?
+  </p>
+  <button
+    data-testid="confirm-cancel"
+  >
+    Cancel
+  </button>
+  <button
+    data-testid="confirm-delete"
+  >
+    Delete
+  </button>
+</div>
+`;

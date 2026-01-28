@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ErrorBoundary should match snapshot for error state 1`] = `
+<div
+  data-testid="fallback"
+>
+  Unexpected Error: 
+  Test error message
+  .
+  <div
+    class="text-center mt"
+  >
+    <a
+      class="text-link"
+      href="http://localhost:3000/test"
+      rel="noreferrer"
+    >
+      Reload page
+    </a>
+  </div>
+</div>
+`;
+
+exports[`ErrorBoundary should match snapshot for success state 1`] = `
+<div
+  data-testid="success"
+>
+  Success
+</div>
+`;

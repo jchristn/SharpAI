@@ -28,10 +28,10 @@ Complete guide for deploying, configuring, and testing SharpAI across all platfo
 
 ```bash
 # CPU mode
-docker run -d -p 8000:8000 --name sharpai jchristn/sharpai:latest
+docker run -d -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 
 # GPU mode (NVIDIA GPU required)
-docker run -d --gpus all -p 8000:8000 --name sharpai jchristn/sharpai:latest
+docker run -d --gpus all -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 
 # Verify
 curl http://localhost:8000/
@@ -96,17 +96,17 @@ curl http://localhost:8000/
 
 **CPU Mode:**
 ```bash
-docker run -d -p 8000:8000 --name sharpai jchristn/sharpai:latest
+docker run -d -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 ```
 
 **Force CPU Mode (even with GPU available):**
 ```bash
-docker run -d -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 --name sharpai jchristn/sharpai:latest
+docker run -d -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 ```
 
 **GPU Mode:**
 ```bash
-docker run -d --gpus all -p 8000:8000 --name sharpai jchristn/sharpai:latest
+docker run -d --gpus all -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 ```
 
 **With persistent storage:**
@@ -116,7 +116,7 @@ docker run -d \
   -v $(pwd)/models:/app/models \
   -v $(pwd)/sharpai.json:/app/sharpai.json \
   --name sharpai \
-  jchristn/sharpai:latest
+  jchristn77/sharpai:latest
 ```
 
 ### Docker Compose
@@ -128,7 +128,7 @@ Create `docker-compose.yml`:
 version: '3.8'
 services:
   sharpai:
-    image: jchristn/sharpai:latest
+    image: jchristn77/sharpai:latest
     ports:
       - "8000:8000"
     volumes:
@@ -144,7 +144,7 @@ services:
 version: '3.8'
 services:
   sharpai:
-    image: jchristn/sharpai:latest
+    image: jchristn77/sharpai:latest
     ports:
       - "8000:8000"
     volumes:
@@ -464,7 +464,7 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 - Usage examples:
   ```bash
   # Docker
-  docker run -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 jchristn/sharpai:latest
+  docker run -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 jchristn77/sharpai:latest
 
   # Bare metal (Linux/Mac)
   export SHARPAI_FORCE_BACKEND=cpu
@@ -676,7 +676,7 @@ docker logs sharpai
 **Fix:**
 ```bash
 # Change port
-docker run -d -p 8080:8000 --name sharpai jchristn/sharpai:latest
+docker run -d -p 8080:8000 --name sharpai jchristn77/sharpai:latest
 
 # Or stop conflicting process
 sudo lsof -i :8000

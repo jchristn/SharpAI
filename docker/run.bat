@@ -24,7 +24,7 @@ docker run ^
   -v .\sharpai.db:/app/sharpai.db ^
   -v .\logs\:/app/logs/ ^
   -v .\models\:/app/models/ ^
-  jchristn/sharpai:%1
+  jchristn77/sharpai:%1
 
 GOTO :Done
 

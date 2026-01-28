@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StoreProvider should match snapshot 1`] = `
+<div
+  data-store="true"
+  data-testid="redux-provider"
+>
+  <div
+    data-testid="test-child"
+  >
+    Test Child
+  </div>
+</div>
+`;

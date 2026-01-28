@@ -27,5 +27,5 @@ docker run \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs/:/app/logs/ \
   -v ./models/:/app/models/ \
-  jchristn/sharpai:$IMG_TAG
+  jchristn77/sharpai:$IMG_TAG
 

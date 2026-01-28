@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpText Component should match snapshot 1`] = `
+<span
+  class="ant-typography css-dev-only-do-not-override-1vjf2v5"
+>
+  Snapshot Test
+</span>
+`;

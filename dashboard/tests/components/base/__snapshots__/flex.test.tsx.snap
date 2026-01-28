@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpFlex Component should match snapshot 1`] = `
+<div
+  class="ant-flex css-dev-only-do-not-override-1vjf2v5"
+>
+  <div>
+    Snapshot Test
+  </div>
+</div>
+`;

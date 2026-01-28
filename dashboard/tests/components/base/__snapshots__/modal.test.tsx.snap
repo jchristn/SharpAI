@@ -1,0 +1,33 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpModal Component should match snapshot 1`] = `
+<div
+  data-testid="modal"
+>
+  <div
+    data-testid="modal-title"
+  >
+    Test Modal
+  </div>
+  <div
+    data-testid="modal-content"
+  >
+    <p>
+      Modal content
+    </p>
+  </div>
+  <div
+    data-testid="modal-footer"
+  />
+  <button
+    data-testid="modal-close"
+  >
+    ×
+  </button>
+  <button
+    data-testid="modal-ok"
+  >
+    OK
+  </button>
+</div>
+`;

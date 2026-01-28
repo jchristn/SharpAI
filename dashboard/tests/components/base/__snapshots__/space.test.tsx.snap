@@ -1,0 +1,22 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpSpace Component should match snapshot 1`] = `
+<div
+  class="ant-space css-dev-only-do-not-override-1vjf2v5 ant-space-horizontal ant-space-align-center ant-space-gap-row-middle ant-space-gap-col-middle"
+>
+  <div
+    class="ant-space-item"
+  >
+    <button>
+      Button 1
+    </button>
+  </div>
+  <div
+    class="ant-space-item"
+  >
+    <button>
+      Button 2
+    </button>
+  </div>
+</div>
+`;

@@ -1,0 +1,270 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Chat Completion Page - Initial Render Tests Error State should match snapshot for error state 1`] = `
+<div
+  class="ant-flex css-dev-only-do-not-override-1vjf2v5 ant-flex-align-center ant-flex-justify-center ant-flex-vertical"
+>
+  <span
+    class="ant-typography css-dev-only-do-not-override-1vjf2v5"
+  >
+    <div
+      style="text-align: center;"
+    >
+      <p>
+        Failed to load models
+      </p>
+      <p
+        style="font-size: 0.9em; color: rgb(102, 102, 102); margin-top: 8px;"
+      >
+        Internal Server Error
+      </p>
+    </div>
+  </span>
+  <span
+    aria-label="close-circle"
+    class="anticon anticon-close-circle colorRed icon"
+    role="img"
+  >
+    <svg
+      aria-hidden="true"
+      data-icon="close-circle"
+      fill="currentColor"
+      fill-rule="evenodd"
+      focusable="false"
+      height="1em"
+      viewBox="64 64 896 896"
+      width="1em"
+    >
+      <path
+        d="M512 64c247.4 0 448 200.6 448 448S759.4 960 512 960 64 759.4 64 512 264.6 64 512 64zm0 76c-205.4 0-372 166.6-372 372s166.6 372 372 372 372-166.6 372-372-166.6-372-372-372zm128.01 198.83c.03 0 .05.01.09.06l45.02 45.01a.2.2 0 01.05.09.12.12 0 010 .07c0 .02-.01.04-.05.08L557.25 512l127.87 127.86a.27.27 0 01.05.06v.02a.12.12 0 010 .07c0 .03-.01.05-.05.09l-45.02 45.02a.2.2 0 01-.09.05.12.12 0 01-.07 0c-.02 0-.04-.01-.08-.05L512 557.25 384.14 685.12c-.04.04-.06.05-.08.05a.12.12 0 01-.07 0c-.03 0-.05-.01-.09-.05l-45.02-45.02a.2.2 0 01-.05-.09.12.12 0 010-.07c0-.02.01-.04.06-.08L466.75 512 338.88 384.14a.27.27 0 01-.05-.06l-.01-.02a.12.12 0 010-.07c0-.03.01-.05.05-.09l45.02-45.02a.2.2 0 01.09-.05.12.12 0 01.07 0c.02 0 .04.01.08.06L512 466.75l127.86-127.86c.04-.05.06-.06.08-.06a.12.12 0 01.07 0z"
+      />
+    </svg>
+  </span>
+</div>
+`;
+
+exports[`Chat Completion Page - Initial Render Tests Loading State should match snapshot for loading state 1`] = `
+<main
+  class="ant-layout-content pageContainer css-dev-only-do-not-override-1vjf2v5"
+>
+  <div
+    class="pageContent"
+  >
+    <div
+      class="ant-flex css-dev-only-do-not-override-1vjf2v5 ant-flex-align-center ant-flex-justify-center ant-flex-vertical"
+    >
+      <span
+        class="ant-typography css-dev-only-do-not-override-1vjf2v5"
+        data-testid="loading-message"
+      >
+        Loading models...
+      </span>
+      <span
+        aria-label="loading"
+        class="anticon anticon-loading anticon-spin pageLoader"
+        role="img"
+      >
+        <svg
+          aria-hidden="true"
+          data-icon="loading"
+          fill="currentColor"
+          focusable="false"
+          height="1em"
+          viewBox="0 0 1024 1024"
+          width="1em"
+        >
+          <path
+            d="M988 548c-19.9 0-36-16.1-36-36 0-59.4-11.6-117-34.6-171.3a440.45 440.45 0 00-94.3-139.9 437.71 437.71 0 00-139.9-94.3C629 83.6 571.4 72 512 72c-19.9 0-36-16.1-36-36s16.1-36 36-36c69.1 0 136.2 13.5 199.3 40.3C772.3 66 827 103 874 150c47 47 83.9 101.8 109.7 162.7 26.7 63.1 40.2 130.2 40.2 199.3.1 19.9-16 36-35.9 36z"
+          />
+        </svg>
+      </span>
+    </div>
+  </div>
+</main>
+`;
+
+exports[`Chat Completion Page - Initial Render Tests Success State should match snapshot for successful chat completion page render 1`] = `
+<main
+  class="ant-layout-content pageContainer css-dev-only-do-not-override-1vjf2v5"
+>
+  <div
+    class="pageTitleContainer ant-flex css-dev-only-do-not-override-1vjf2v5 ant-flex-wrap-wrap ant-flex-align-center ant-flex-justify-space-between ant-flex-gap-small"
+  >
+    <span
+      class="ant-typography css-dev-only-do-not-override-1vjf2v5"
+      data-testid="heading"
+      style="font-weight: 600; font-size: 16px;"
+    >
+      <div
+        class="chatTitle"
+      >
+        <span
+          class="ant-typography chatName css-dev-only-do-not-override-1vjf2v5"
+        >
+          Chat Completion
+        </span>
+        <div
+          class="ant-divider css-dev-only-do-not-override-1vjf2v5 ant-divider-vertical ml-sm mr-sm"
+          role="separator"
+        />
+        <button
+          class="ant-btn css-dev-only-do-not-override-1vjf2v5 ant-btn-link ant-btn-color-link ant-btn-variant-link"
+          type="button"
+        >
+          <span
+            class="ant-btn-icon"
+          >
+            <span
+              aria-label="setting"
+              class="anticon anticon-setting"
+              role="img"
+            >
+              <svg
+                aria-hidden="true"
+                data-icon="setting"
+                fill="currentColor"
+                focusable="false"
+                height="1em"
+                viewBox="64 64 896 896"
+                width="1em"
+              >
+                <path
+                  d="M924.8 625.7l-65.5-56c3.1-19 4.7-38.4 4.7-57.8s-1.6-38.8-4.7-57.8l65.5-56a32.03 32.03 0 009.3-35.2l-.9-2.6a443.74 443.74 0 00-79.7-137.9l-1.8-2.1a32.12 32.12 0 00-35.1-9.5l-81.3 28.9c-30-24.6-63.5-44-99.7-57.6l-15.7-85a32.05 32.05 0 00-25.8-25.7l-2.7-.5c-52.1-9.4-106.9-9.4-159 0l-2.7.5a32.05 32.05 0 00-25.8 25.7l-15.8 85.4a351.86 351.86 0 00-99 57.4l-81.9-29.1a32 32 0 00-35.1 9.5l-1.8 2.1a446.02 446.02 0 00-79.7 137.9l-.9 2.6c-4.5 12.5-.8 26.5 9.3 35.2l66.3 56.6c-3.1 18.8-4.6 38-4.6 57.1 0 19.2 1.5 38.4 4.6 57.1L99 625.5a32.03 32.03 0 00-9.3 35.2l.9 2.6c18.1 50.4 44.9 96.9 79.7 137.9l1.8 2.1a32.12 32.12 0 0035.1 9.5l81.9-29.1c29.8 24.5 63.1 43.9 99 57.4l15.8 85.4a32.05 32.05 0 0025.8 25.7l2.7.5a449.4 449.4 0 00159 0l2.7-.5a32.05 32.05 0 0025.8-25.7l15.7-85a350 350 0 0099.7-57.6l81.3 28.9a32 32 0 0035.1-9.5l1.8-2.1c34.8-41.1 61.6-87.5 79.7-137.9l.9-2.6c4.5-12.3.8-26.3-9.3-35zM788.3 465.9c2.5 15.1 3.8 30.6 3.8 46.1s-1.3 31-3.8 46.1l-6.6 40.1 74.7 63.9a370.03 370.03 0 01-42.6 73.6L721 702.8l-31.4 25.8c-23.9 19.6-50.5 35-79.3 45.8l-38.1 14.3-17.9 97a377.5 377.5 0 01-85 0l-17.9-97.2-37.8-14.5c-28.5-10.8-55-26.2-78.7-45.7l-31.4-25.9-93.4 33.2c-17-22.9-31.2-47.6-42.6-73.6l75.5-64.5-6.5-40c-2.4-14.9-3.7-30.3-3.7-45.5 0-15.3 1.2-30.6 3.7-45.5l6.5-40-75.5-64.5c11.3-26.1 25.6-50.7 42.6-73.6l93.4 33.2 31.4-25.9c23.7-19.5 50.2-34.9 78.7-45.7l37.9-14.3 17.9-97.2c28.1-3.2 56.8-3.2 85 0l17.9 97 38.1 14.3c28.7 10.8 55.4 26.2 79.3 45.8l31.4 25.8 92.8-32.9c17 22.9 31.2 47.6 42.6 73.6L781.8 426l6.5 39.9zM512 326c-97.2 0-176 78.8-176 176s78.8 176 176 176 176-78.8 176-176-78.8-176-176-176zm79.2 255.2A111.6 111.6 0 01512 614c-29.9 0-58-11.7-79.2-32.8A111.6 111.6 0 01400 502c0-29.9 11.7-58 32.8-79.2C454 401.6 482.1 390 512 390c29.9 0 58 11.6 79.2 32.8A111.6 111.6 0 01624 502c0 29.9-11.7 58-32.8 79.2z"
+                />
+              </svg>
+            </span>
+          </span>
+          <span>
+            Show Settings
+          </span>
+        </button>
+      </div>
+    </span>
+    <div
+      class="ant-form-item mb-0 css-dev-only-do-not-override-1vjf2v5"
+    >
+      <div
+        class="ant-row ant-form-item-row css-dev-only-do-not-override-1vjf2v5"
+      >
+        <div
+          class="ant-col ant-form-item-label css-dev-only-do-not-override-1vjf2v5"
+        >
+          <label
+            class=""
+            title="Model"
+          >
+            Model
+          </label>
+        </div>
+        <div
+          class="ant-col ant-form-item-control css-dev-only-do-not-override-1vjf2v5"
+        >
+          <div
+            class="ant-form-item-control-input"
+          >
+            <div
+              class="ant-form-item-control-input-content"
+            >
+              <select>
+                <option
+                  value="llama3.2:1b"
+                >
+                  llama3.2:1b
+                </option>
+                <option
+                  value="llama3.2:3b"
+                >
+                  llama3.2:3b
+                </option>
+                <option
+                  value="mistral:7b"
+                >
+                  mistral:7b
+                </option>
+                <option
+                  value="codellama:13b"
+                >
+                  codellama:13b
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="pageContent"
+  >
+    <div
+      class="chatPage"
+    >
+      <div
+        class="mainContent"
+      >
+        <div
+          class="chatContainer"
+        >
+          <div
+            class="emptyState"
+          >
+            <div
+              class="emptyStateContent"
+            >
+              <h4
+                class="ant-typography headingCommonStyles mb"
+                style="font-weight: 500;"
+              >
+                Select a model to start chatting
+              </h4>
+              <form
+                class="emptyStateForm"
+              >
+                <textarea
+                  class="ant-input ant-input-outlined emptyStateInput"
+                  disabled=""
+                  placeholder="Type your message here..."
+                  rows="1"
+                />
+                <button
+                  class="ant-btn ant-btn-primary ant-btn-color-primary ant-btn-variant-solid sendButton"
+                  disabled=""
+                  type="submit"
+                >
+                  <span
+                    class="ant-btn-icon"
+                  >
+                    <span
+                      aria-label="send"
+                      class="anticon anticon-send"
+                      role="img"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        data-icon="send"
+                        fill="currentColor"
+                        focusable="false"
+                        height="1em"
+                        viewBox="64 64 896 896"
+                        width="1em"
+                      >
+                        <defs />
+                        <path
+                          d="M931.4 498.9L94.9 79.5c-3.4-1.7-7.3-2.1-11-1.2a15.99 15.99 0 00-11.7 19.3l86.2 352.2c1.3 5.3 5.2 9.6 10.4 11.3l147.7 50.7-147.6 50.7c-5.2 1.8-9.1 6-10.3 11.3L72.2 926.5c-.9 3.7-.5 7.6 1.2 10.9 3.9 7.9 13.5 11.1 21.5 7.2l836.5-417c3.1-1.5 5.6-4.1 7.2-7.1 3.9-8 .7-17.6-7.2-21.6zM170.8 826.3l50.3-205.6 295.2-101.3c2.3-.8 4.2-2.6 5-5 1.4-4.2-.8-8.7-5-10.2L221.1 403 171 198.2l628 314.9-628.2 313.2z"
+                        />
+                      </svg>
+                    </span>
+                  </span>
+                  <span>
+                    Send
+                  </span>
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+`;

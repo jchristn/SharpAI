@@ -1,0 +1,32 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpPageContainer Component should match snapshot 1`] = `
+<main
+  class="ant-layout-content pageContainer css-dev-only-do-not-override-1vjf2v5"
+>
+  <div
+    align="center"
+    class="pageTitleContainer"
+    data-testid="page-header"
+    gap="small"
+    justify="space-between"
+  >
+    <span
+      data-testid="heading"
+      style="font-weight: 600; font-size: 16px;"
+    >
+      Snapshot Page
+    </span>
+    <button>
+      Action
+    </button>
+  </div>
+  <div
+    class="pageContent"
+  >
+    <div>
+      Snapshot Content
+    </div>
+  </div>
+</main>
+`;

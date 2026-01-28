@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpLogo Component should match snapshot 1`] = `
+<div
+  class="fade-in ant-flex css-dev-only-do-not-override-1vjf2v5 ant-flex-align-center"
+  style="gap: 8px;"
+>
+  <img
+    alt="Sharp AI"
+    height="35"
+    src="/images/sharp-logo.png"
+  />
+  <span
+    class="ant-typography css-dev-only-do-not-override-1vjf2v5"
+    style="font-weight: 600; font-size: 19.444444444444443px;"
+  >
+    SharpAI
+  </span>
+</div>
+`;

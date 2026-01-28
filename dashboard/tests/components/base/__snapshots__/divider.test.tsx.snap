@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`SharpDivider Component should match snapshot 1`] = `
+<div
+  class="ant-divider css-dev-only-do-not-override-1vjf2v5 ant-divider-horizontal ant-divider-with-text ant-divider-with-text-center"
+  role="separator"
+>
+  <span
+    class="ant-divider-inner-text"
+  >
+    Test Divider
+  </span>
+</div>
+`;

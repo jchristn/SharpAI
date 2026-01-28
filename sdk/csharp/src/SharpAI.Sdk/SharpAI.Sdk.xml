@@ -1,0 +1,396 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SharpAI.Sdk</name>
+    </assembly>
+    <members>
+        <member name="T:SharpAI.Sdk.Implementations.OllamaMethods">
+            <summary>
+            Implementation of Ollama API methods.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.#ctor(SharpAI.Sdk.SharpAISdk)">
+            <summary>
+            Initialize the Ollama methods implementation.
+            </summary>
+            <param name="sdk">SharpAI SDK instance.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.PullModel(SharpAI.Models.Ollama.OllamaPullModelRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.DeleteModel(SharpAI.Models.Ollama.OllamaDeleteModelRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.ListLocalModels(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GenerateEmbeddings(SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GenerateMultipleEmbeddings(SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GenerateCompletion(SharpAI.Models.Ollama.OllamaGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GenerateChatCompletion(SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GenerateChatCompletionStream(SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GenerateCompletionStream(SharpAI.Models.Ollama.OllamaGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Sdk.Implementations.OpenAIMethods">
+            <summary>
+            Implementation of OpenAI API methods using RestWrapper.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.#ctor(SharpAI.Sdk.SharpAISdk)">
+            <summary>
+            Initialize the OpenAI methods with a SharpAI SDK instance.
+            </summary>
+            <param name="sdk">SharpAI SDK instance for making HTTP requests.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateEmbeddingsAsync(SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateMultipleEmbeddingsAsync(SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateCompletionAsync(SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateCompletionStreamAsync(SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateChatCompletionAsync(SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateChatCompletionStreamAsync(SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Sdk.Interfaces.IOllamaMethods">
+            <summary>
+            Interface for Ollama API methods.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.PullModel(SharpAI.Models.Ollama.OllamaPullModelRequest,System.Threading.CancellationToken)">
+            <summary>
+            Pull a model from the registry with streaming progress updates.
+            </summary>
+            <param name="request">Pull model request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Async enumerable of pull model progress updates.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.DeleteModel(SharpAI.Models.Ollama.OllamaDeleteModelRequest,System.Threading.CancellationToken)">
+            <summary>
+            Delete a model.
+            </summary>
+            <param name="request">Delete model request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Delete model result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.ListLocalModels(System.Threading.CancellationToken)">
+            <summary>
+            List local models.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>List of local models.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GenerateEmbeddings(SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate embeddings for the given input text(s).
+            </summary>
+            <param name="request">The embeddings request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Embeddings result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GenerateMultipleEmbeddings(SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate embeddings for multiple input texts.
+            </summary>
+            <param name="request">The embeddings request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Embeddings result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GenerateCompletion(SharpAI.Models.Ollama.OllamaGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate text completion.
+            </summary>
+            <param name="request">Generate completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Generated completion result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GenerateChatCompletion(SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate chat completion.
+            </summary>
+            <param name="request">Generate chat completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Generated chat completion result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GenerateChatCompletionStream(SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate chat completion with streaming.
+            </summary>
+            <param name="request">Generate chat completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Async enumerable of streaming chat completion results.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GenerateCompletionStream(SharpAI.Models.Ollama.OllamaGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate text completion with streaming.
+            </summary>
+            <param name="request">Generate completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Async enumerable of streaming completion results.</returns>
+        </member>
+        <member name="T:SharpAI.Sdk.Interfaces.IOpenAIMethods">
+            <summary>
+            Interface for OpenAI API methods.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOpenAIMethods.GenerateEmbeddingsAsync(SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate embeddings for the given input text(s).
+            </summary>
+            <param name="request">The embeddings request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Embeddings result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOpenAIMethods.GenerateMultipleEmbeddingsAsync(SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate embeddings for multiple input texts.
+            </summary>
+            <param name="request">The embeddings request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Embeddings result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOpenAIMethods.GenerateCompletionAsync(SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate text completion for the given prompt(s).
+            </summary>
+            <param name="request">The completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Completion result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOpenAIMethods.GenerateCompletionStreamAsync(SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate streaming text completion for the given prompt(s).
+            </summary>
+            <param name="request">The completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Streaming completion results.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOpenAIMethods.GenerateChatCompletionAsync(SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate chat completion for the given messages.
+            </summary>
+            <param name="request">The chat completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Chat completion result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOpenAIMethods.GenerateChatCompletionStreamAsync(SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest,System.Threading.CancellationToken)">
+            <summary>
+            Generate streaming chat completion for the given messages.
+            </summary>
+            <param name="request">The chat completion request.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Streaming chat completion results.</returns>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.SharpAIPullModelResponse">
+            <summary>
+            SharpAI server pull model response message.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAIPullModelResponse.Status">
+            <summary>
+            Current status of the pull operation.
+            Examples: "pulling manifest", "pulling model", "writing manifest", "success"
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAIPullModelResponse.Downloaded">
+            <summary>
+            Number of bytes downloaded.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAIPullModelResponse.Percent">
+            <summary>
+            Download progress as a decimal (0.0 to 1.0).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAIPullModelResponse.Error">
+            <summary>
+            Error message if the pull operation failed.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Models.SharpAIPullModelResponse.GetProgressPercentage">
+            <summary>
+            Gets the download progress as a percentage (0-100).
+            </summary>
+            <returns>Progress percentage (0-100), or null if data unavailable.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Models.SharpAIPullModelResponse.GetFormattedProgress">
+            <summary>
+            Gets a formatted progress string.
+            </summary>
+            <returns>Progress string (e.g., "1.8 GB (44.7%)").</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Models.SharpAIPullModelResponse.IsComplete">
+            <summary>
+            Checks if the operation is complete.
+            </summary>
+            <returns>True if the status indicates completion.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Models.SharpAIPullModelResponse.HasError">
+            <summary>
+            Checks if the operation has failed.
+            </summary>
+            <returns>True if an error occurred.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Models.SharpAIPullModelResponse.FormatBytes(System.Int64)">
+            <summary>
+            Formats bytes into human-readable format.
+            </summary>
+            <param name="bytes">Number of bytes.</param>
+            <returns>Formatted string (e.g., "1.5 GB").</returns>
+        </member>
+        <member name="T:SharpAI.Sdk.SharpAISdk">
+            <summary>
+            SharpAI SDK for interacting with SharpAI server.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.LogRequests">
+            <summary>
+            Enable or disable logging of request bodies.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.LogResponses">
+            <summary>
+            Enable or disable logging of response bodies.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.Logger">
+            <summary>
+            Method to invoke to send log messages.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.Endpoint">
+            <summary>
+            Endpoint URL for the SharpAI server.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.TimeoutMs">
+            <summary>
+            Timeout in milliseconds for HTTP requests.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.Ollama">
+            <summary>
+            Ollama API methods.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.OpenAI">
+            <summary>
+            OpenAI API methods.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Sdk.SharpAISdk._JsonOptions">
+            <summary>
+            JSON serializer options for API requests and responses.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.#ctor(System.String)">
+            <summary>
+            Initialize the SharpAI SDK.
+            </summary>
+            <param name="endpoint">SharpAI server endpoint URL.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.Dispose">
+            <summary>
+            Dispose of the SDK and clean up resources.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.Dispose(System.Boolean)">
+            <summary>
+            Dispose of the SDK and clean up resources.
+            </summary>
+            <param name="disposing">True if disposing.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.Log(System.String,System.String)">
+            <summary>
+            Log a message using the configured logger.
+            </summary>
+            <param name="level">Log level.</param>
+            <param name="message">Message to log.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.PostAsync``1(System.String,System.Object,System.Threading.CancellationToken)">
+            <summary>
+            Send a POST request with JSON data and return typed response.
+            </summary>
+            <typeparam name="T">Response type.</typeparam>
+            <param name="url">Full URL to send request to.</param>
+            <param name="data">Object to serialize and send.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Deserialized response of type T.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.GetAsync``1(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Send a GET request and return typed response.
+            </summary>
+            <typeparam name="T">Response type.</typeparam>
+            <param name="url">Full URL to send request to.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Deserialized response of type T.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.DeleteAsync``1(System.String,System.Object,System.Threading.CancellationToken)">
+            <summary>
+            Send a DELETE request with JSON data and return typed response.
+            </summary>
+            <typeparam name="T">Response type.</typeparam>
+            <param name="url">Full URL to send request to.</param>
+            <param name="data">Object to serialize and send.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Deserialized response of type T.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.GetRawPostResponse(System.String,System.Object,System.Threading.CancellationToken)">
+            <summary>
+            Send a POST request and return raw response as string.
+            </summary>
+            <param name="url">Full URL to send request to.</param>
+            <param name="data">Object to serialize and send.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Raw response data as string.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.GetRawResponse(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Send a GET request and return raw response as string.
+            </summary>
+            <param name="url">Full URL to send request to.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Raw response data as string.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.ReadResponse(RestWrapper.RestResponse,System.Threading.CancellationToken)">
+            <summary>
+            Read response data from RestResponse, handling both chunked and non-chunked responses.
+            </summary>
+            <param name="resp">REST response.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Response data as string.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.PostStreamAsync``1(System.String,System.Object,System.Threading.CancellationToken,System.Func{System.String,System.String},System.Func{``0,System.Boolean})">
+            <summary>
+            Send a streaming POST request and yield deserialized objects of type T.
+            </summary>
+            <typeparam name="T">Type to deserialize streaming responses to.</typeparam>
+            <param name="url">Full URL to send request to.</param>
+            <param name="data">Object to serialize and send.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <param name="processLine">Optional function to process each line before deserialization.</param>
+            <param name="shouldStop">Optional function to determine if streaming should stop.</param>
+            <returns>Async enumerable of deserialized objects.</returns>
+        </member>
+    </members>
+</doc>

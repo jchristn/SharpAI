@@ -350,4 +350,21 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
- 
+
+###
+###
+### Dashboard (Next.js)
+###
+###
+
+# Next.js build output
+dashboard/.next/
+
+###
+###
+### TypeScript SDK
+###
+###
+
+# SDK build output
+sdk/js/dist/

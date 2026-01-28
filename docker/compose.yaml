@@ -2,13 +2,13 @@ services:
 
   #
   # SharpAI
-  # See https://hub.docker.com/r/jchristn/sharpai
+  # See https://hub.docker.com/r/jchristn77/sharpai
   # and https://github.com/jchristn/sharpai
   #
 
   sharpai:
     container_name: 'sharpai'
-    image: 'jchristn/sharpai:v4.0.0'
+    image: 'jchristn77/sharpai:v4.0.0'
     network_mode: 'host'
     stdin_open: true
     tty: true
