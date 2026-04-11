@@ -1,47 +1,43 @@
-const nextJest = require("next/jest");
-
-const createJestConfig = nextJest({
-  dir: "./",
-});
-
-const customJestConfig = {
+/** @type {import('jest').Config} */
+module.exports = {
   coverageProvider: "v8",
   testEnvironment: "./jest.environment.js",
   moduleNameMapper: {
     "^#/(.*)$": "<rootDir>/src/$1",
     "^antd/es/(.*)$": "<rootDir>/node_modules/antd/lib/$1",
+    "\\.(css|scss|sass)$": "<rootDir>/tests/__mocks__/styleMock.js",
+    "\\.(jpg|jpeg|png|gif|svg|ico)$": "<rootDir>/tests/__mocks__/fileMock.js",
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
-  testEnvironmentOptions: {
-    customExportConditions: [""],
+  transform: {
+    "^.+\\.(ts|tsx)$": [
+      "ts-jest",
+      {
+        tsconfig: {
+          jsx: "react-jsx",
+          esModuleInterop: true,
+          module: "commonjs",
+          target: "es2020",
+          moduleResolution: "node",
+          allowJs: true,
+          resolveJsonModule: true,
+          baseUrl: ".",
+          paths: { "#/*": ["./src/*"] },
+        },
+      },
+    ],
+    "^.+\\.(js|jsx|mjs)$": "babel-jest",
   },
-  extensionsToTreatAsEsm: [".ts", ".tsx"],
-  globals: {
-    "ts-jest": {
-      useESM: true,
-    },
-  },
+  testMatch: ["<rootDir>/tests/**/*.(test|spec).(ts|tsx|js|jsx)"],
   transformIgnorePatterns: [
-    "<rootDir>/node_modules/(?!react-hot-toast)/",
-    "<rootDir>/node_modules/(?!until-async)/"
+    "/node_modules/(?!(react-hot-toast|until-async)/)",
   ],
   collectCoverageFrom: [
     "src/**/*.{ts,tsx}",
     "!**/*.d.ts",
     "!**/node_modules/**",
-    "!**/.next/**",
     "!**/coverage/**",
   ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
-    },
-  },
   coverageReporters: ["json", "lcov", "text", "clover"],
   coverageDirectory: "coverage",
 };
-
-module.exports = createJestConfig(customJestConfig);

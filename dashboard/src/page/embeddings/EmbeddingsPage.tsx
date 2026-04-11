@@ -1,6 +1,5 @@
-"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Col, Form, Input, message, Row } from "antd";
 import PageContainer from "#/components/base/pageContainer/PageContainer";
 import SharpSelect from "#/components/base/select/Select";
@@ -16,7 +15,7 @@ import {
   useGenerateEmbeddingsMutation,
   useGenerateEmbeddingsOpenAIMutation,
 } from "#/lib/reducer/apiSlice";
-import { formatError } from "#/utils/utils";
+import { filterModelsForPage, formatError } from "#/utils/utils";
 import SharpTitle from "#/components/base/typograpghy/Title";
 import styles from "./embed.module.scss";
 import SharpCard from "#/components/base/card/Card";
@@ -27,6 +26,8 @@ import {
   GenerateEmbeddingsOpenAIResponse,
   GenerateEmbeddingsResponse,
 } from "#/lib/reducer/types";
+import SharpTooltip from "#/components/base/tooltip/Tooltip";
+import { tooltips, pageDescriptions } from "#/constants/tooltips";
 
 interface FormValues {
   model: string;
@@ -45,12 +46,20 @@ const EmbeddingsPage = () => {
     isLoading: modelsLoading,
     isError: modelsError,
     error: modelsErrorData,
-  } = useGetLocalModelsQuery();
+  } = useGetLocalModelsQuery(undefined, { refetchOnMountOrArgChange: true });
 
   const [generateEmbeddings, { isLoading }] = useGenerateEmbeddingsMutation();
   const [generateEmbeddingsOpenAI, { isLoading: generatingEmbeddingsOpenAI }] =
     useGenerateEmbeddingsOpenAIMutation();
   const generatingEmbeddings = isLoading || generatingEmbeddingsOpenAI;
+
+  // Auto-select the only embedding model if exactly one exists
+  useEffect(() => {
+    const matches = filterModelsForPage(localModels, "embedding");
+    if (matches.length === 1 && !form.getFieldValue("model")) {
+      form.setFieldValue("model", matches[0].name);
+    }
+  }, [localModels, form]);
   const handleSubmit = async (values: FormValues) => {
     try {
       let response:
@@ -108,14 +117,18 @@ const EmbeddingsPage = () => {
     );
   }
 
-  const modelOptions =
-    localModels?.map((model) => ({
+  const modelOptions = filterModelsForPage(localModels, "embedding").map(
+    (model) => ({
       value: model.name,
       label: model.name,
-    })) || [];
+    })
+  );
 
   return (
-    <PageContainer pageTitle="Embeddings">
+    <PageContainer
+      pageTitle="Embeddings"
+      pageSubtitle={pageDescriptions.embeddings}
+    >
       <SharpFlex vertical gap={24}>
         <Form
           form={form}
@@ -128,6 +141,7 @@ const EmbeddingsPage = () => {
               <SharpFormItem
                 label="Model"
                 name="model"
+                tooltip={tooltips.embeddings.model}
                 rules={[{ required: true, message: "Please select a model!" }]}
                 style={{ flex: 1 }}
               >
@@ -142,6 +156,7 @@ const EmbeddingsPage = () => {
               <SharpFormItem
                 label="Request Format"
                 name="requestFormat"
+                tooltip={tooltips.embeddings.requestFormat}
                 rules={[
                   {
                     required: true,
@@ -163,6 +178,7 @@ const EmbeddingsPage = () => {
               <SharpFormItem
                 label="Input"
                 name="input"
+                tooltip={tooltips.embeddings.input}
                 rules={[
                   { required: true, message: "Please enter input text!" },
                 ]}
@@ -178,15 +194,21 @@ const EmbeddingsPage = () => {
           </Row>
           <SharpFormItem className="mt-sm">
             <SharpFlex gap={12}>
-              <SharpButton
-                type="primary"
-                htmlType="submit"
-                loading={generatingEmbeddings}
-              >
-                Generate Embeddings
-              </SharpButton>
+              <SharpTooltip title={tooltips.embeddings.generate}>
+                <SharpButton
+                  type="primary"
+                  htmlType="submit"
+                  loading={generatingEmbeddings}
+                >
+                  Generate Embeddings
+                </SharpButton>
+              </SharpTooltip>
               {embeddings && (
-                <SharpButton onClick={clearResults}>Clear Results</SharpButton>
+                <SharpTooltip title={tooltips.embeddings.clear}>
+                  <SharpButton onClick={clearResults}>
+                    Clear Results
+                  </SharpButton>
+                </SharpTooltip>
               )}
             </SharpFlex>
           </SharpFormItem>

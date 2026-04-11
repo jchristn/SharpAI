@@ -11,6 +11,11 @@ export interface LocalModelDetails {
   quantization_level: string;
 }
 
+export interface LocalModelCapabilities {
+  embeddings: boolean;
+  completions: boolean;
+}
+
 export interface LocalModel {
   name: string;
   model: string;
@@ -18,6 +23,20 @@ export interface LocalModel {
   size: number;
   digest: string;
   details: LocalModelDetails;
+  capabilities?: LocalModelCapabilities;
+}
+
+export interface RunningModel {
+  name: string;
+  digest: string;
+  size: number;
+  size_vram: number;
+  expires_at?: string | null;
+  details: LocalModelDetails;
+}
+
+export interface RunningModelsResponse {
+  models: RunningModel[];
 }
 
 export interface GenerateEmbeddingsPaylaod {
@@ -135,6 +154,115 @@ export interface ChatCompletionsOpenAIPayload {
   user: string;
   seed: number;
 }
+// Settings types
+
+export interface SyslogServer {
+  Hostname: string;
+  Port: number;
+  RandomizePorts: boolean;
+  MinimumPort: number;
+  MaximumPort: number;
+}
+
+export interface LoggingSettings {
+  Servers: SyslogServer[];
+  LogDirectory: string;
+  LogFilename: string;
+  ConsoleLogging: boolean;
+  EnableColors: boolean;
+  MinimumSeverity: number;
+}
+
+export interface StorageSettings {
+  TempDirectory: string;
+  ModelsDirectory: string;
+}
+
+export interface DatabaseDebugSettings {
+  EnableForQueries: boolean;
+  EnableForResults: boolean;
+}
+
+export interface DatabaseSettings {
+  Filename: string;
+  Type: string;
+  Port: number;
+  RequireEncryption: boolean;
+  Debug: DatabaseDebugSettings;
+}
+
+export interface HuggingFaceSettings {
+  ApiKey: string;
+}
+
+export interface RestIoSettings {
+  StreamBufferSize: number;
+  MaxRequests: number;
+  ReadTimeoutMs: number;
+  MaxIncomingHeadersSize: number;
+  EnableKeepAlive: boolean;
+}
+
+export interface RestSslSettings {
+  Enable: boolean;
+  PfxCertificateFile: string | null;
+  PfxCertificatePassword: string | null;
+  MutuallyAuthenticate: boolean;
+  AcceptInvalidAcertificates: boolean;
+}
+
+export interface RestHeadersSettings {
+  IncludeContentLength: boolean;
+  DefaultHeaders: Record<string, string>;
+}
+
+export interface RestAccessControlSettings {
+  DenyList: Record<string, unknown>;
+  PermitList: Record<string, unknown>;
+  Mode: string;
+}
+
+export interface RestDebugSettings {
+  AccessControl: boolean;
+  Routing: boolean;
+  Requests: boolean;
+  Responses: boolean;
+}
+
+export interface RestSettings {
+  Hostname: string;
+  Port: number;
+  IO: RestIoSettings;
+  Ssl: RestSslSettings;
+  Headers: RestHeadersSettings;
+  AccessControl: RestAccessControlSettings;
+  Debug: RestDebugSettings;
+}
+
+export interface RuntimeSettings {
+  ForceBackend: string | null;
+  CpuBackendPath: string | null;
+  GpuBackendPath: string | null;
+  EnableNativeLogging: boolean;
+}
+
+export interface DebugSettings {
+  RequestBody: boolean;
+}
+
+export interface SharpAISettings {
+  CreatedUtc: string;
+  SoftwareVersion: string;
+  Logging: LoggingSettings;
+  Storage: StorageSettings;
+  Database: DatabaseSettings;
+  HuggingFace: HuggingFaceSettings;
+  Rest: RestSettings;
+  Runtime: RuntimeSettings;
+  Debug: DebugSettings;
+  QuantizationPriority: Record<string, number>;
+}
+
 export interface CompletionsOpenAIResponse {
   id: string;
   object: string;

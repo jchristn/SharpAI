@@ -13,7 +13,6 @@
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
-    using SwiftStack.Rest;
     using SyslogLogging;
     using WatsonWebserver.Core;
 
@@ -64,7 +63,7 @@
         #region Public-Methods
 
         internal async Task<object> GenerateEmbeddings(
-            AppRequest req,
+            ApiRequest req,
             OpenAIGenerateEmbeddingsRequest ger,
             CancellationToken token = default)
         {
@@ -243,7 +242,7 @@
         }
 
         internal async Task<object> GenerateCompletion(
-            AppRequest req,
+            ApiRequest req,
             OpenAIGenerateCompletionRequest gcr,
             CancellationToken token = default)
         {
@@ -326,7 +325,7 @@
                         gcr.GetPrompt(),
                         gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                         gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                        null,
+                        NormalizeStop(gcr.Stop),
                         token).ConfigureAwait(false);
 
                     ret.Choices.Add(new OpenAICompletionChoice
@@ -351,7 +350,7 @@
                             prompts[i],
                             gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                             gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                            null,
+                            NormalizeStop(gcr.Stop),
                             token).ConfigureAwait(false);
 
                         ret.Choices.Add(new OpenAICompletionChoice
@@ -384,7 +383,7 @@
                         gcr.GetPrompt(),
                         gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                         gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                        null,
+                        NormalizeStop(gcr.Stop),
                         token).ConfigureAwait(false))
                     {
                         if (nextToken != null)
@@ -462,7 +461,7 @@
                             prompts[i],
                             gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                             gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                            null,
+                            NormalizeStop(gcr.Stop),
                             token).ConfigureAwait(false))
                         {
                             if (nextToken != null)
@@ -535,7 +534,7 @@
         }
 
         internal async Task<object> GenerateChatCompletion(
-            AppRequest req,
+            ApiRequest req,
             OpenAIGenerateChatCompletionRequest gcr,
             CancellationToken token = default)
         {
@@ -629,7 +628,7 @@
                     prompt,
                     gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                     gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                    null,
+                    NormalizeStop(gcr.Stop),
                     token).ConfigureAwait(false);
 
                 ret.Choices.Add(new OpenAIChatChoice
@@ -659,7 +658,7 @@
                     prompt,
                     gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
                     gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                    null,
+                    NormalizeStop(gcr.Stop),
                     token).ConfigureAwait(false))
                 {
                     if (nextToken != null)
@@ -736,6 +735,32 @@
             var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
             var unixTime = (dateTime.ToUniversalTime() - epoch).TotalSeconds;
             return (long)unixTime;
+        }
+
+        // OpenAI's `stop` field can be a string, an array of strings, or null.
+        // Normalize to string[] for the engine.
+        private static string[] NormalizeStop(object stop)
+        {
+            if (stop == null) return null;
+
+            if (stop is string s)
+            {
+                return string.IsNullOrEmpty(s) ? null : new[] { s };
+            }
+
+            if (stop is System.Collections.IEnumerable enumerable)
+            {
+                List<string> list = new List<string>();
+                foreach (object item in enumerable)
+                {
+                    if (item == null) continue;
+                    string itemStr = item.ToString();
+                    if (!string.IsNullOrEmpty(itemStr)) list.Add(itemStr);
+                }
+                return list.Count > 0 ? list.ToArray() : null;
+            }
+
+            return null;
         }
 
         #endregion

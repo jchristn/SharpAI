@@ -46,6 +46,39 @@
         #region Public-Methods
 
         /// <summary>
+        /// Get a snapshot of the model file paths that currently have a live, non-disposed engine loaded.
+        /// Disposed engines encountered during enumeration are removed from the cache.
+        /// </summary>
+        /// <returns>List of model file paths for currently loaded engines.</returns>
+        public List<string> GetLoadedModelPaths()
+        {
+            List<string> loaded = new List<string>();
+
+            lock (_EnginesLock)
+            {
+                List<string> stale = new List<string>();
+
+                foreach (KeyValuePair<string, LlamaSharpEngine> kvp in _Engines)
+                {
+                    if (kvp.Value == null || kvp.Value.IsDisposed)
+                    {
+                        stale.Add(kvp.Key);
+                        continue;
+                    }
+
+                    loaded.Add(kvp.Key);
+                }
+
+                foreach (string key in stale)
+                {
+                    _Engines.Remove(key);
+                }
+            }
+
+            return loaded;
+        }
+
+        /// <summary>
         /// Get the engine for a given model file.
         /// </summary>
         /// <param name="filename">Path and filename to the model.</param>

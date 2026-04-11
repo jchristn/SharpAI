@@ -1,7 +1,6 @@
-"use client";
 
-import React, { useState } from "react";
-import { message } from "antd";
+import React, { useEffect, useState } from "react";
+import { InputNumber, message, Popover } from "antd";
 import PageContainer from "#/components/base/pageContainer/PageContainer";
 import SharpSelect from "#/components/base/select/Select";
 import SharpText from "#/components/base/typograpghy/Text";
@@ -13,7 +12,12 @@ import {
   useChatCompletionsMutation,
   useChatCompletionsOpenAIMutation,
 } from "#/lib/reducer/apiSlice";
-import { formatError, parseJSON } from "#/utils/utils";
+import {
+  filterModelsForPage,
+  formatError,
+  parseJSON,
+  parseNdJson,
+} from "#/utils/utils";
 import { completionOptions } from "../completion/constants";
 import { AxiosProgressEvent } from "axios";
 import {
@@ -22,11 +26,17 @@ import {
 } from "#/lib/reducer/types";
 import styles from "../completion/completion.module.scss";
 import SharpButton from "#/components/base/button/Button";
-import { DeleteOutlined, SettingOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  ScissorOutlined,
+  SettingOutlined,
+} from "@ant-design/icons";
 import SharpFormItem from "#/components/base/form/FormItem";
 import SharpDivider from "#/components/base/divider/Divider";
 import { RequestFormatEnum } from "#/types/types";
 import { ApiBaseQueryResponseWithMetaData } from "#/lib/store/rtk/rtkApiInstance";
+import SharpTooltip from "#/components/base/tooltip/Tooltip";
+import { tooltips, pageDescriptions } from "#/constants/tooltips";
 import ChatSettings from "../completion/components/ChatSettings";
 import {
   messageToPayloadMessages,
@@ -51,7 +61,7 @@ const ChatComplitionPage = () => {
     isLoading: modelsLoading,
     isError: modelsError,
     error: modelsErrorData,
-  } = useGetLocalModelsQuery();
+  } = useGetLocalModelsQuery(undefined, { refetchOnMountOrArgChange: true });
 
   const [generateChatCompletions, { isLoading }] = useChatCompletionsMutation();
 
@@ -61,6 +71,14 @@ const ChatComplitionPage = () => {
   ] = useChatCompletionsOpenAIMutation();
   const generatingChatCompletions =
     isLoading || generatingChatCompletionsOpenAI;
+
+  // Auto-select the only completion model if exactly one exists
+  useEffect(() => {
+    const matches = filterModelsForPage(localModels, "completion");
+    if (matches.length === 1 && !selectedModel) {
+      setSelectedModel(matches[0].name);
+    }
+  }, [localModels, selectedModel]);
   const handleSendMessage = async (userMessage: string) => {
     if (!selectedModel) {
       message.error("Please select a model first!");
@@ -202,16 +220,12 @@ const ChatComplitionPage = () => {
                   firstTokenTime = Date.now();
                 }
 
-                const data: CompletionsResponse[] | null = parseJSON(
-                  "[" +
-                    pe.event.currentTarget.responseText
-                      .replace(/\n/g, "") // Remove all line breaks
-                      .replace(/\r/g, "") // Remove carriage returns
-                      .replaceAll("}{", "},{") + // Add commas between the objects
-                    "]"
-                );
-                const responses = data?.map((item) => item.response) || [];
-                assistantResponse = responses.join("");
+                const responseText =
+                  (pe.event?.currentTarget as XMLHttpRequest)?.responseText ??
+                  (pe.event?.target as XMLHttpRequest)?.responseText ??
+                  "";
+                const data = parseNdJson<CompletionsResponse>(responseText);
+                assistantResponse = data.map((item) => item.response ?? "").join("");
                 if (assistantResponse?.trim()) {
                   // Update the assistant message in real-time
                   setMessages((prev) => {
@@ -315,6 +329,23 @@ const ChatComplitionPage = () => {
     setMessages([]);
   };
 
+  const [truncateKeepCount, setTruncateKeepCount] = useState<number>(10);
+  const [truncatePopoverOpen, setTruncatePopoverOpen] =
+    useState<boolean>(false);
+
+  const truncateChat = () => {
+    if (truncateKeepCount <= 0) {
+      setMessages([]);
+    } else {
+      setMessages((prev) =>
+        prev.length > truncateKeepCount
+          ? prev.slice(prev.length - truncateKeepCount)
+          : prev
+      );
+    }
+    setTruncatePopoverOpen(false);
+  };
+
   const handleOptionChange = (
     key: keyof typeof completionOptions,
     value: any
@@ -351,16 +382,21 @@ const ChatComplitionPage = () => {
     );
   }
 
-  const modelOptions =
-    localModels?.map((model) => ({
+  const modelOptions = filterModelsForPage(localModels, "completion").map(
+    (model) => ({
       value: model.name,
       label: model.name,
-    })) || [];
+    })
+  );
 
   return (
     <PageContainer
       pageTitleRightContent={
-        <SharpFormItem label="Model" className="mb-0">
+        <SharpFormItem
+          label="Model"
+          className="mb-0"
+          tooltip={tooltips.completionsCommon.model}
+        >
           <SharpSelect
             value={selectedModel}
             onChange={(value) => setSelectedModel(value as string)}
@@ -371,32 +407,82 @@ const ChatComplitionPage = () => {
           />
         </SharpFormItem>
       }
+      pageSubtitle={pageDescriptions.chatCompletion}
       pageTitle={
         <div className={styles.chatTitle}>
           <SharpText className={styles.chatName}>Chat Completion</SharpText>
           {messages.length > 0 && (
             <>
               <SharpDivider type="vertical" className="ml-sm mr-sm" />
-              <SharpButton
-                type="link"
-                icon={<DeleteOutlined />}
-                onClick={clearChat}
-                className={styles.clearButton}
-                disabled={generatingChatCompletions}
+              <Popover
+                trigger="click"
+                open={truncatePopoverOpen}
+                onOpenChange={setTruncatePopoverOpen}
+                placement="bottom"
+                title="Truncate history"
+                content={
+                  <div style={{ width: 220 }}>
+                    <SharpText
+                      style={{
+                        fontSize: 12,
+                        display: "block",
+                        marginBottom: 6,
+                        color: "var(--ant-color-text-secondary)",
+                      }}
+                    >
+                      Keep the most recent N messages
+                    </SharpText>
+                    <InputNumber
+                      min={0}
+                      value={truncateKeepCount}
+                      onChange={(v) => setTruncateKeepCount(Number(v) || 0)}
+                      style={{ width: "100%", marginBottom: 8 }}
+                      autoFocus
+                    />
+                    <SharpButton
+                      type="primary"
+                      block
+                      onClick={truncateChat}
+                      disabled={generatingChatCompletions}
+                    >
+                      Truncate
+                    </SharpButton>
+                  </div>
+                }
               >
-                Clear Chat
-              </SharpButton>
+                <SharpButton
+                  type="link"
+                  icon={<ScissorOutlined />}
+                  disabled={generatingChatCompletions}
+                >
+                  Truncate
+                </SharpButton>
+              </Popover>
+              <SharpDivider type="vertical" className="ml-sm mr-sm" />
+              <SharpTooltip title={tooltips.completionsCommon.clearChat}>
+                <SharpButton
+                  type="link"
+                  icon={<DeleteOutlined />}
+                  onClick={clearChat}
+                  className={styles.clearButton}
+                  disabled={generatingChatCompletions}
+                >
+                  Clear Chat
+                </SharpButton>
+              </SharpTooltip>
             </>
           )}
           <SharpDivider type="vertical" className="ml-sm mr-sm" />
-          <SharpButton
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={toggleSidebar}
-            disabled={generatingChatCompletions}
-          >
-            {sidebarCollapsed ? "Show Settings" : "Hide Settings"}
-          </SharpButton>
+          <SharpTooltip title={tooltips.completionsCommon.settings}>
+            <SharpButton
+              type="link"
+              icon={<SettingOutlined />}
+              onClick={toggleSidebar}
+              disabled={generatingChatCompletions}
+            >
+              {sidebarCollapsed ? "Show Settings" : "Hide Settings"}
+            </SharpButton>
+          </SharpTooltip>
         </div>
       }
       className=""
@@ -416,7 +502,7 @@ const ChatComplitionPage = () => {
                 ? "Start a conversation to generate chat completion."
                 : "Select a model to start chatting"
             }
-            disabled={!selectedModel || generatingChatCompletions}
+            disabled={generatingChatCompletions}
           />
         </div>
         <ChatSettings

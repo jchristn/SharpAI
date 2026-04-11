@@ -1,6 +1,5 @@
-"use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { message } from "antd";
 import PageContainer from "#/components/base/pageContainer/PageContainer";
 import SharpSelect from "#/components/base/select/Select";
@@ -13,7 +12,12 @@ import {
   useCompletionsMutation,
   useCompletionsOpenAIMutation,
 } from "#/lib/reducer/apiSlice";
-import { formatError, parseJSON } from "#/utils/utils";
+import {
+  filterModelsForPage,
+  formatError,
+  parseJSON,
+  parseNdJson,
+} from "#/utils/utils";
 import { completionOptions } from "./constants";
 import { AxiosProgressEvent } from "axios";
 import {
@@ -28,6 +32,8 @@ import ChatSettings from "./components/ChatSettings";
 import SharpDivider from "#/components/base/divider/Divider";
 import { RequestFormatEnum } from "#/types/types";
 import { ApiBaseQueryResponseWithMetaData } from "#/lib/store/rtk/rtkApiInstance";
+import SharpTooltip from "#/components/base/tooltip/Tooltip";
+import { tooltips, pageDescriptions } from "#/constants/tooltips";
 
 const ComplitionPage = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -46,7 +52,7 @@ const ComplitionPage = () => {
     isLoading: modelsLoading,
     isError: modelsError,
     error: modelsErrorData,
-  } = useGetLocalModelsQuery();
+  } = useGetLocalModelsQuery(undefined, { refetchOnMountOrArgChange: true });
 
   const [generateChatCompletions, { isLoading }] = useCompletionsMutation();
 
@@ -56,6 +62,14 @@ const ComplitionPage = () => {
   ] = useCompletionsOpenAIMutation();
   const generatingChatCompletions =
     isLoading || generatingChatCompletionsOpenAI;
+
+  // Auto-select the only completion model if exactly one exists
+  useEffect(() => {
+    const matches = filterModelsForPage(localModels, "completion");
+    if (matches.length === 1 && !selectedModel) {
+      setSelectedModel(matches[0].name);
+    }
+  }, [localModels, selectedModel]);
   const handleSendMessage = async (userMessage: string) => {
     if (!selectedModel) {
       message.error("Please select a model first!");
@@ -168,17 +182,12 @@ const ComplitionPage = () => {
                   firstTokenTime = Date.now();
                 }
 
-                const data: CompletionsResponse[] | null = parseJSON(
-                  "[" +
-                    pe.event.currentTarget.responseText
-                      .replace(/\n/g, "") // Remove all line breaks
-                      .replace(/\r/g, "") // Remove carriage returns
-                      .replaceAll("}{", "},{") + // Add commas between the objects
-                    "]"
-                );
-
-                const responses = data?.map((item) => item.response) || [];
-                assistantResponse = responses.join("");
+                const responseText =
+                  (pe.event?.currentTarget as XMLHttpRequest)?.responseText ??
+                  (pe.event?.target as XMLHttpRequest)?.responseText ??
+                  "";
+                const data = parseNdJson<CompletionsResponse>(responseText);
+                assistantResponse = data.map((item) => item.response ?? "").join("");
                 if (assistantResponse?.trim()) {
                   // Update the assistant message in real-time
                   setMessages((prev) => {
@@ -318,16 +327,21 @@ const ComplitionPage = () => {
     );
   }
 
-  const modelOptions =
-    localModels?.map((model) => ({
+  const modelOptions = filterModelsForPage(localModels, "completion").map(
+    (model) => ({
       value: model.name,
       label: model.name,
-    })) || [];
+    })
+  );
 
   return (
     <PageContainer
       pageTitleRightContent={
-        <SharpFormItem label="Model" className="mb-0">
+        <SharpFormItem
+          label="Model"
+          className="mb-0"
+          tooltip={tooltips.completionsCommon.model}
+        >
           <SharpSelect
             value={selectedModel}
             onChange={(value) => setSelectedModel(value as string)}
@@ -338,32 +352,37 @@ const ComplitionPage = () => {
           />
         </SharpFormItem>
       }
+      pageSubtitle={pageDescriptions.completions}
       pageTitle={
         <div className={styles.chatTitle}>
           <SharpText className={styles.chatName}>Completion</SharpText>
           {messages.length > 0 && (
             <>
               <SharpDivider type="vertical" className="ml-sm mr-sm" />
-              <SharpButton
-                type="link"
-                icon={<DeleteOutlined />}
-                onClick={clearChat}
-                className={styles.clearButton}
-                disabled={generatingChatCompletions}
-              >
-                Clear Chat
-              </SharpButton>
+              <SharpTooltip title={tooltips.completionsCommon.clearChat}>
+                <SharpButton
+                  type="link"
+                  icon={<DeleteOutlined />}
+                  onClick={clearChat}
+                  className={styles.clearButton}
+                  disabled={generatingChatCompletions}
+                >
+                  Clear Chat
+                </SharpButton>
+              </SharpTooltip>
             </>
           )}
           <SharpDivider type="vertical" className="ml-sm mr-sm" />
-          <SharpButton
-            type="link"
-            icon={<SettingOutlined />}
-            onClick={toggleSidebar}
-            disabled={generatingChatCompletions}
-          >
-            {sidebarCollapsed ? "Show Settings" : "Hide Settings"}
-          </SharpButton>
+          <SharpTooltip title={tooltips.completionsCommon.settings}>
+            <SharpButton
+              type="link"
+              icon={<SettingOutlined />}
+              onClick={toggleSidebar}
+              disabled={generatingChatCompletions}
+            >
+              {sidebarCollapsed ? "Show Settings" : "Hide Settings"}
+            </SharpButton>
+          </SharpTooltip>
         </div>
       }
       className=""
@@ -383,8 +402,8 @@ const ComplitionPage = () => {
                 ? "Start a conversation to generate completion."
                 : "Select a model to start chatting"
             }
-            disabled={!selectedModel || generatingChatCompletions}
-            noteText={`Add role markers ([User]/[Assistant]) to your prompts. This tells the model to respond to your input rather than continue it as an incomplete sentence. See the documentation for the exact formatting template`}
+            disabled={generatingChatCompletions}
+            noteText={`Add role markers ([User]/[Assistant]) to your prompts to tell the model to respond to your input rather than continue your prompt. Check documentation and best practices for your selected model for the recommended template.`}
           />
         </div>
         <ChatSettings

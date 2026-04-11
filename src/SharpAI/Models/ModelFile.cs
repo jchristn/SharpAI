@@ -207,6 +207,11 @@
                     families = new[] { Family },
                     parameter_size = ParameterCount.ToString(),
                     quantization_level = Quantization
+                },
+                capabilities = new
+                {
+                    embeddings = Embeddings,
+                    completions = Completions
                 }
             };
         }

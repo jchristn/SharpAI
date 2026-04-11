@@ -19,9 +19,8 @@
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
-    using SwiftStack;
-    using SwiftStack.Rest;
     using SyslogLogging;
+    using WatsonWebserver.Core;
 
     using Constants = SharpAI.Constants;
 
@@ -74,7 +73,7 @@
         #region Public-Methods
 
         internal async Task<object> PullModel(
-            AppRequest req,
+            ApiRequest req,
             OllamaPullModelRequest pmr,
             CancellationToken token = default)
         {
@@ -173,7 +172,7 @@
                 if (urls == null || urls.Count < 1)
                 {
                     _Logging.Warn("no download URLs found for model " + modelName);
-                    throw new SwiftStackException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + modelName + ".");
+                    throw new WebserverException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + modelName + ".");
                 }
 
                 string msg = _Header + "attempting download of model " + modelName + " from the following URLs:";
@@ -197,6 +196,8 @@
                 string filename = null;
                 string successUrl = null;
 
+                long totalSize = preferred.Size != null ? preferred.Size.Value : 0;
+
                 Action<string, long, decimal> progressCallback = async (filename, bytesDownloaded, percentComplete) =>
                 {
                     if (percentComplete > 0 && percentComplete < 1)
@@ -207,6 +208,8 @@
                         {
                             status = "pulling " + modelName,
                             downloaded = bytesDownloaded,
+                            completed = bytesDownloaded,
+                            total = totalSize,
                             percent = Convert.ToDecimal(complete)
                         }, false) + Environment.NewLine;
 
@@ -243,7 +246,7 @@
                 if (!success || String.IsNullOrEmpty(filename))
                 {
                     _Logging.Warn(_Header + "unable to download model " + modelName + " using " + urls.Count + " URL(s)");
-                    throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to download model " + modelName + " using " + urls.Count + " URL(s).");
+                    throw new WebserverException(ApiResultEnum.InternalError, "Unable to download model " + modelName + " using " + urls.Count + " URL(s).");
                 }
 
                 _Logging.Info(_Header + "downloaded GGUF file for " + modelName);
@@ -252,10 +255,18 @@
 
                 #region Persist
 
+                bool supportsEmbeddings;
+                bool supportsCompletions;
+                string detectedArchitecture;
                 using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
                 {
-                    modelFile.Embeddings = engine.SupportsEmbeddings;
-                    modelFile.Completions = engine.SupportsGeneration;
+                    supportsEmbeddings = engine.SupportsEmbeddings;
+                    supportsCompletions = engine.SupportsGeneration;
+                    detectedArchitecture = engine.Architecture;
+                    _Logging.Debug(_Header + "detected capabilities for " + modelName +
+                        ": architecture=" + (detectedArchitecture ?? "unknown") +
+                        ", embeddings=" + supportsEmbeddings +
+                        ", completions=" + supportsCompletions);
                 }
 
                 using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
@@ -279,7 +290,7 @@
                         if (md == null)
                         {
                             _Logging.Warn(_Header + "unable to retrieve metadata for " + modelName);
-                            throw new SwiftStackException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + modelName + "'.");
+                            throw new WebserverException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + modelName + "'.");
                         }
                     }
                     catch (Exception e)
@@ -288,7 +299,7 @@
                     }
 
                     long parameterCount = 0;
-                    if (md.SafeTensors != null) parameterCount = md.SafeTensors.Total;
+                    if (md != null && md.SafeTensors != null) parameterCount = md.SafeTensors.Total;
 
                     modelFile.ContentLength = preferred.Size != null ? preferred.Size.Value : 0;
                     modelFile.MD5Hash = Convert.ToHexString(md5);
@@ -298,6 +309,10 @@
                     modelFile.ParameterCount = parameterCount;
                     modelFile.ModelCreationUtc = preferred.LastModified;
                     modelFile.SourceUrl = successUrl;
+                    modelFile.Embeddings = supportsEmbeddings;
+                    modelFile.Completions = supportsCompletions;
+                    if (!String.IsNullOrEmpty(detectedArchitecture))
+                        modelFile.Family = detectedArchitecture;
 
                     _ModelFileService.Add(modelFile);
 
@@ -339,7 +354,7 @@
         }
 
         internal async Task<object> DeleteModel(
-            AppRequest req,
+            ApiRequest req,
             OllamaDeleteModelRequest dmr,
             CancellationToken token = default)
         {
@@ -368,7 +383,7 @@
         }
 
         internal async Task<object> ListLocalModels(
-            AppRequest req,
+            ApiRequest req,
             CancellationToken token = default)
         {
             List<ModelFile> modelFiles = _ModelFileService.All();
@@ -392,8 +407,70 @@
             return ret;
         }
 
+        internal async Task<object> ListRunningModels(
+            ApiRequest req,
+            CancellationToken token = default)
+        {
+            req.Http.Response.ContentType = Constants.JsonContentType;
+
+            OllamaListRunningModelsResult ret = new OllamaListRunningModelsResult();
+
+            List<string> loadedPaths = _ModelEngineService.GetLoadedModelPaths();
+            if (loadedPaths == null || loadedPaths.Count < 1)
+            {
+                _Logging.Debug(_Header + "no models currently loaded");
+                return ret;
+            }
+
+            string selectedBackend = SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend;
+            bool isGpuBackend = !String.IsNullOrEmpty(selectedBackend)
+                && selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase);
+
+            foreach (string loadedPath in loadedPaths)
+            {
+                string filename = Path.GetFileName(loadedPath);
+                if (String.IsNullOrEmpty(filename)) continue;
+
+                Guid modelGuid;
+                if (!Guid.TryParse(filename, out modelGuid))
+                {
+                    _Logging.Debug(_Header + "loaded engine path is not GUID-backed, skipping: " + loadedPath);
+                    continue;
+                }
+
+                ModelFile modelFile = _ModelFileService.GetByGuid(modelGuid);
+                if (modelFile == null)
+                {
+                    _Logging.Debug(_Header + "no model file record for loaded engine " + modelGuid.ToString());
+                    continue;
+                }
+
+                OllamaRunningModel running = new OllamaRunningModel
+                {
+                    Name = modelFile.Name,
+                    Digest = modelFile.SHA256Hash,
+                    Size = modelFile.ContentLength,
+                    SizeVRAM = isGpuBackend ? modelFile.ContentLength : 0,
+                    ExpiresAt = null,
+                    Details = new OllamaModelDetails
+                    {
+                        ParentModel = modelFile.ParentModel ?? String.Empty,
+                        Format = modelFile.Format,
+                        Family = modelFile.Family,
+                        Families = new List<string> { modelFile.Family },
+                        ParameterSize = modelFile.ParameterCount.ToString(),
+                        QuantizationLevel = modelFile.Quantization
+                    }
+                };
+
+                ret.Models.Add(running);
+            }
+
+            return ret;
+        }
+
         internal async Task<object> GenerateEmbeddings(
-            AppRequest req,
+            ApiRequest req,
             OllamaGenerateEmbeddingsRequest ger,
             CancellationToken token = default)
         {
@@ -479,7 +556,7 @@
         }
 
         internal async Task<object> GenerateCompletion(
-            AppRequest req,
+            ApiRequest req,
             OllamaGenerateCompletionRequest gcr,
             CancellationToken token = default)
         {
@@ -526,7 +603,7 @@
                         gcr.Prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        null,
+                        gcr.Options.Stop?.ToArray(),
                         token).ConfigureAwait(false);
                 }
 
@@ -552,7 +629,7 @@
                         gcr.Prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        null,
+                        gcr.Options.Stop?.ToArray(),
                         token).ConfigureAwait(false))
                     {
                         if (nextToken != null)
@@ -590,7 +667,7 @@
         }
 
         internal async Task<object> GenerateChatCompletion(
-            AppRequest req,
+            ApiRequest req,
             OllamaGenerateChatCompletionRequest gcr,
             CancellationToken token = default)
         {
@@ -651,7 +728,7 @@
                         prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        null,
+                        gcr.Options.Stop?.ToArray(),
                         token).ConfigureAwait(false);
                 }
 
@@ -678,7 +755,7 @@
                         prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        null,
+                        gcr.Options.Stop?.ToArray(),
                         token).ConfigureAwait(false))
                     {
                         if (nextToken != null)

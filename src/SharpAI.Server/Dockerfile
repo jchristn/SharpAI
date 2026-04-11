@@ -5,25 +5,29 @@
 
 #
 # Build stage
+# .NET 10 SDK on Ubuntu 24.04 (Noble)
 #
-FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-noble AS build
 WORKDIR /src
 
 # Copy source
 COPY . .
 
 # Build and publish
+# SharpAI and SharpAI.Server multi-target net8.0;net10.0 — pin to net10.0 so the
+# publish command produces a single output directory rather than trying to write
+# both TFMs into /app/publish.
 WORKDIR /src/SharpAI.Server
-RUN dotnet publish SharpAI.Server.csproj -c Release -o /app/publish \
+RUN dotnet publish SharpAI.Server.csproj -c Release -f net10.0 -o /app/publish \
     --no-self-contained \
     /p:UseAppHost=false \
     /p:GeneratePackageOnBuild=false
-    
+
 #
 # Runtime stage
 # Using Ubuntu 24.04 (Noble) base for glibc 2.39 (ARM64 native libs need 2.38+)
 #
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS final
 
 # Install runtime dependencies required by LlamaSharp native libraries
 # - libgomp1: OpenMP runtime for parallel processing

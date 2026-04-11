@@ -7,10 +7,12 @@ const SharpLogo = ({
   height = 35,
   onlyIcon = false,
   className,
+  textColor,
 }: {
   height?: number;
   onlyIcon?: boolean;
   className?: string;
+  textColor?: string;
 }) => {
   return (
     <>
@@ -28,7 +30,7 @@ const SharpLogo = ({
           className={classNames(className, "fade-in")}
         >
           <img src="/images/sharp-logo.png" alt="Sharp AI" height={height} />
-          <SharpText fontSize={height / 1.8} weight={600}>
+          <SharpText fontSize={height / 1.8} weight={600} color={textColor}>
             SharpAI
           </SharpText>
         </SharpFlex>

@@ -243,6 +243,17 @@
         }
 
         /// <summary>
+        /// Update an existing ModelFile row.
+        /// </summary>
+        /// <param name="obj">ModelFile to update.</param>
+        /// <returns>The updated instance.</returns>
+        public ModelFile Update(ModelFile obj)
+        {
+            if (obj == null) throw new ArgumentNullException(nameof(obj));
+            return _ORM.Update<ModelFile>(obj);
+        }
+
+        /// <summary>
         /// Delete.
         /// </summary>
         /// <param name="guid">GUID.</param>

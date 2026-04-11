@@ -460,13 +460,19 @@
         <member name="P:SharpAI.Engines.LlamaSharpEngine.SupportsEmbeddings">
             <summary>
             Gets a value indicating whether this engine supports generating embeddings.
-            Support depends on whether the embedder was successfully initialized.
+            Determined by inspecting the GGUF architecture and pooling-type metadata.
             </summary>
         </member>
         <member name="P:SharpAI.Engines.LlamaSharpEngine.SupportsGeneration">
             <summary>
             Gets a value indicating whether this engine supports text generation.
-            LlamaSharp always supports text generation.
+            Determined by inspecting the GGUF architecture metadata. Pure embedding
+            architectures (BERT family, T5 encoder, etc.) return false.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.Architecture">
+            <summary>
+            Gets the GGUF <c>general.architecture</c> value from the loaded model, or null if unavailable.
             </summary>
         </member>
         <member name="P:SharpAI.Engines.LlamaSharpEngine.IsInitialized">
@@ -6397,6 +6403,13 @@
             </summary>
             <param name="logging">Logging.</param>
         </member>
+        <member name="M:SharpAI.Services.ModelEngineService.GetLoadedModelPaths">
+            <summary>
+            Get a snapshot of the model file paths that currently have a live, non-disposed engine loaded.
+            Disposed engines encountered during enumeration are removed from the cache.
+            </summary>
+            <returns>List of model file paths for currently loaded engines.</returns>
+        </member>
         <member name="M:SharpAI.Services.ModelEngineService.GetByModelFile(System.String)">
             <summary>
             Get the engine for a given model file.
@@ -6482,6 +6495,13 @@
             </summary>
             <param name="obj">ModelFile.</param>
             <returns>Instance.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelFileService.Update(SharpAI.Models.ModelFile)">
+            <summary>
+            Update an existing ModelFile row.
+            </summary>
+            <param name="obj">ModelFile to update.</param>
+            <returns>The updated instance.</returns>
         </member>
         <member name="M:SharpAI.Services.ModelFileService.Delete(System.Guid)">
             <summary>

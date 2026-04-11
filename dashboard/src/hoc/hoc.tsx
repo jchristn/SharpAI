@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useEffect, ComponentType } from "react";
 import { useValidateConnectivityMutation } from "../lib/reducer/apiSlice";

@@ -40,9 +40,9 @@ SharpAI is organized as a monorepo containing the core library, server, dashboar
 SharpAI/
 ├── src/                    # Core .NET library and server
 │   ├── SharpAI/           # Core library (NuGet: SharpAI)
-│   ├── SharpAI.Server/    # REST API server
+│   ├── SharpAI.Server/    # REST API server (Watson 7 + OpenAPI/Swagger)
 │   └── Test.*/            # Test projects
-├── dashboard/              # Next.js 14 web interface
+├── dashboard/              # Vite + React + Ant Design web interface
 ├── sdk/
 │   ├── csharp/            # C# SDK (NuGet: SharpAI.Sdk)
 │   ├── python/            # Python SDK (coming soon)
@@ -56,8 +56,8 @@ SharpAI/
 | Project | Description | Documentation |
 |---------|-------------|---------------|
 | **SharpAI** | Core .NET library for local AI inference | This README |
-| **SharpAI.Server** | Ollama & OpenAI compatible REST API server | This README |
-| **Dashboard** | Next.js web interface for managing models | [dashboard/README.md](dashboard/README.md) |
+| **SharpAI.Server** | Ollama & OpenAI compatible REST API server on Watson 7 with built-in OpenAPI/Swagger | This README |
+| **Dashboard** | Vite + React web interface for managing models, running inference, and editing settings | [dashboard/README.md](dashboard/README.md) |
 | **C# SDK** | SDK for .NET applications to connect to SharpAI server | [sdk/csharp/README.md](sdk/csharp/README.md) |
 | **TypeScript SDK** | SDK for Node.js/browser applications | [sdk/js/README.md](sdk/js/README.md) |
 | **Python SDK** | SDK for Python applications | [sdk/python/README.md](sdk/python/README.md) |
@@ -66,16 +66,20 @@ SharpAI/
 
 ## 🚀 Features
 
-- **Ollama and OpenAI Compatible REST API Server** - Provides endpoints compatible with API from Ollama and OpenAI
-- **Model Management** - Download and manage GGUF models from HuggingFace using Ollama APIs
+- **Ollama and OpenAI Compatible REST API Server** — Provides endpoints compatible with API from Ollama and OpenAI
+- **Built-in OpenAPI / Swagger documentation** — Every REST route is documented with tags, summaries, request and response schemas; the server exposes `/openapi.json` and a live `/swagger` UI at startup
+- **Settings API** — `GET /api/settings` returns the live in-memory configuration, `PUT /api/settings` replaces it and rewrites `sharpai.json` on disk (preserving `CreatedUtc` and `SoftwareVersion`)
+- **Model Management** — Download and manage GGUF models from HuggingFace using Ollama APIs
+- **Automatic Capability Detection** — Each pulled model's `general.architecture` and `general.pooling_type` GGUF metadata determines whether it supports embeddings, completions, or both, and drives the correct chat template selection
 - **Multiple Inference Types**:
   - Text embeddings generation
   - Text completions
   - Chat completions
-- **Prompt Engineering Tools** - Built-in helpers for formatting prompts for different model types
-- **GPU Acceleration** - Automatic CUDA detection when available
-- **Streaming Support** - Real-time token streaming for completions
-- **SQLite Model Registry** - Tracks model metadata and file information
+- **Prompt Engineering Tools** — Built-in helpers for formatting prompts for different model types
+- **GPU Acceleration** — Automatic CUDA detection when available
+- **Streaming Support** — Real-time token streaming for completions with proper stop-sequence handling
+- **SQLite Model Registry** — Tracks model metadata and file information
+- **Web Dashboard** — Vite + React + Ant Design UI for pulling models, generating embeddings, running completions and chat, inspecting running models, and editing server configuration live
 
 ## 📋 Table of Contents
 
@@ -423,19 +427,31 @@ Supported text generation formats:
 
 ## 🌐 API Server
 
-SharpAI includes a fully-functional REST API server through the **SharpAI.Server** project, which provides Ollama-compatible endpoints. The server acts and behaves like Ollama (with minor gaps), allowing you to use existing Ollama clients and integrations with SharpAI.
+SharpAI includes a fully-functional REST API server through the **SharpAI.Server** project, built on Watson 7. It provides Ollama-compatible endpoints, OpenAI-compatible endpoints, a settings-management API, and built-in OpenAPI 3.0 / Swagger UI.
 
 Ollama API endpoints include:
-- `/api/generate` - Text generation
-- `/api/chat` - Chat completions
-- `/api/embed` - Generate embeddings
-- `/api/tags` - List available models
-- `/api/pull` - Download models from HuggingFace
+- `GET /api/tags` — List available local models (returns a `capabilities` object indicating embedding and completion support per model)
+- `POST /api/pull` — Download models from HuggingFace (streams NDJSON progress with `downloaded`, `completed`, `total`, and `percent`)
+- `DELETE /api/delete` — Delete a local model
+- `GET /api/ps` — List models currently loaded in memory (analogous to `ollama ps`)
+- `POST /api/embed` — Generate embeddings
+- `POST /api/generate` — Text completions (streaming and non-streaming; honors `options.stop`)
+- `POST /api/chat` — Chat completions (automatically wraps messages in the correct chat template for the model's GGUF architecture)
 
 OpenAI API endpoints include:
-- `/v1/embeddings` - Generate embeddings
-- `/v1/completions` - Text generation
-- `/v1/chat/completions` - Chat completions
+- `POST /v1/embeddings` — Generate embeddings
+- `POST /v1/completions` — Text completions (streaming via SSE)
+- `POST /v1/chat/completions` — Chat completions (streaming via SSE)
+
+Settings API:
+- `GET /api/settings` — Return the full live in-memory `Settings` object
+- `PUT /api/settings` — Replace the in-memory settings and rewrite `sharpai.json` to disk. `CreatedUtc` and `SoftwareVersion` are preserved server-side so clients cannot overwrite them. Some settings (REST `Hostname`/`Port`/`Ssl`, `Database`) take effect only on the next restart.
+
+API documentation:
+- `GET /openapi.json` — Complete OpenAPI 3.0 document describing every route, tag, request body, and response schema
+- `GET /swagger` — Interactive Swagger UI served from the same server
+
+CORS preflight `OPTIONS` requests are handled by the server so dashboard cross-origin calls work out of the box.
 
 ## ⚙️ Requirements
 
@@ -513,12 +529,12 @@ SharpAI.Server is available as a Docker image, providing an easy way to deploy t
 
 For Windows:
 ```batch
-run.bat v1.0.0
+run.bat v4.0.0
 ```
 
 For Linux/macOS:
 ```bash
-./run.sh v1.0.0
+./run.sh v4.0.0
 ```
 
 #### Using Docker Compose
@@ -589,10 +605,10 @@ You can access OpenAI APIs at:
 3. Run the container:
    ```bash
    # Windows
-   run.bat v1.0.0
+   run.bat v4.0.0
    
    # Linux/macOS
-   ./run.sh v1.0.0
+   ./run.sh v4.0.0
    ```
 
 4. Download a model using the API (GGUF format required):
@@ -618,7 +634,7 @@ For production deployments, you can use Docker Compose. Create a `compose.yaml` 
 ```yaml
 services:
   sharpai:
-    image: jchristn77/sharpai:v1.0.0
+    image: jchristn77/sharpai:v4.0.0
     ports:
       - "8000:8000"
     volumes:
@@ -650,7 +666,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn77/sharpai:v1.0.0
+  jchristn77/sharpai:v4.0.0
 ```
 
 For Docker Compose, add:

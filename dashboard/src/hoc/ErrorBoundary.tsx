@@ -1,4 +1,3 @@
-'use client';
 
 import FallBack from '../components/base/fallback/FallBack';
 import React, { ErrorInfo } from 'react';

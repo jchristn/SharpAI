@@ -13,9 +13,12 @@
 # testing
 /coverage
 
-# next.js
+# next.js (legacy — dashboard is now Vite)
 /.next/
 /out/
+
+# vite build output
+/dist/
 
 # production
 /build

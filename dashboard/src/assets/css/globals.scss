@@ -223,73 +223,11 @@ a {
 .ant-table-container {
   .ant-table-content {
     border: 1px solid var(--ant-color-border);
-    border-radius: var(--ant-border-radius-lg);
+    border-radius: 8px;
     overflow-x: auto;
-    table {
-      width: 99% !important;
-      margin: 0 auto;
-    }
-  }
-  .ant-table-thead {
-    tr {
-      th:first-child,
-      th:last-child {
-        padding-left: 60px;
-        border: none !important;
-        position: relative;
-      }
-      th:first-child::after,
-      th:last-child::after {
-        content: "";
-        position: absolute;
-        height: 1px;
-        bottom: 0;
-        width: 90%;
-        right: 0;
-        // border-bottom: 1px solid #d1d5db;
-      }
-      th:last-child::after {
-        left: 0;
-        right: unset;
-      }
-    }
   }
   .text-white-space-nowrap {
     white-space: nowrap;
-  }
-  .ant-table-tbody {
-    tr {
-      td:first-child,
-      td:last-child {
-        padding-left: 60px;
-        border: none !important;
-        position: relative;
-      }
-      td:first-child::after,
-      td:last-child::after {
-        content: "";
-        position: absolute;
-        height: 1px;
-        bottom: 0;
-        width: 90%;
-        right: 0;
-        border-bottom: 1px solid var(--ant-color-border);
-      }
-      td:last-child::after {
-        left: 0;
-        right: unset;
-      }
-    }
-
-    tr:last-child {
-      td:first-child::after,
-      td:last-child::after {
-        border: none;
-      }
-      td {
-        border: none !important;
-      }
-    }
   }
 }
 

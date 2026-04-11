@@ -1,8 +1,41 @@
 .sidebarContainer {
-  border-right: 1px solid var(--ant-color-border);
-  //   background-color: var(--ant-color-bg-base) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+
+  :global(.ant-layout-sider-children) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 100vh;
+  }
 }
 .logoContainer {
   height: 64px;
-  border-bottom: 1px solid var(--ant-color-border);
+  flex: 0 0 auto;
+}
+.menuContainer {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+.bottomContainer {
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+.collapseContainer {
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+}
+.collapseButton {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+.versionContainer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+.versionText {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  font-variant-numeric: tabular-nums;
 }

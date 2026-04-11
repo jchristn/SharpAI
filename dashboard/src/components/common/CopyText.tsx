@@ -1,4 +1,3 @@
-"use client";
 import { CopyOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import SharpFlex from "../base/flex/Flex";

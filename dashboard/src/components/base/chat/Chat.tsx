@@ -58,10 +58,24 @@ const Chat: React.FC<ChatProps> = ({
   const [inputValue, setInputValue] = React.useState("");
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
   const messagesContainerRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<any>(null);
+  const emptyInputRef = React.useRef<any>(null);
+  const wasLoadingRef = React.useRef<boolean>(false);
   const [isUserScrolling, setIsUserScrolling] = React.useState(false);
   const [modalVisible, setModalVisible] = React.useState(false);
   const [selectedMetadata, setSelectedMetadata] =
     React.useState<ResponseMetadata | null>(null);
+
+  // When generation finishes, return focus to whichever input is mounted.
+  React.useEffect(() => {
+    if (wasLoadingRef.current && !isLoading) {
+      const target =
+        messages.length > 0 ? inputRef.current : emptyInputRef.current;
+      // Slight delay to let antd re-enable the disabled attribute first
+      setTimeout(() => target?.focus?.(), 0);
+    }
+    wasLoadingRef.current = isLoading;
+  }, [isLoading, messages.length]);
 
   const handleInfoClick = (metadata: ResponseMetadata) => {
     setSelectedMetadata(metadata);
@@ -125,6 +139,7 @@ const Chat: React.FC<ChatProps> = ({
             </SharpTitle>
             <form onSubmit={handleSubmit} className={styles.emptyStateForm}>
               <Input.TextArea
+                ref={emptyInputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
@@ -132,6 +147,7 @@ const Chat: React.FC<ChatProps> = ({
                 disabled={disabled || isLoading}
                 className={styles.emptyStateInput}
                 rows={1}
+                autoFocus
               />
               <SharpButton
                 loading={isLoading}
@@ -144,7 +160,9 @@ const Chat: React.FC<ChatProps> = ({
                 {isLoading ? "Sending..." : "Send"}
               </SharpButton>
               {noteText && (
-                <SharpText fontSize={12}>Note: {noteText}</SharpText>
+                <SharpText fontSize={12} style={{ color: "#64748b" }}>
+                  Note: {noteText}
+                </SharpText>
               )}
             </form>
           </div>
@@ -220,7 +238,12 @@ const Chat: React.FC<ChatProps> = ({
               >
                 <div className={styles.messageContent}>
                   <div className={styles.loadingIndicator}>
-                    <LoadingOutlined spin />
+                    <span className={styles.typingDots}>
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                    <span>Thinking…</span>
                   </div>
                 </div>
               </div>
@@ -230,6 +253,7 @@ const Chat: React.FC<ChatProps> = ({
           <form onSubmit={handleSubmit} className={styles.inputForm}>
             <SharpFlex gap={8}>
               <SharpInput
+                ref={inputRef}
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
@@ -256,8 +280,23 @@ const Chat: React.FC<ChatProps> = ({
                 />
               )}
             </SharpFlex>
+            <SharpText
+              className="mt d-block"
+              fontSize={11}
+              style={{
+                color: "#64748b",
+                textAlign: "center",
+                marginTop: 8,
+              }}
+            >
+              AI can make mistakes. Fact check all answers.
+            </SharpText>
             {noteText && (
-              <SharpText className="mt d-block" fontSize={12}>
+              <SharpText
+                className="mt d-block"
+                fontSize={12}
+                style={{ color: "#64748b" }}
+              >
                 Note: {noteText}
               </SharpText>
             )}

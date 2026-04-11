@@ -30,7 +30,15 @@ const ResizableTitle = (props: any) => {
 };
 
 const SharpTable = (props: TableProps) => {
-  const { columns, ...rest } = props;
+  const { columns, pagination, ...rest } = props;
+
+  // Default pagination position to topRight
+  const paginationConfig =
+    pagination === false
+      ? false
+      : pagination
+      ? { position: ["topRight" as const], ...pagination }
+      : { position: ["topRight" as const] };
   const [columnsState, setColumnsState] = useState(columns);
 
   const handleResize =
@@ -61,6 +69,7 @@ const SharpTable = (props: TableProps) => {
   return (
     <Table
       {...rest}
+      pagination={paginationConfig as TableProps["pagination"]}
       columns={columnsWithResizable}
       components={{
         header: {

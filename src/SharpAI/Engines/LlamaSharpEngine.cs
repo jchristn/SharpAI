@@ -67,15 +67,29 @@
 
         /// <summary>
         /// Gets a value indicating whether this engine supports generating embeddings.
-        /// Support depends on whether the embedder was successfully initialized.
+        /// Determined by inspecting the GGUF architecture and pooling-type metadata.
         /// </summary>
-        public override bool SupportsEmbeddings => _Embedder != null;
+        public override bool SupportsEmbeddings => DetectSupportsEmbeddings();
 
         /// <summary>
         /// Gets a value indicating whether this engine supports text generation.
-        /// LlamaSharp always supports text generation.
+        /// Determined by inspecting the GGUF architecture metadata. Pure embedding
+        /// architectures (BERT family, T5 encoder, etc.) return false.
         /// </summary>
-        public override bool SupportsGeneration => true;
+        public override bool SupportsGeneration => DetectSupportsGeneration();
+
+        /// <summary>
+        /// Gets the GGUF <c>general.architecture</c> value from the loaded model, or null if unavailable.
+        /// </summary>
+        public string Architecture
+        {
+            get
+            {
+                if (_Model == null || _Model.Metadata == null) return null;
+                if (_Model.Metadata.TryGetValue("general.architecture", out string arch)) return arch;
+                return null;
+            }
+        }
 
         /// <summary>
         /// Gets whether this engine has been successfully initialized.
@@ -739,6 +753,55 @@
         #endregion
 
         #region Private-Methods
+
+        // Architectures that produce embeddings only (encoder-only, BERT family, etc.).
+        // Source: llama.cpp's gguf-py/gguf/constants.py MODEL_ARCH enum — these arches
+        // route to encoder-only code paths with no causal text generation.
+        private static readonly HashSet<string> _EmbeddingOnlyArchitectures = new HashSet<string>(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            "bert",
+            "nomic-bert",
+            "nomic-bert-moe",
+            "jina-bert-v2",
+            "jina-bert-v3",
+            "t5encoder",
+            "gte",
+            "bge",
+            "gritlm",
+        };
+
+        private bool DetectSupportsEmbeddings()
+        {
+            // If the GGUF declares a pooling type (mean/cls/last/rank) it is authoritative:
+            // llama.cpp only sets this for models that produce sentence-level embeddings.
+            if (_Model?.Metadata != null &&
+                _Model.Metadata.TryGetValue("general.pooling_type", out string pooling) &&
+                !string.IsNullOrEmpty(pooling) && pooling != "-1" && pooling != "none")
+            {
+                return true;
+            }
+
+            string arch = Architecture;
+            if (!string.IsNullOrEmpty(arch) && _EmbeddingOnlyArchitectures.Contains(arch))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool DetectSupportsGeneration()
+        {
+            string arch = Architecture;
+            if (!string.IsNullOrEmpty(arch) && _EmbeddingOnlyArchitectures.Contains(arch))
+            {
+                return false;
+            }
+
+            // Default: any decoder-capable model (llama, qwen2, mistral, phi3, gemma, ...) supports generation.
+            return true;
+        }
 
         private async Task<float[]> ProcessTextWithChunking(string text, CancellationToken token)
         {

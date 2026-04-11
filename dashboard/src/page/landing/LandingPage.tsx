@@ -1,13 +1,10 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import PageContainer from "#/components/base/pageContainer/PageContainer";
 import styles from "./style.module.scss";
 import SharpLogo from "#/components/logo/SharpLogo";
 import SharpFlex from "#/components/base/flex/Flex";
 import { useValidateConnectivityMutation } from "#/lib/reducer/apiSlice";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useNavigate } from "react-router-dom";
 import SharpText from "#/components/base/typograpghy/Text";
 import SharpButton from "#/components/base/button/Button";
 import SharpTitle from "#/components/base/typograpghy/Title";
@@ -21,6 +18,7 @@ import {
   CloseCircleOutlined,
 } from "@ant-design/icons";
 import { changeAxiosBaseUrl } from "#/lib/store/rtk/rtkApiInstance";
+import { tooltips } from "#/constants/tooltips";
 import toast from "react-hot-toast";
 import { localStorageKeys } from "#/constants/constant";
 import SharpDivider from "#/components/base/divider/Divider";
@@ -32,7 +30,7 @@ const LandingPage = () => {
   const [sharpAPIUrl, setSharpAPIUrl] = useState(sharpApiUrl);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   useEffect(() => {
     // Trigger connectivity validation on component mount
@@ -54,7 +52,7 @@ const LandingPage = () => {
         setHasValidated(true);
         // Navigate to dashboard on successful form submission
         if (result.data) {
-          router.push("/dashboard");
+          navigate("/dashboard");
         }
       } else {
         toast.error("Something went wrong.");
@@ -85,6 +83,7 @@ const LandingPage = () => {
             <Form.Item
               label="SharpAI Server URL"
               name="sharpAPIUrl"
+              tooltip={tooltips.landing.url}
               rules={[
                 { required: true, message: "Please enter a valid SharpAPIUrl" },
               ]}

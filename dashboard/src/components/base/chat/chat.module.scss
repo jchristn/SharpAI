@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100%;
   border-radius: 8px;
-  background: var(--ant-color-bg-base);
+  background: var(--ant-color-bg-container);
   overflow: auto;
 }
 
@@ -37,6 +37,19 @@
 
 .emptyStateInput {
   min-height: 100px !important;
+  background: var(--ant-color-bg-elevated) !important;
+  border: 1px solid var(--ant-color-border) !important;
+  color: var(--ant-color-text-base) !important;
+  border-radius: 6px !important;
+
+  &::placeholder {
+    color: var(--ant-color-text-placeholder);
+  }
+
+  &:hover,
+  &:focus {
+    border-color: var(--ant-color-primary) !important;
+  }
 }
 
 .messagesContainer {
@@ -130,4 +143,51 @@
 .sendButton {
   min-height: 40px;
   min-width: 50px;
+}
+
+.loadingIndicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ant-color-text-secondary);
+
+  :global(.anticon) {
+    font-size: 18px;
+    color: var(--ant-color-primary);
+  }
+}
+
+.typingDots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ant-color-primary);
+    animation: typingPulse 1.2s infinite ease-in-out;
+
+    &:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+  }
+}
+
+@keyframes typingPulse {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
 }

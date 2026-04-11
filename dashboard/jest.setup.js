@@ -1,18 +1,14 @@
 import "@testing-library/jest-dom";
 
-// Mock next/navigation
-jest.mock("next/navigation", () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-    };
-  },
-  usePathname() {
-    return "";
-  },
-}));
+// Mock react-router-dom navigation hooks for tests that don't provide a router
+jest.mock("react-router-dom", () => {
+  const actual = jest.requireActual("react-router-dom");
+  return {
+    ...actual,
+    useNavigate: () => jest.fn(),
+    useLocation: () => ({ pathname: "/", search: "", hash: "", state: null, key: "default" }),
+  };
+});
 
 
 // Mock antd message

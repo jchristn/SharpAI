@@ -1,19 +1,21 @@
 import React from "react";
 import { Layout, Menu, Button } from "antd";
 import {
-  HomeOutlined,
+  AppstoreOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   UnorderedListOutlined,
   MessageOutlined,
+  SettingOutlined,
 } from "@ant-design/icons";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 import "../../../assets/css/globals.scss";
 import SharpFlex from "../flex/Flex";
 import styles from "./sidebar.module.scss";
-import SharpText from "../typograpghy/Text";
-import Link from "next/link";
 import SharpLogo from "#/components/logo/SharpLogo";
+import SharpTooltip from "../tooltip/Tooltip";
+import { useGetSettingsQuery } from "#/lib/reducer/apiSlice";
+import pkg from "../../../../package.json";
 
 const { Sider } = Layout;
 
@@ -23,45 +25,54 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
+  const { data: settings } = useGetSettingsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const menuItems = [
     {
       key: "models",
-      icon: <HomeOutlined />,
-      label: <Link href="/dashboard">Models</Link>,
+      icon: <AppstoreOutlined />,
+      label: <Link to="/dashboard">Models</Link>,
     },
     {
       key: "embeddings",
       icon: <UnorderedListOutlined />,
-      label: <Link href="/dashboard/embeddings">Embeddings</Link>,
+      label: <Link to="/dashboard/embeddings">Embeddings</Link>,
     },
     {
       key: "completions",
       icon: <MessageOutlined />,
-      label: <Link href="/dashboard/completions">Completions</Link>,
+      label: <Link to="/dashboard/completions">Completions</Link>,
     },
     {
       key: "chat-completion",
       icon: <MessageOutlined />,
-      label: <Link href="/dashboard/chat-completion">Chat Completion</Link>,
+      label: <Link to="/dashboard/chat-completion">Chat Completion</Link>,
+    },
+    {
+      key: "configuration",
+      icon: <SettingOutlined />,
+      label: <Link to="/dashboard/configuration">Configuration</Link>,
     },
   ];
 
-  // Determine the selected key based on current pathname
   const getSelectedKey = () => {
-    if (pathname === "/dashboard") return ["models"];
+    if (pathname === "/dashboard" || pathname === "/dashboard/") return ["models"];
     if (pathname.startsWith("/dashboard/embeddings")) return ["embeddings"];
     if (pathname.startsWith("/dashboard/completions")) return ["completions"];
     if (pathname.startsWith("/dashboard/chat-completion"))
       return ["chat-completion"];
-    return ["home"]; // default fallback
+    if (pathname.startsWith("/dashboard/configuration"))
+      return ["configuration"];
+    return ["home"];
   };
 
   return (
     <Sider
-      theme="light"
-      width={200}
+      theme="dark"
+      width={220}
       trigger={null}
       collapsible
       collapsed={collapsed}
@@ -74,25 +85,42 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
         align="center"
         className={styles.logoContainer}
       >
-        <SharpText weight={600} fontSize={20}>
-          <SharpLogo onlyIcon={collapsed} />
-        </SharpText>
+        <SharpLogo onlyIcon={collapsed} textColor="#ffffff" />
       </SharpFlex>
-      <SharpFlex
-        justify="center"
-        className=" mt"
-        vertical
-        align={collapsed ? "center" : "flex-end"}
-        gap={10}
-      >
-        <Button
-          type="text"
-          icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={() => onCollapse?.(!collapsed)}
-          title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+      <div className={styles.menuContainer}>
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={getSelectedKey()}
+          items={menuItems}
         />
-      </SharpFlex>
-      <Menu mode="inline" selectedKeys={getSelectedKey()} items={menuItems} />
+      </div>
+      <div className={styles.bottomContainer}>
+        <div className={styles.collapseContainer}>
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={() => onCollapse?.(!collapsed)}
+            title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            className={styles.collapseButton}
+            block
+          />
+        </div>
+        {!collapsed && (
+          <div className={styles.versionContainer}>
+            <SharpTooltip
+              title={
+                <>
+                  <div>Dashboard v{pkg.version}</div>
+                  <div>Server v{settings?.SoftwareVersion ?? "unknown"}</div>
+                </>
+              }
+            >
+              <span className={styles.versionText}>v{pkg.version}</span>
+            </SharpTooltip>
+          </div>
+        )}
+      </div>
     </Sider>
   );
 };

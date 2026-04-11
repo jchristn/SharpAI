@@ -1,8 +1,7 @@
-"use client";
 
 import React, { useState } from "react";
-import { InputNumber, Switch, Form, Select, Input } from "antd";
-import { SettingOutlined, CloseOutlined } from "@ant-design/icons";
+import { InputNumber, Switch, Form, Select } from "antd";
+import { CloseOutlined, QuestionCircleOutlined } from "@ant-design/icons";
 import SharpButton from "#/components/base/button/Button";
 import { completionOptions } from "../constants";
 import styles from "./chatSettings.module.scss";
@@ -10,7 +9,24 @@ import SharpSelect from "#/components/base/select/Select";
 import { requestFormatOptions } from "#/page/embeddings/constants";
 import { RequestFormatEnum } from "#/types/types";
 import SharpDivider from "#/components/base/divider/Divider";
-import SharpInput from "#/components/base/input/Input";
+import SharpTooltip from "#/components/base/tooltip/Tooltip";
+import { tooltips } from "#/constants/tooltips";
+
+const L: React.FC<{ text: string; tooltip: string }> = ({ text, tooltip }) => (
+  <label className={styles.optionLabel}>
+    {text}{" "}
+    <SharpTooltip title={tooltip}>
+      <QuestionCircleOutlined
+        style={{
+          fontSize: 11,
+          color: "var(--ant-color-text-secondary)",
+          cursor: "help",
+          marginLeft: 4,
+        }}
+      />
+    </SharpTooltip>
+  </label>
+);
 
 interface ChatSettingsProps {
   currentOptions: typeof completionOptions;
@@ -60,7 +76,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               <div className={styles.groupTitle}>Core Parameters</div>
               <SharpDivider className="mt-0" />
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>Request Type</label>
+                <L
+                  text="Request Type"
+                  tooltip={tooltips.completionsCommon.requestType}
+                />
                 <SharpSelect
                   placeholder="Select a request type"
                   options={requestFormatOptions}
@@ -74,9 +93,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               </div>
               {onNumberOfMessagesChange && (
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Number of messages to retain in context
-                  </label>
+                  <L
+                    text="Number of messages to retain in context"
+                    tooltip="How many of the most recent messages to include in the prompt sent to the model. Older messages are dropped."
+                  />
                   <InputNumber
                     placeholder="number of messages"
                     style={{ width: "100%" }}
@@ -88,7 +108,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
               )}
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>Stream Response</label>
+                <L
+                  text="Stream Response"
+                  tooltip={tooltips.completionsCommon.streamEnabled}
+                />
                 <Switch
                   checked={streamEnabled}
                   onChange={onStreamToggle}
@@ -97,9 +120,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               </div>
 
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>
-                  Temperature ({currentOptions.temperature})
-                </label>
+                <L
+                  text={`Temperature (${currentOptions.temperature})`}
+                  tooltip={tooltips.chatSettings.temperature}
+                />
                 <InputNumber
                   min={0}
                   max={2}
@@ -112,9 +136,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               </div>
 
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>
-                  Top P ({currentOptions.top_p})
-                </label>
+                <L
+                  text={`Top P (${currentOptions.top_p})`}
+                  tooltip={tooltips.chatSettings.topP}
+                />
                 <InputNumber
                   min={0}
                   max={1}
@@ -128,9 +153,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
 
               {requestType === RequestFormatEnum.OLLAMA && (
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Top K ({currentOptions.top_k})
-                  </label>
+                  <L
+                    text={`Top K (${currentOptions.top_k})`}
+                    tooltip={tooltips.chatSettings.topK}
+                  />
                   <InputNumber
                     min={1}
                     max={100}
@@ -142,7 +168,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
               )}
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>Stop Sequences</label>
+                <L
+                  text="Stop Sequences"
+                  tooltip={tooltips.chatSettings.stop}
+                />
                 <Select
                   mode="tags"
                   value={
@@ -160,9 +189,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 />
               </div>
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>
-                  Max Tokens ({currentOptions.num_predict})
-                </label>
+                <L
+                  text={`Max Tokens (${currentOptions.num_predict})`}
+                  tooltip={tooltips.chatSettings.numPredict}
+                />
                 <InputNumber
                   min={1}
                   max={4096}
@@ -182,9 +212,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               {requestType === RequestFormatEnum.OLLAMA && (
                 <>
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Repeat Penalty ({currentOptions.repeat_penalty})
-                    </label>
+                    <L
+                      text={`Repeat Penalty (${currentOptions.repeat_penalty})`}
+                      tooltip={tooltips.chatSettings.repeatPenalty}
+                    />
                     <InputNumber
                       min={0}
                       max={2}
@@ -199,9 +230,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Seed ({currentOptions.seed})
-                    </label>
+                    <L
+                      text={`Seed (${currentOptions.seed})`}
+                      tooltip={tooltips.chatSettings.seed}
+                    />
                     <InputNumber
                       value={currentOptions.seed}
                       onChange={(value) => onOptionChange("seed", value)}
@@ -211,9 +243,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Context Length ({currentOptions.num_ctx})
-                    </label>
+                    <L
+                      text={`Context Length (${currentOptions.num_ctx})`}
+                      tooltip={tooltips.chatSettings.numCtx}
+                    />
                     <InputNumber
                       min={512}
                       max={8192}
@@ -225,9 +258,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Min P ({currentOptions.min_p})
-                    </label>
+                    <L
+                      text={`Min P (${currentOptions.min_p})`}
+                      tooltip={tooltips.chatSettings.minP}
+                    />
                     <InputNumber
                       min={0}
                       max={1}
@@ -240,9 +274,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      TFS Z ({currentOptions.tfs_z})
-                    </label>
+                    <L
+                      text={`TFS Z (${currentOptions.tfs_z})`}
+                      tooltip={tooltips.chatSettings.tfsZ}
+                    />
                     <InputNumber
                       min={0}
                       max={1}
@@ -255,9 +290,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Typical P ({currentOptions.typical_p})
-                    </label>
+                    <L
+                      text={`Typical P (${currentOptions.typical_p})`}
+                      tooltip={tooltips.chatSettings.typicalP}
+                    />
                     <InputNumber
                       min={0}
                       max={1}
@@ -270,9 +306,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Mirostat ({currentOptions.mirostat})
-                    </label>
+                    <L
+                      text={`Mirostat (${currentOptions.mirostat})`}
+                      tooltip={tooltips.chatSettings.mirostat}
+                    />
                     <InputNumber
                       min={0}
                       max={2}
@@ -284,9 +321,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Mirostat Tau ({currentOptions.mirostat_tau})
-                    </label>
+                    <L
+                      text={`Mirostat Tau (${currentOptions.mirostat_tau})`}
+                      tooltip={tooltips.chatSettings.mirostatTau}
+                    />
                     <InputNumber
                       min={0}
                       max={10}
@@ -301,9 +339,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                   </div>
 
                   <div className={styles.optionItem}>
-                    <label className={styles.optionLabel}>
-                      Mirostat Eta ({currentOptions.mirostat_eta})
-                    </label>
+                    <L
+                      text={`Mirostat Eta (${currentOptions.mirostat_eta})`}
+                      tooltip={tooltips.chatSettings.mirostatEta}
+                    />
                     <InputNumber
                       min={0}
                       max={1}
@@ -320,9 +359,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               )}
 
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>
-                  Presence Penalty ({currentOptions.presence_penalty})
-                </label>
+                <L
+                  text={`Presence Penalty (${currentOptions.presence_penalty})`}
+                  tooltip={tooltips.chatSettings.presencePenalty}
+                />
                 <InputNumber
                   min={-2}
                   max={2}
@@ -337,9 +377,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               </div>
 
               <div className={styles.optionItem}>
-                <label className={styles.optionLabel}>
-                  Frequency Penalty ({currentOptions.frequency_penalty})
-                </label>
+                <L
+                  text={`Frequency Penalty (${currentOptions.frequency_penalty})`}
+                  tooltip={tooltips.chatSettings.frequencyPenalty}
+                />
                 <InputNumber
                   min={-2}
                   max={2}
@@ -361,9 +402,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 <SharpDivider className="mt-0" />
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Threads ({currentOptions.num_thread})
-                  </label>
+                  <L
+                    text={`Threads (${currentOptions.num_thread})`}
+                    tooltip={tooltips.chatSettings.numThread}
+                  />
                   <InputNumber
                     min={1}
                     max={32}
@@ -375,9 +417,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Number of GPUs ({currentOptions.num_gpu})
-                  </label>
+                  <L
+                    text={`Number of GPUs (${currentOptions.num_gpu})`}
+                    tooltip={tooltips.chatSettings.numGpu}
+                  />
                   <InputNumber
                     min={0}
                     max={100}
@@ -389,9 +432,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Number of Batches ({currentOptions.num_batch})
-                  </label>
+                  <L
+                    text={`Number of Batches (${currentOptions.num_batch})`}
+                    tooltip={tooltips.chatSettings.numBatch}
+                  />
                   <InputNumber
                     min={1}
                     max={512}
@@ -403,9 +447,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Number of Tokens to Keep ({currentOptions.num_keep})
-                  </label>
+                  <L
+                    text={`Number of Tokens to Keep (${currentOptions.num_keep})`}
+                    tooltip={tooltips.chatSettings.numKeep}
+                  />
                   <InputNumber
                     min={0}
                     max={100}
@@ -417,9 +462,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Repeat Last N ({currentOptions.repeat_last_n})
-                  </label>
+                  <L
+                    text={`Repeat Last N (${currentOptions.repeat_last_n})`}
+                    tooltip={tooltips.chatSettings.repeatLastN}
+                  />
                   <InputNumber
                     min={-1}
                     max={512}
@@ -431,9 +477,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>
-                    Main GPU ({currentOptions.main_gpu})
-                  </label>
+                  <L
+                    text={`Main GPU (${currentOptions.main_gpu})`}
+                    tooltip={tooltips.chatSettings.mainGpu}
+                  />
                   <InputNumber
                     min={0}
                     max={8}
@@ -445,7 +492,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>Low VRAM</label>
+                  <L text="Low VRAM" tooltip={tooltips.chatSettings.lowVram} />
                   <Switch
                     checked={currentOptions.low_vram}
                     onChange={(value) => onOptionChange("low_vram", value)}
@@ -454,7 +501,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>F16 KV Cache</label>
+                  <L
+                    text="F16 KV Cache"
+                    tooltip={tooltips.chatSettings.f16Kv}
+                  />
                   <Switch
                     checked={currentOptions.f16_kv}
                     onChange={(value) => onOptionChange("f16_kv", value)}
@@ -463,7 +513,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>Use Memory Map</label>
+                  <L
+                    text="Use Memory Map"
+                    tooltip={tooltips.chatSettings.useMmap}
+                  />
                   <Switch
                     checked={currentOptions.use_mmap}
                     onChange={(value) => onOptionChange("use_mmap", value)}
@@ -472,7 +525,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>Use Memory Lock</label>
+                  <L
+                    text="Use Memory Lock"
+                    tooltip={tooltips.chatSettings.useMlock}
+                  />
                   <Switch
                     checked={currentOptions.use_mlock}
                     onChange={(value) => onOptionChange("use_mlock", value)}
@@ -481,7 +537,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>Vocabulary Only</label>
+                  <L
+                    text="Vocabulary Only"
+                    tooltip={tooltips.chatSettings.vocabOnly}
+                  />
                   <Switch
                     checked={currentOptions.vocab_only}
                     onChange={(value) => onOptionChange("vocab_only", value)}
@@ -490,7 +549,7 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>NUMA</label>
+                  <L text="NUMA" tooltip={tooltips.chatSettings.numa} />
                   <Switch
                     checked={currentOptions.numa}
                     onChange={(value) => onOptionChange("numa", value)}
@@ -499,7 +558,10 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
                 </div>
 
                 <div className={styles.optionItem}>
-                  <label className={styles.optionLabel}>Penalize Newline</label>
+                  <L
+                    text="Penalize Newline"
+                    tooltip={tooltips.chatSettings.penalizeNewline}
+                  />
                   <Switch
                     checked={currentOptions.penalize_newline}
                     onChange={(value) =>
@@ -511,15 +573,17 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
               </div>
             )}
 
-            <SharpButton
-              type="default"
-              onClick={onResetDefaults}
-              className={styles.resetButton}
-              block
-              disabled={disabled}
-            >
-              Reset to Defaults
-            </SharpButton>
+            <SharpTooltip title={tooltips.chatSettings.resetDefaults}>
+              <SharpButton
+                type="default"
+                onClick={onResetDefaults}
+                className={styles.resetButton}
+                block
+                disabled={disabled}
+              >
+                Reset to Defaults
+              </SharpButton>
+            </SharpTooltip>
           </Form>
         </div>
       </div>

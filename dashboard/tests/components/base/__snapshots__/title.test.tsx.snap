@@ -1,9 +1,0 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
-
-exports[`SharpTitle Component should match snapshot 1`] = `
-<h1
-  class="ant-typography headingCommonStyles css-dev-only-do-not-override-1vjf2v5"
->
-  Snapshot Test
-</h1>
-`;

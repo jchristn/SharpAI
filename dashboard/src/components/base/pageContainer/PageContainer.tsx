@@ -11,6 +11,7 @@ const PageContainer = ({
   withoutWhiteBG = false,
   id,
   pageTitle,
+  pageSubtitle,
   pageTitleRightContent,
   style,
 }: {
@@ -19,6 +20,7 @@ const PageContainer = ({
   withoutWhiteBG?: boolean;
   id?: string;
   pageTitle?: React.ReactNode | string;
+  pageSubtitle?: React.ReactNode | string;
   pageTitleRightContent?: React.ReactNode;
   showGraphSelector?: boolean;
   style?: React.CSSProperties;
@@ -30,20 +32,30 @@ const PageContainer = ({
       style={style}
     >
       {(pageTitle || pageTitleRightContent) && (
-        <>
-          <SharpFlex
-            className={styles.pageTitleContainer}
-            wrap
-            gap="small"
-            align="center"
-            justify="space-between"
-          >
+        <SharpFlex
+          className={styles.pageTitleContainer}
+          wrap
+          gap="small"
+          align="center"
+          justify="space-between"
+        >
+          <div>
             <SharpText fontSize={16} weight={600} data-testid="heading">
               {pageTitle}
             </SharpText>
-            {pageTitleRightContent}
-          </SharpFlex>
-        </>
+            {pageSubtitle && (
+              <div className={styles.pageSubtitle}>
+                <SharpText
+                  fontSize={12}
+                  style={{ color: "var(--ant-color-text-secondary)" }}
+                >
+                  {pageSubtitle}
+                </SharpText>
+              </div>
+            )}
+          </div>
+          {pageTitleRightContent}
+        </SharpFlex>
       )}
       <div className={styles.pageContent}>{children}</div>
     </Content>

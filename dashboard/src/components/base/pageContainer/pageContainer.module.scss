@@ -1,16 +1,21 @@
 .pageContainer {
-  background: var(--ant-color-bg-base);
-  border-radius: var(--ant-border-radius-sm);
-  min-height: calc(100vh - 70px);
+  background: var(--ant-color-bg-container);
+  min-height: calc(100vh - 56px);
 }
 
 .pageTitleContainer {
-  padding: var(--ant-padding) var(--ant-padding-lg) !important;
+  padding: 16px 24px !important;
   border-bottom: 1px solid var(--ant-color-border);
 }
 
+.pageSubtitle {
+  margin-top: 2px;
+  max-width: 900px;
+  line-height: 1.4;
+}
+
 .pageContent {
-  padding: var(--ant-padding-lg);
-  max-height: calc(100vh - 132px);
+  padding: 24px;
+  max-height: calc(100vh - 128px);
   overflow: auto;
 }

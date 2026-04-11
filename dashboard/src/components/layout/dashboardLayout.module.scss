@@ -1,19 +1,46 @@
 .header {
   border-bottom: 1px solid var(--ant-color-border);
-  background:var(--ant-layout-light-sider-bg) !important;
-  padding: 0 var(--ant-padding) !important;
-  height: 65px;
+  background: var(--ant-color-bg-container) !important;
+  padding: 0 16px !important;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  global {
-    .label {
-      font-size: 10px;
-      font-weight: 600;
-      color: #333333;
-      display: block;
-      height: fit-content;
-      line-height: normal;
-    }
+}
+
+// Header control row. Every child is forced to the same fixed height and
+// centered vertically with flexbox, so the GitHub icon, dark-mode toggle, and
+// Logout link all land on the same horizontal midline regardless of whether
+// they are an SVG, an antd Button, or a React Router Link.
+.headerIconLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  color: var(--ant-color-text-base);
+  line-height: 1;
+
+  &:hover {
+    color: var(--ant-color-primary);
+  }
+}
+
+.headerLogoutLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  color: var(--ant-color-primary);
+  line-height: 1;
+
+  &:hover {
+    color: var(--ant-color-primary-hover, var(--ant-color-primary));
+  }
+
+  // Ensure the icon itself is vertically centered
+  :global(.anticon) {
+    display: inline-flex;
+    align-items: center;
   }
 }

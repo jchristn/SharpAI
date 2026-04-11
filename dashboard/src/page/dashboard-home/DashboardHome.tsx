@@ -1,29 +1,41 @@
-"use client";
 
 import React, { useState } from "react";
 import PageContainer from "#/components/base/pageContainer/PageContainer";
 import SharpTable from "#/components/base/table/Table";
 import {
   useGetLocalModelsQuery,
+  useGetRunningModelsQuery,
   useDeleteModelMutation,
 } from "#/lib/reducer/apiSlice";
-import { LocalModel } from "#/lib/reducer/types";
+import { LocalModel, RunningModel } from "#/lib/reducer/types";
 import PageLoading from "#/components/base/loading/PageLoading";
 import FallBack from "#/components/base/fallback/FallBack";
 import SharpText from "#/components/base/typograpghy/Text";
 import { createColumnConfig } from "./constants";
-import { formatError } from "#/utils/utils";
+import { formatError, formatSizeInMB } from "#/utils/utils";
 import SharpButton from "#/components/base/button/Button";
 import SharpFlex from "#/components/base/flex/Flex";
-import { LinkOutlined, ReloadOutlined } from "@ant-design/icons";
+import {
+  CloseCircleOutlined,
+  LinkOutlined,
+  LoadingOutlined,
+  PlayCircleOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import PullModelModal from "./PullModelModal";
 import ConfirmationModal from "#/components/common/ConfirmationModal";
-import { message } from "antd";
+import { message, Progress } from "antd";
+import { formatSize } from "#/utils/utils";
+import { usePullProgress } from "#/hooks/usePullProgress";
+import SharpTooltip from "#/components/base/tooltip/Tooltip";
+import TooltipHeader from "#/components/base/tooltip/TooltipHeader";
+import { tooltips, pageDescriptions } from "#/constants/tooltips";
 
 const DashboardHome = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<LocalModel | null>(null);
+  const { activePulls, cancelPull } = usePullProgress();
 
   const {
     data: localModels,
@@ -32,6 +44,13 @@ const DashboardHome = () => {
     error,
     refetch,
   } = useGetLocalModelsQuery();
+
+  const { data: runningModelsData, refetch: refetchRunning } =
+    useGetRunningModelsQuery(undefined, {
+      pollingInterval: 5000,
+      refetchOnMountOrArgChange: true,
+    });
+  const runningModels: RunningModel[] = runningModelsData?.models ?? [];
 
   const [deleteModel, { isLoading: isDeleting }] = useDeleteModelMutation();
 
@@ -49,7 +68,7 @@ const DashboardHome = () => {
       message.success(`Successfully deleted model: ${modelToDelete.name}`);
       setIsConfirmModalOpen(false);
       setModelToDelete(null);
-      refetch(); // Refresh the models list
+      refetch();
     } catch (error) {
       message.error(`Failed to delete model: ${formatError(error)}`);
     }
@@ -70,10 +89,6 @@ const DashboardHome = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-  };
-
-  const handlePullSuccess = () => {
-    refetch(); // Refresh the models list after successful pull
   };
 
   // Handle loading state
@@ -98,25 +113,27 @@ const DashboardHome = () => {
   return (
     <PageContainer
       pageTitle={
-        <SharpFlex align="center" gap="20">
-          <SharpText>Local Models ({localModels?.length || 0})</SharpText>
-          <ReloadOutlined className="ml-sm" onClick={refetch} />
-        </SharpFlex>
+        <SharpText>Local Models ({localModels?.length || 0})</SharpText>
       }
+      pageSubtitle={pageDescriptions.models}
       pageTitleRightContent={
         <SharpFlex align="center" gap="20">
-          <SharpButton
-            icon={<LinkOutlined />}
-            type="link"
-            href="https://huggingface.co/models?search=gguf"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Available Models
-          </SharpButton>
-          <SharpButton type="primary" onClick={handleOpenModal}>
-            Pull models
-          </SharpButton>
+          <SharpTooltip title="Browse GGUF models on HuggingFace in a new tab.">
+            <SharpButton
+              icon={<LinkOutlined />}
+              type="link"
+              href="https://huggingface.co/models?search=gguf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Available Models
+            </SharpButton>
+          </SharpTooltip>
+          <SharpTooltip title="Download a new model from HuggingFace by its 'organization/repo' slug.">
+            <SharpButton type="primary" onClick={handleOpenModal}>
+              Pull models
+            </SharpButton>
+          </SharpTooltip>
         </SharpFlex>
       }
     >
@@ -128,19 +145,261 @@ const DashboardHome = () => {
           pageSize: 10,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total: number, range: [number, number]) =>
-            `${range[0]}-${range[1]} of ${total} models`,
+          showTotal: (total: number, range: [number, number]) => (
+            <SharpFlex align="center" gap={8}>
+              <ReloadOutlined
+                onClick={refetch}
+                title="Refresh"
+                style={{ cursor: "pointer" }}
+              />
+              <span>
+                {range[0]}-{range[1]} of {total} models
+              </span>
+            </SharpFlex>
+          ),
         }}
-        scroll={{ x: 1200 }}
         size="middle"
       />
 
+      {/* Running Models */}
+      <div style={{ marginTop: 24 }}>
+        <SharpFlex
+          align="center"
+          gap={8}
+          style={{
+            marginBottom: 12,
+          }}
+        >
+          <PlayCircleOutlined style={{ color: "var(--ant-color-success)" }} />
+          <SharpTooltip title={tooltips.running.heading}>
+            <SharpText
+              style={{
+                fontWeight: 600,
+                fontSize: 14,
+                cursor: "help",
+              }}
+            >
+              Running Models ({runningModels.length})
+            </SharpText>
+          </SharpTooltip>
+          <SharpTooltip title="Refresh the running models list immediately.">
+            <ReloadOutlined
+              onClick={refetchRunning}
+              style={{ cursor: "pointer", fontSize: 12, opacity: 0.6 }}
+            />
+          </SharpTooltip>
+        </SharpFlex>
+        {runningModels.length === 0 ? (
+          <SharpText
+            style={{
+              fontSize: 13,
+              color: "var(--ant-color-text-secondary)",
+              fontStyle: "italic",
+            }}
+          >
+            No models currently loaded in memory.
+          </SharpText>
+        ) : (
+          <SharpTable
+            columns={
+              [
+                {
+                  title: (
+                    <TooltipHeader
+                      label="Name"
+                      tooltip={tooltips.running.name}
+                    />
+                  ),
+                  dataIndex: "name",
+                  key: "name",
+                  ellipsis: true,
+                },
+                {
+                  title: (
+                    <TooltipHeader
+                      label="Family"
+                      tooltip={tooltips.running.family}
+                    />
+                  ),
+                  dataIndex: ["details", "family"],
+                  key: "family",
+                  width: 160,
+                },
+                {
+                  title: (
+                    <TooltipHeader
+                      label="Quantization"
+                      tooltip={tooltips.running.quantization}
+                    />
+                  ),
+                  dataIndex: ["details", "quantization_level"],
+                  key: "quantization",
+                  width: 160,
+                },
+                {
+                  title: (
+                    <TooltipHeader
+                      label="Size"
+                      tooltip={tooltips.running.size}
+                    />
+                  ),
+                  dataIndex: "size",
+                  key: "size",
+                  width: 130,
+                  align: "right",
+                  render: (value: number) => formatSize(value),
+                },
+                {
+                  title: (
+                    <TooltipHeader
+                      label="VRAM"
+                      tooltip={tooltips.running.vram}
+                    />
+                  ),
+                  dataIndex: "size_vram",
+                  key: "size_vram",
+                  width: 130,
+                  align: "right",
+                  render: (value: number) =>
+                    value > 0 ? (
+                      formatSize(value)
+                    ) : (
+                      <SharpTooltip title={tooltips.running.vram}>
+                        <span style={{ cursor: "help" }}>—</span>
+                      </SharpTooltip>
+                    ),
+                },
+              ] as any
+            }
+            dataSource={runningModels}
+            rowKey="digest"
+            pagination={false}
+            size="small"
+          />
+        )}
+      </div>
+
+      {/* Active Pull Progress */}
+      {Object.keys(activePulls).length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <SharpFlex
+            align="center"
+            gap={8}
+            style={{ marginBottom: 12 }}
+          >
+            <LoadingOutlined />
+            <SharpTooltip title={tooltips.pulling.heading}>
+              <SharpText
+                style={{
+                  fontWeight: 600,
+                  fontSize: 14,
+                  cursor: "help",
+                }}
+              >
+                Pulling Models ({Object.keys(activePulls).length})
+              </SharpText>
+            </SharpTooltip>
+          </SharpFlex>
+          <SharpTable
+            columns={[
+              {
+                title: (
+                  <TooltipHeader
+                    label="Model"
+                    tooltip={tooltips.pulling.modelName}
+                  />
+                ),
+                dataIndex: "modelName",
+                key: "modelName",
+                ellipsis: true,
+              },
+              {
+                title: (
+                  <TooltipHeader
+                    label="Status"
+                    tooltip={tooltips.pulling.status}
+                  />
+                ),
+                dataIndex: "status",
+                key: "status",
+                width: 180,
+                ellipsis: true,
+              },
+              {
+                title: (
+                  <TooltipHeader
+                    label="Progress"
+                    tooltip={tooltips.pulling.progress}
+                  />
+                ),
+                key: "progress",
+                width: 280,
+                render: (_: any, record: any) => {
+                  const percent =
+                    record.total && record.total > 0
+                      ? Math.round((record.downloaded / record.total) * 100)
+                      : 0;
+                  return (
+                    <Progress
+                      percent={percent}
+                      size="small"
+                      status="active"
+                    />
+                  );
+                },
+              },
+              {
+                title: (
+                  <TooltipHeader
+                    label="Size"
+                    tooltip={tooltips.pulling.size}
+                  />
+                ),
+                key: "size",
+                width: 180,
+                align: "right",
+                render: (_: any, record: any) => (
+                  <SharpText
+                    style={{
+                      fontSize: 12,
+                      whiteSpace: "nowrap",
+                      fontVariantNumeric: "tabular-nums",
+                    }}
+                  >
+                    {record.total && record.total > 0
+                      ? `${formatSizeInMB(record.downloaded)} / ${formatSizeInMB(record.total)}`
+                      : "—"}
+                  </SharpText>
+                ),
+              },
+              {
+                title: "",
+                key: "actions",
+                width: 56,
+                align: "right",
+                render: (_: any, record: any) => (
+                  <SharpTooltip title={tooltips.pulling.cancel}>
+                    <SharpButton
+                      type="text"
+                      danger
+                      size="small"
+                      icon={<CloseCircleOutlined />}
+                      onClick={() => cancelPull(record.modelName)}
+                    />
+                  </SharpTooltip>
+                ),
+              },
+            ] as any}
+            dataSource={Object.values(activePulls)}
+            rowKey="modelName"
+            pagination={false}
+            size="small"
+          />
+        </div>
+      )}
+
       {/* Pull Model Modal */}
-      <PullModelModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onSuccess={handlePullSuccess}
-      />
+      <PullModelModal isOpen={isModalOpen} onClose={handleCloseModal} />
 
       {/* Delete Confirmation Modal */}
       <ConfirmationModal

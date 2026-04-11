@@ -15,7 +15,7 @@ import {
   SliceTags,
   ChatCompletionsOpenAIPayload,
 } from "./types";
-import { LocalModel } from "./types";
+import { LocalModel, RunningModelsResponse, SharpAISettings } from "./types";
 import { AxiosProgressEvent } from "axios";
 
 const enhancedSdk = apiSlice.enhanceEndpoints({
@@ -40,18 +40,37 @@ const apiSliceInstance = enhancedSdk.injectEndpoints({
         url: "/api/tags",
       }),
     }),
+    getRunningModels: build.query<RunningModelsResponse, void>({
+      query: () => ({
+        url: "/api/ps",
+      }),
+    }),
     pullModels: build.mutation<
       void,
       {
         model: string;
         onDownloadProgress?: (progressEvent: AxiosProgressEvent) => void;
+        signal?: AbortSignal;
       }
     >({
-      query: ({ model, onDownloadProgress }) => ({
+      query: ({ model, onDownloadProgress, signal }) => ({
         url: "/api/pull",
         method: "POST",
         data: { model },
         onDownloadProgress,
+        signal,
+      }),
+    }),
+    getSettings: build.query<SharpAISettings, void>({
+      query: () => ({
+        url: "/api/settings",
+      }),
+    }),
+    updateSettings: build.mutation<SharpAISettings, SharpAISettings>({
+      query: (settings) => ({
+        url: "/api/settings",
+        method: "PUT",
+        data: settings,
       }),
     }),
     deleteModel: build.mutation<void, { model: string }>({
@@ -155,6 +174,9 @@ const apiSliceInstance = enhancedSdk.injectEndpoints({
 export const {
   useValidateConnectivityMutation,
   useGetLocalModelsQuery,
+  useGetRunningModelsQuery,
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
   usePullModelsMutation,
   useDeleteModelMutation,
   useGenerateEmbeddingsMutation,
