@@ -1,16 +1,26 @@
-version: '3.8'
-
 services:
+
+  #
+  # SharpAI Server (CUDA / NVIDIA GPU)
+  # Requires the NVIDIA Container Toolkit on the host:
+  # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+  #
+  # See https://hub.docker.com/r/jchristn77/sharpai
+  # and https://github.com/jchristn/sharpai
+  #
   sharpai:
-    image: sharpai:latest
-    container_name: sharpai-gpu
+    container_name: 'sharpai'
+    image: 'jchristn77/sharpai:v4.0.0'
     ports:
-      - "8000:8000"
+      - '8000:8000'
+    stdin_open: true
+    tty: true
     volumes:
-      - sharpai-models:/app/models
-      - sharpai-data:/app
+      - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs/:/app/logs/
+      - ./models/:/app/models/
     environment:
-      - ASPNETCORE_URLS=http://+:8000
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     deploy:
@@ -20,8 +30,19 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: curl --fail http://localhost:8000
     restart: unless-stopped
 
-volumes:
-  sharpai-models:
-  sharpai-data:
+  #
+  # SharpAI Dashboard
+  # See https://hub.docker.com/r/jchristn77/sharpai-ui
+  #
+  sharpai-ui:
+    container_name: 'sharpai-ui'
+    image: 'jchristn77/sharpai-ui:v4.0.0'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - sharpai
+    restart: unless-stopped

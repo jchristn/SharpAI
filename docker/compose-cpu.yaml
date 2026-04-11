@@ -1,18 +1,35 @@
-version: '3.8'
-
 services:
+
+  #
+  # SharpAI Server (CPU)
+  # See https://hub.docker.com/r/jchristn77/sharpai
+  # and https://github.com/jchristn/sharpai
+  #
   sharpai:
-    image: sharpai:latest
-    container_name: sharpai-cpu
+    container_name: 'sharpai'
+    image: 'jchristn77/sharpai:v4.0.0'
     ports:
-      - "8000:8000"
+      - '8000:8000'
+    stdin_open: true
+    tty: true
     volumes:
-      - sharpai-models:/app/models
-      - sharpai-data:/app
-    environment:
-      - ASPNETCORE_URLS=http://+:8000
+      - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs/:/app/logs/
+      - ./models/:/app/models/
+    healthcheck:
+      test: curl --fail http://localhost:8000
     restart: unless-stopped
 
-volumes:
-  sharpai-models:
-  sharpai-data:
+  #
+  # SharpAI Dashboard
+  # See https://hub.docker.com/r/jchristn77/sharpai-ui
+  #
+  sharpai-ui:
+    container_name: 'sharpai-ui'
+    image: 'jchristn77/sharpai-ui:v4.0.0'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - sharpai
+    restart: unless-stopped
