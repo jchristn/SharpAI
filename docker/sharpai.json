@@ -1,5 +1,5 @@
 {
-  "CreatedUtc": "2025-07-25T06:06:25.538911Z",
+  "CreatedUtc": "2026-04-11T00:00:00.000000Z",
   "SoftwareVersion": "4.0.0",
   "Logging": {
     "Servers": [
@@ -37,12 +37,47 @@
   "Rest": {
     "Hostname": "*",
     "Port": 8000,
+    "Protocols": {
+      "EnableHttp1": true,
+      "EnableHttp2": false,
+      "EnableHttp3": false,
+      "EnableHttp2Cleartext": false,
+      "MaxConcurrentStreams": 100,
+      "IdleTimeoutMs": 120000,
+      "Http2": {
+        "HeaderTableSize": 4096,
+        "EnablePush": false,
+        "MaxConcurrentStreams": 100,
+        "InitialWindowSize": 65535,
+        "MaxFrameSize": 16384,
+        "MaxHeaderListSize": 65536
+      },
+      "Http3": {
+        "MaxFieldSectionSize": 0,
+        "QpackMaxTableCapacity": 0,
+        "QpackBlockedStreams": 0,
+        "EnableDatagram": false
+      }
+    },
+    "AltSvc": {
+      "Enabled": false,
+      "Port": 0,
+      "Http3Alpn": "h3",
+      "MaxAgeSeconds": 86400
+    },
     "IO": {
       "StreamBufferSize": 65536,
       "MaxRequests": 1024,
       "ReadTimeoutMs": 10000,
       "MaxIncomingHeadersSize": 65536,
-      "EnableKeepAlive": false
+      "EnableKeepAlive": false,
+      "MaxRequestBodySize": 0,
+      "MaxHeaderCount": 64,
+      "Http1": {
+        "PoolMaxRetainedPerType": 256,
+        "ResponseHeaderTemplateCacheSize": 256,
+        "StatusLineCacheSize": 64
+      }
     },
     "Ssl": {
       "Enable": false,
@@ -60,8 +95,7 @@
         "Accept-Language": "en-US, en",
         "Accept-Charset": "ISO-8859-1, utf-8",
         "Cache-Control": "no-cache",
-        "Connection": "close",
-        "Host": "localhost:8000"
+        "Connection": "close"
       }
     },
     "AccessControl": {
@@ -74,16 +108,32 @@
       "Routing": false,
       "Requests": false,
       "Responses": false
-    }
+    },
+    "Timeout": {
+      "DefaultTimeout": "00:00:00"
+    },
+    "WebSockets": {
+      "Enable": false,
+      "MaxMessageSize": 16777216,
+      "ReceiveBufferSize": 65536,
+      "CloseHandshakeTimeoutMs": 5000,
+      "AllowClientSuppliedGuid": false,
+      "ClientGuidHeaderName": "x-guid",
+      "SupportedVersions": ["13"],
+      "EnableHttp1": true,
+      "EnableHttp2": false,
+      "EnableHttp3": false
+    },
+    "UseMachineHostname": true
   },
   "Runtime": {
     "ForceBackend": null,
     "CpuBackendPath": null,
     "GpuBackendPath": null,
-    "EnableNativeLogging": true
+    "EnableNativeLogging": false
   },
   "Debug": {
     "RequestBody": false
   },
-  "QuantizationPriority": { }
+  "QuantizationPriority": {}
 }
