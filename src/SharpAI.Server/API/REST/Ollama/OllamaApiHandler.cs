@@ -255,18 +255,66 @@
 
                 #region Persist
 
-                bool supportsEmbeddings;
-                bool supportsCompletions;
-                string detectedArchitecture;
-                using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
+                bool supportsEmbeddings = false;
+                bool supportsCompletions = true;
+                string detectedArchitecture = null;
+                bool capabilitiesDetected = false;
+
+                // Try lightweight GGUF header reader first (no native dependencies, milliseconds)
+                try
                 {
-                    supportsEmbeddings = engine.SupportsEmbeddings;
-                    supportsCompletions = engine.SupportsGeneration;
-                    detectedArchitecture = engine.Architecture;
+                    SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(
+                        filename,
+                        out detectedArchitecture,
+                        out supportsEmbeddings,
+                        out supportsCompletions);
+
+                    capabilitiesDetected = true;
+
                     _Logging.Debug(_Header + "detected capabilities for " + modelName +
-                        ": architecture=" + (detectedArchitecture ?? "unknown") +
+                        " via GGUF metadata: architecture=" + (detectedArchitecture ?? "unknown") +
                         ", embeddings=" + supportsEmbeddings +
                         ", completions=" + supportsCompletions);
+                }
+                catch (Exception metaEx)
+                {
+                    _Logging.Warn(_Header + "lightweight GGUF metadata read failed for " + modelName +
+                        ", falling back to full model load:" + Environment.NewLine + metaEx.ToString());
+                }
+
+                // Fall back to full engine initialization if lightweight reader failed
+                if (!capabilitiesDetected)
+                {
+                    try
+                    {
+                        using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
+                        {
+                            supportsEmbeddings = engine.SupportsEmbeddings;
+                            supportsCompletions = engine.SupportsGeneration;
+                            detectedArchitecture = engine.Architecture;
+                            _Logging.Debug(_Header + "detected capabilities for " + modelName +
+                                " via full model load: architecture=" + (detectedArchitecture ?? "unknown") +
+                                ", embeddings=" + supportsEmbeddings +
+                                ", completions=" + supportsCompletions);
+                        }
+                    }
+                    catch (Exception capEx)
+                    {
+                        _Logging.Warn(_Header + "capability detection failed for " + modelName +
+                            ", cleaning up downloaded file:" + Environment.NewLine + capEx.ToString());
+
+                        try
+                        {
+                            if (File.Exists(filename))
+                                File.Delete(filename);
+                        }
+                        catch (Exception cleanupEx)
+                        {
+                            _Logging.Warn(_Header + "failed to delete orphaned model file " + filename + ": " + cleanupEx.ToString());
+                        }
+
+                        throw;
+                    }
                 }
 
                 using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
@@ -346,6 +394,26 @@
                 await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(notFound), true, token).ConfigureAwait(false);
                 return null;
             }
+            catch (Exception ex)
+            {
+                _Logging.Warn(_Header + "pull failed for " + modelName + ":" + Environment.NewLine + ex.ToString());
+
+                string errorMsg = _Serializer.SerializeJson(new
+                {
+                    error = "pull failed: " + ex.Message
+                }, false) + Environment.NewLine;
+
+                try
+                {
+                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(errorMsg), true, token).ConfigureAwait(false);
+                }
+                catch (Exception chunkEx)
+                {
+                    _Logging.Warn(_Header + "failed to send error chunk for " + modelName + ":" + Environment.NewLine + chunkEx.ToString());
+                }
+
+                return null;
+            }
             finally
             {
                 if (!String.IsNullOrEmpty(modelName))
@@ -418,13 +486,13 @@
             List<string> loadedPaths = _ModelEngineService.GetLoadedModelPaths();
             if (loadedPaths == null || loadedPaths.Count < 1)
             {
-                _Logging.Debug(_Header + "no models currently loaded");
                 return ret;
             }
 
             string selectedBackend = SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend;
             bool isGpuBackend = !String.IsNullOrEmpty(selectedBackend)
-                && selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase);
+                && (selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase)
+                    || selectedBackend.Equals("metal", StringComparison.OrdinalIgnoreCase));
 
             foreach (string loadedPath in loadedPaths)
             {
@@ -593,6 +661,14 @@
                 };
             }
 
+            // Use client-provided stop sequences, or derive from model family
+            ChatFormatEnum genFormat = ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple);
+            string[] genStopSequences = gcr.Options.Stop?.ToArray();
+            if (genStopSequences == null || genStopSequences.Length == 0)
+                genStopSequences = ChatFormatHelper.GetDefaultStopSequences(genFormat);
+
+            bool genDisplayThinking = gcr.Options.DisplayThinking ?? false;
+
             if (gcr.Stream == null || !gcr.Stream.Value)
             {
                 string response = "";
@@ -603,8 +679,11 @@
                         gcr.Prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        gcr.Options.Stop?.ToArray(),
+                        genStopSequences,
                         token).ConfigureAwait(false);
+
+                    if (!genDisplayThinking)
+                        response = ThinkingFilter.RemoveThinkingBlocks(response);
                 }
 
                 return new
@@ -619,6 +698,7 @@
             else
             {
                 string nextToken = "";
+                ThinkingFilter genThinkFilter = genDisplayThinking ? null : new ThinkingFilter();
 
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
@@ -629,10 +709,12 @@
                         gcr.Prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        gcr.Options.Stop?.ToArray(),
+                        genStopSequences,
                         token).ConfigureAwait(false))
                     {
-                        if (nextToken != null)
+                        string filtered = genThinkFilter != null ? genThinkFilter.ProcessToken(curr) : curr;
+
+                        if (nextToken != null && nextToken.Length > 0)
                         {
                             json = _Serializer.SerializeJson(new
                             {
@@ -646,7 +728,14 @@
                             await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
                         }
 
-                        nextToken = curr;
+                        nextToken = filtered;
+                    }
+
+                    if (genThinkFilter != null)
+                    {
+                        string flushed = genThinkFilter.Flush();
+                        if (!String.IsNullOrEmpty(flushed))
+                            nextToken = (nextToken ?? "") + flushed;
                     }
                 }
 
@@ -714,9 +803,16 @@
                 });
             }
 
-            string prompt = ChatPromptBuilder.Build(
-                ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple),
-                messages);
+            ChatFormatEnum chatFormat = ChatFormatHelper.ModelFamilyToChatFormat(modelFile.Family, ChatFormatEnum.Simple);
+
+            string prompt = ChatPromptBuilder.Build(chatFormat, messages);
+
+            // Use client-provided stop sequences, or derive from chat format
+            string[] stopSequences = gcr.Options.Stop?.ToArray();
+            if (stopSequences == null || stopSequences.Length == 0)
+                stopSequences = ChatFormatHelper.GetDefaultStopSequences(chatFormat);
+
+            bool displayThinking = gcr.Options.DisplayThinking ?? false;
 
             if (gcr.Stream == null || !gcr.Stream.Value)
             {
@@ -728,8 +824,11 @@
                         prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        gcr.Options.Stop?.ToArray(),
+                        stopSequences,
                         token).ConfigureAwait(false);
+
+                    if (!displayThinking)
+                        response = ThinkingFilter.RemoveThinkingBlocks(response);
                 }
 
                 return new
@@ -745,6 +844,7 @@
             {
                 string nextToken = "";
                 string json = null;
+                ThinkingFilter thinkFilter = displayThinking ? null : new ThinkingFilter();
 
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
@@ -755,10 +855,12 @@
                         prompt,
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
-                        gcr.Options.Stop?.ToArray(),
+                        stopSequences,
                         token).ConfigureAwait(false))
                     {
-                        if (nextToken != null)
+                        string filtered = thinkFilter != null ? thinkFilter.ProcessToken(curr) : curr;
+
+                        if (nextToken != null && nextToken.Length > 0)
                         {
                             json = _Serializer.SerializeJson(new
                             {
@@ -772,7 +874,15 @@
                             await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
                         }
 
-                        nextToken = curr;
+                        nextToken = filtered;
+                    }
+
+                    // Flush any remaining buffered content from the thinking filter
+                    if (thinkFilter != null)
+                    {
+                        string flushed = thinkFilter.Flush();
+                        if (!String.IsNullOrEmpty(flushed))
+                            nextToken = (nextToken ?? "") + flushed;
                     }
                 }
 

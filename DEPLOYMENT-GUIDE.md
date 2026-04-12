@@ -51,13 +51,20 @@ curl http://localhost:8000/
 - Disk: 20GB+ of disk space recommended, have enough capacity for downloaded models
 
 **For GPU Acceleration (Optional):**
+
+*NVIDIA CUDA (Windows/Linux):*
 - NVIDIA GPU with Compute Capability 6.0+ (Pascal or newer)
 - 8GB+ VRAM (16GB+ for larger models)
 - NVIDIA proprietary drivers
 - CUDA Toolkit 12.x (bare-metal only)
 - NVIDIA Container Toolkit (Docker only)
 
-**Note:** AMD/Intel GPUs are not supported. Apple Silicon (M1/M2/M3/M4) does not support GPU acceleration.
+*Apple Metal (macOS Apple Silicon):*
+- Apple M1, M2, M3, or M4 chip
+- macOS 13 (Ventura) or later
+- Bare-metal installation only (Docker containers run Linux and cannot access Metal)
+
+**Note:** AMD/Intel GPUs are not supported.
 
 ### Software
 
@@ -69,14 +76,13 @@ curl http://localhost:8000/
 
 ### Supported Platforms
 
-| Platform | CPU | GPU (CUDA) |
-|----------|-----|------------|
-| Windows x64 | ✅ | ✅ |
-| Linux x64 | ✅ | ✅ |
-| macOS Intel (x64) | ✅ | ✅* |
-| macOS Apple Silicon (ARM64) | ✅ | ❌ |
-
-*Legacy Intel Macs with NVIDIA GPUs only
+| Platform | CPU | GPU |
+|----------|-----|-----|
+| Windows x64 | ✅ | ✅ (CUDA) |
+| Linux x64 | ✅ | ✅ (CUDA) |
+| macOS Apple Silicon (ARM64) | ✅ | ✅ (Metal) |
+| macOS Intel (x64) | ✅ | ❌ |
+| Docker on Apple Silicon | ✅ | ❌ (Metal requires bare-metal macOS) |
 
 ---
 
@@ -274,8 +280,9 @@ docker-compose down
 - Starts the server
 
 **Apple Silicon Note:**
-- GPU acceleration not supported (no Metal support)
-- CPU performance is still good for models <7B parameters
+- Metal GPU acceleration is auto-detected on bare-metal macOS
+- Force Metal: `"Runtime": {"ForceBackend": "metal"}` or `SHARPAI_FORCE_BACKEND=metal`
+- Docker on Apple Silicon runs Linux containers — Metal is not available, CPU is used instead
 
 **Troubleshooting macOS:**
 
@@ -460,7 +467,7 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 **Environment Variable: SHARPAI_FORCE_BACKEND** (Highest Priority)
 - Override backend selection via environment variable
 - Takes precedence over configuration file settings
-- Values: `cpu` or `cuda`
+- Values: `cpu`, `cuda`, or `metal`
 - Usage examples:
   ```bash
   # Docker
@@ -477,14 +484,18 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 
 **ForceBackend** (Configuration File)
 - Override automatic detection in `sharpai.json`
-- Values: `null` (default), `"cpu"`, or `"cuda"`
+- Values: `null` (default), `"cpu"`, `"cuda"`, or `"metal"`
 - Note: Environment variable takes precedence over this setting
 
 **CpuBackendPath** - Custom CPU library path
 - Default: Auto-detected from NuGet packages
 - Supports environment variables: `$HOME`, `%USERPROFILE%`
 
-**GpuBackendPath** - Custom GPU library path
+**GpuBackendPath** - Custom GPU (CUDA) library path
+- Default: Auto-detected from NuGet packages
+- Supports environment variables
+
+**MetalBackendPath** - Custom Metal library path (macOS Apple Silicon only)
 - Default: Auto-detected from NuGet packages
 - Supports environment variables
 
@@ -504,24 +515,25 @@ At startup, SharpAI:
 1. **Detects platform** - Windows/Linux/macOS
 2. **Detects architecture** - x64/ARM64
 3. **Checks for GPU**:
+   - Apple Silicon (macOS ARM64): Checks for `libggml-metal.dylib` → Metal backend
    - NVIDIA driver files
    - Environment variables (`NVIDIA_VISIBLE_DEVICES`)
    - `nvidia-smi` command
    - CUDA libraries
 4. **Selects backend**:
-   - GPU: If NVIDIA GPU detected (Windows/Linux only)
-   - CPU: If no GPU or on Apple Silicon
+   - Metal: If Apple Silicon detected and Metal library present (macOS bare-metal only)
+   - CUDA: If NVIDIA GPU detected (Windows/Linux)
+   - CPU: If no GPU detected, or in Docker on Apple Silicon
 
 **Platform Support:**
 
 | Platform | Architecture | CPU | GPU |
 |----------|--------------|-----|-----|
-| Windows | x64 | ✅ | ✅ |
-| Linux | x64 | ✅ | ✅ |
-| macOS | x64 (Intel) | ✅ | ✅* |
-| macOS | ARM64 (Apple Silicon) | ✅ | ❌ |
-
-*Legacy Intel Macs with NVIDIA GPUs only
+| Windows | x64 | ✅ | ✅ (CUDA) |
+| Linux | x64 | ✅ | ✅ (CUDA) |
+| macOS | ARM64 (Apple Silicon) | ✅ | ✅ (Metal) |
+| macOS | x64 (Intel) | ✅ | ❌ |
+| Docker on Apple Silicon | ARM64 | ✅ | ❌ (Metal requires bare-metal macOS) |
 
 ---
 

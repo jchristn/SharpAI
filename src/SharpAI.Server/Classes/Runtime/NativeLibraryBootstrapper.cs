@@ -72,13 +72,20 @@ namespace SharpAI.Server.Classes.Runtime
                     {
                         logging.Info($"[NativeLibraryBootstrapper] configuring {backend} backend: {libraryPath}");
 
+                        OSPlatform currentPlatform = GetCurrentPlatform();
+
                         try
                         {
-                            // On Linux, pre-load dependencies BEFORE configuring library
-                            if (GetCurrentPlatform() == OSPlatform.Linux)
+                            // Pre-load platform-specific dependencies BEFORE configuring library
+                            string libraryDir = Path.GetDirectoryName(libraryPath);
+
+                            if (currentPlatform == OSPlatform.Linux)
                             {
-                                string libraryDir = Path.GetDirectoryName(libraryPath);
                                 PreLoadLinuxDependencies(libraryDir, logging);
+                            }
+                            else if (currentPlatform == OSPlatform.OSX)
+                            {
+                                PreLoadMacOSDependencies(libraryDir, logging);
                             }
 
                             // CRITICAL: Configure library path BEFORE any LlamaSharp types are referenced
@@ -117,11 +124,16 @@ namespace SharpAI.Server.Classes.Runtime
 
                                     try
                                     {
-                                        // On Linux, pre-load dependencies BEFORE configuring library
-                                        if (GetCurrentPlatform() == OSPlatform.Linux)
+                                        // Pre-load platform-specific dependencies BEFORE configuring library
+                                        string cpuDir = Path.GetDirectoryName(cpuPath);
+
+                                        if (currentPlatform == OSPlatform.Linux)
                                         {
-                                            string cpuDir = Path.GetDirectoryName(cpuPath);
                                             PreLoadLinuxDependencies(cpuDir, logging);
+                                        }
+                                        else if (currentPlatform == OSPlatform.OSX)
+                                        {
+                                            PreLoadMacOSDependencies(cpuDir, logging);
                                         }
 
                                         NativeLibraryConfig
@@ -204,6 +216,79 @@ namespace SharpAI.Server.Classes.Runtime
             }
         }
 
+        private static void PreLoadMacOSDependencies(string libraryDir, LoggingModule logging)
+        {
+            if (GetCurrentPlatform() != OSPlatform.OSX) return;
+
+            logging.Debug($"[NativeLibraryBootstrapper] pre-loading macOS dependencies from: {libraryDir}");
+
+            // List of dependencies in load order.
+            // libggml.dylib depends on libggml-blas.dylib and libggml-metal.dylib,
+            // so those must be loaded first.
+            string[] dependencies = new string[]
+            {
+                "libggml-base.dylib",
+                "libggml-cpu.dylib",
+                "libggml-blas.dylib",
+                "libggml-metal.dylib",
+                "libggml.dylib"
+            };
+
+            foreach (string dep in dependencies)
+            {
+                string depPath = Path.Combine(libraryDir, dep);
+                if (File.Exists(depPath))
+                {
+                    try
+                    {
+                        IntPtr handle = NativeLibrary.Load(depPath);
+                        logging.Debug($"[NativeLibraryBootstrapper] pre-loaded dependency: {dep}");
+                    }
+                    catch (Exception ex)
+                    {
+                        logging.Warn($"[NativeLibraryBootstrapper] failed to pre-load {dep}:" + Environment.NewLine + ex.ToString());
+                    }
+                }
+                else
+                {
+                    logging.Debug($"[NativeLibraryBootstrapper] dependency not found: {depPath}");
+                }
+            }
+        }
+
+        private static bool DetectMetalAvailability(LoggingModule logging)
+        {
+            try
+            {
+                string baseDirectory = AppContext.BaseDirectory;
+                string rid = GetRuntimeIdentifier(OSPlatform.OSX);
+                string nativeDir = Path.Combine(baseDirectory, "runtimes", rid, "native");
+                string metalLib = Path.Combine(nativeDir, "libggml-metal.dylib");
+
+                if (File.Exists(metalLib))
+                {
+                    logging.Debug($"[NativeLibraryBootstrapper] Metal library detected: {metalLib}");
+                    return true;
+                }
+
+                // Try custom Docker structure
+                string customMetalLib = Path.Combine(baseDirectory, "runtimes", "metal", "libggml-metal.dylib");
+                if (File.Exists(customMetalLib))
+                {
+                    logging.Debug($"[NativeLibraryBootstrapper] Metal library detected at custom path: {customMetalLib}");
+                    return true;
+                }
+
+                logging.Debug("[NativeLibraryBootstrapper] Metal library not found");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logging.Debug($"[NativeLibraryBootstrapper] Metal detection failed: {ex.Message}");
+                return false;
+            }
+        }
+
         private static void ConfigureNativeLogging(Settings settings, LoggingModule logging)
         {
             bool enableLogging = settings.Runtime?.EnableNativeLogging ?? false;
@@ -256,11 +341,20 @@ namespace SharpAI.Server.Classes.Runtime
 
             logging.Debug($"[NativeLibraryBootstrapper] detected platform {platform} architecture {architecture}");
 
-            // Apple Silicon cannot use CUDA
+            // Apple Silicon: check for Metal GPU acceleration
             if (platform == OSPlatform.OSX && architecture == Architecture.Arm64)
             {
-                logging.Debug("[NativeLibraryBootstrapper] Apple Silicon detected, GPU backend not supported, using CPU");
-                return "cpu";
+                bool metalAvailable = DetectMetalAvailability(logging);
+                if (metalAvailable)
+                {
+                    logging.Info("[NativeLibraryBootstrapper] Apple Silicon detected, selecting Metal backend");
+                    return "metal";
+                }
+                else
+                {
+                    logging.Info("[NativeLibraryBootstrapper] Apple Silicon detected, Metal not available, using CPU");
+                    return "cpu";
+                }
             }
 
             // Check for GPU availability
@@ -389,6 +483,15 @@ namespace SharpAI.Server.Classes.Runtime
                     return expandedPath;
                 }
             }
+            else if (backend.Equals("metal", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!String.IsNullOrEmpty(settings.Runtime?.MetalBackendPath))
+                {
+                    string expandedPath = Environment.ExpandEnvironmentVariables(settings.Runtime.MetalBackendPath);
+                    logging.Debug($"[NativeLibraryBootstrapper] using Metal backend path from settings: {expandedPath}");
+                    return expandedPath;
+                }
+            }
 
             OSPlatform platform = GetCurrentPlatform();
             string baseDirectory = AppContext.BaseDirectory;
@@ -439,6 +542,17 @@ namespace SharpAI.Server.Classes.Runtime
                 if (File.Exists(cudaPath))
                 {
                     return cudaPath;
+                }
+            }
+            else if (backend.Equals("metal", StringComparison.OrdinalIgnoreCase))
+            {
+                // Metal uses the same libllama.dylib as CPU on osx-arm64.
+                // GPU offload is activated by requesting GpuLayerCount > 0 at model load time.
+                string metalPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
+                if (File.Exists(metalPath))
+                {
+                    logging.Debug("[NativeLibraryBootstrapper] using Metal backend (osx-arm64 native)");
+                    return metalPath;
                 }
             }
             else if (backend.Equals("cpu", StringComparison.OrdinalIgnoreCase))

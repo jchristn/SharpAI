@@ -80,10 +80,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed = false, onCollapse }) => {
       className={styles.sidebarContainer}
     >
       <SharpFlex
-        justify="center"
+        justify={collapsed ? "center" : "start"}
         gap={8}
         align="center"
-        className={styles.logoContainer}
+        className={`${styles.logoContainer} ${collapsed ? styles.logoCollapsed : ""}`}
       >
         <SharpLogo onlyIcon={collapsed} textColor="#ffffff" />
       </SharpFlex>

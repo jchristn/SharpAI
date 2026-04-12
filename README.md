@@ -76,7 +76,7 @@ SharpAI/
   - Text completions
   - Chat completions
 - **Prompt Engineering Tools** — Built-in helpers for formatting prompts for different model types
-- **GPU Acceleration** — Automatic CUDA detection when available
+- **GPU Acceleration** — Automatic CUDA detection (Windows/Linux) and Metal acceleration (macOS Apple Silicon)
 - **Streaming Support** — Real-time token streaming for completions with proper stop-sequence handling
 - **SQLite Model Registry** — Tracks model metadata and file information
 - **Web Dashboard** — Vite + React + Ant Design UI for pulling models, generating embeddings, running completions and chat, inspecting running models, and editing server configuration live
@@ -466,22 +466,28 @@ CORS preflight `OPTIONS` requests are handled by the server so dashboard cross-o
 - **HuggingFace API Key**: Required (free at https://huggingface.co/settings/tokens)
 
 **For GPU Acceleration (Optional):**
-- **NVIDIA GPU only** with Compute Capability 6.0+ (Pascal or newer)
+
+*NVIDIA CUDA (Windows/Linux):*
+- **NVIDIA GPU** with Compute Capability 6.0+ (Pascal or newer)
 - 8GB+ VRAM (16GB+ for larger models)
 - NVIDIA proprietary drivers installed
 - CUDA Toolkit 12.x (for bare-metal deployments)
 - NVIDIA Container Toolkit (for Docker deployments)
 
+*Apple Metal (macOS Apple Silicon):*
+- Apple M1, M2, M3, or M4 chip
+- macOS 13 (Ventura) or later
+- Bare-metal installation (not Docker — Docker containers run Linux and cannot access Metal)
+
 **Important GPU Notes:**
-- **NVIDIA GPUs only** - AMD and Intel GPUs are not supported
-- **Apple Silicon (M1/M2/M3/M4)** - GPU acceleration (Metal) is not supported, CPU mode only
-- **Legacy Intel Macs** - NVIDIA GPUs are rare but supported if present
+- AMD and Intel GPUs are not supported
+- Docker on Apple Silicon does **not** provide Metal acceleration — use bare-metal macOS for GPU
 
 ### Tested Platforms
 
 SharpAI has been tested on:
 - Windows 11 (x64)
-- macOS Sequoia (Apple Silicon - CPU only)
+- macOS Sequoia (Apple Silicon - Metal GPU)
 - Ubuntu 24.04 LTS (x64)
 
 ### Full Deployment Guide
@@ -507,17 +513,25 @@ Models are stored in the specified `modelDirectory` with files named by their GU
 
 ### GPU Support
 
-SharpAI automatically detects NVIDIA CUDA availability and optimizes layer allocation. The library supports **NVIDIA GPUs only**.
+SharpAI automatically detects GPU availability and optimizes layer allocation at startup.
+
+| Platform | CPU | GPU |
+|----------|-----|-----|
+| Windows x64 | ✅ | ✅ (CUDA) |
+| Linux x64 | ✅ | ✅ (CUDA) |
+| macOS Apple Silicon (ARM64) | ✅ | ✅ (Metal) |
+| macOS Intel (x64) | ✅ | ❌ |
+| Docker on Apple Silicon | ✅ | ❌ (Metal requires bare-metal macOS) |
 
 **Supported:**
 - **NVIDIA GPUs** via CUDA (Windows and Linux)
+- **Apple Silicon** via Metal (macOS ARM64, bare-metal only)
 
 **Not Supported:**
 - AMD GPUs (ROCm/Vulkan not supported)
-- Apple Silicon Metal (M1/M2/M3/M4 - CPU only)
 - Intel GPUs (SYCL/Vulkan not supported)
 
-The `NativeLibraryBootstrapper` automatically detects your platform and GPU at startup, selecting the appropriate backend (CPU or CUDA). See the [Requirements](#-requirements) section for detailed GPU requirements.
+The `NativeLibraryBootstrapper` automatically detects your platform and GPU at startup, selecting the appropriate backend (CPU, CUDA, or Metal). See the [Requirements](#-requirements) section for detailed GPU requirements.
 
 ## 🐳 Running in Docker
 
@@ -529,12 +543,12 @@ SharpAI.Server is available as a Docker image, providing an easy way to deploy t
 
 For Windows:
 ```batch
-run.bat v4.0.0
+run.bat v4.1.0
 ```
 
 For Linux/macOS:
 ```bash
-./run.sh v4.0.0
+./run.sh v4.1.0
 ```
 
 #### Using Docker Compose
@@ -605,10 +619,10 @@ You can access OpenAI APIs at:
 3. Run the container:
    ```bash
    # Windows
-   run.bat v4.0.0
+   run.bat v4.1.0
    
    # Linux/macOS
-   ./run.sh v4.0.0
+   ./run.sh v4.1.0
    ```
 
 4. Download a model using the API (GGUF format required):
@@ -634,7 +648,7 @@ For production deployments, you can use Docker Compose. Create a `compose.yaml` 
 ```yaml
 services:
   sharpai:
-    image: jchristn77/sharpai:v4.0.0
+    image: jchristn77/sharpai:v4.1.0
     ports:
       - "8000:8000"
     volumes:
@@ -666,7 +680,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn77/sharpai:v4.0.0
+  jchristn77/sharpai:v4.1.0
 ```
 
 For Docker Compose, add:

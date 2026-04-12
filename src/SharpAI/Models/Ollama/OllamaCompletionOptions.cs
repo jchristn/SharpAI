@@ -272,6 +272,13 @@
         public List<string> Stop { get; set; }
 
         /// <summary>
+        /// When true, include model thinking/reasoning tokens (e.g. &lt;think&gt;...&lt;/think&gt;) in the response.
+        /// When false (default), thinking tokens are stripped from the output.
+        /// </summary>
+        [JsonPropertyName("display_thinking")]
+        public bool? DisplayThinking { get; set; }
+
+        /// <summary>
         /// Enable NUMA support (optional, default: false).
         /// </summary>
         [JsonPropertyName("numa")]

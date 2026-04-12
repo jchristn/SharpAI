@@ -11,6 +11,11 @@
 .logoContainer {
   height: 64px;
   flex: 0 0 auto;
+  // Match the left padding of Ant Design's inline menu items (24px item padding + 4px item margin)
+  padding-left: 28px !important;
+}
+.logoCollapsed {
+  padding-left: 0 !important;
 }
 .menuContainer {
   flex: 1 1 auto;

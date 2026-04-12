@@ -147,49 +147,75 @@ namespace SharpAI.Server
                     {
                         _Logging.Debug(_Header + "capability detection: inspecting '" + mf.Name + "' (" + path + ")");
 
-                        using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(path))
+                        string detectedArch = null;
+                        bool embeddings = false;
+                        bool completions = true;
+                        bool detectedViaMetadata = false;
+
+                        // Try lightweight GGUF header reader first
+                        try
                         {
-                            string detectedArch = engine.Architecture;
-                            string arch = detectedArch ?? "unknown";
-                            bool embeddings = engine.SupportsEmbeddings;
-                            bool completions = engine.SupportsGeneration;
+                            SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(
+                                path,
+                                out detectedArch,
+                                out embeddings,
+                                out completions);
+                            detectedViaMetadata = true;
+                        }
+                        catch (Exception metaEx)
+                        {
+                            _Logging.Warn(_Header + "capability detection: lightweight read failed for '" + mf.Name +
+                                "', falling back to full model load:" + Environment.NewLine + metaEx.ToString());
+                        }
 
-                            string capabilityDesc =
-                                (embeddings && completions) ? "embeddings + completions" :
-                                (embeddings ? "embeddings only" :
-                                (completions ? "completions only" : "neither"));
-
-                            bool familyChanged =
-                                !String.IsNullOrEmpty(detectedArch) &&
-                                !String.Equals(mf.Family, detectedArch, StringComparison.OrdinalIgnoreCase);
-
-                            if (mf.Embeddings != embeddings || mf.Completions != completions || familyChanged)
+                        // Fall back to full engine initialization
+                        if (!detectedViaMetadata)
+                        {
+                            using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(path))
                             {
-                                _Logging.Info(_Header + "capability detection: '" + mf.Name +
-                                    "' architecture='" + arch + "' - " + capabilityDesc +
-                                    " (was family='" + (mf.Family ?? "unknown") + "'" +
-                                    ", embeddings=" + mf.Embeddings + ", completions=" + mf.Completions +
-                                    "; now family='" + arch + "'" +
-                                    ", embeddings=" + embeddings + ", completions=" + completions +
-                                    ") - updating database");
+                                detectedArch = engine.Architecture;
+                                embeddings = engine.SupportsEmbeddings;
+                                completions = engine.SupportsGeneration;
+                            }
+                        }
 
-                                mf.Embeddings = embeddings;
-                                mf.Completions = completions;
-                                if (!String.IsNullOrEmpty(detectedArch)) mf.Family = detectedArch;
-                                _ModelFileService.Update(mf);
-                                updated++;
-                            }
-                            else
-                            {
-                                _Logging.Debug(_Header + "capability detection: '" + mf.Name +
-                                    "' architecture='" + arch + "' - " + capabilityDesc + " (already correct in database)");
-                                unchanged++;
-                            }
+                        string arch = detectedArch ?? "unknown";
+
+                        string capabilityDesc =
+                            (embeddings && completions) ? "embeddings + completions" :
+                            (embeddings ? "embeddings only" :
+                            (completions ? "completions only" : "neither"));
+
+                        bool familyChanged =
+                            !String.IsNullOrEmpty(detectedArch) &&
+                            !String.Equals(mf.Family, detectedArch, StringComparison.OrdinalIgnoreCase);
+
+                        if (mf.Embeddings != embeddings || mf.Completions != completions || familyChanged)
+                        {
+                            _Logging.Info(_Header + "capability detection: '" + mf.Name +
+                                "' architecture='" + arch + "' - " + capabilityDesc +
+                                " (was family='" + (mf.Family ?? "unknown") + "'" +
+                                ", embeddings=" + mf.Embeddings + ", completions=" + mf.Completions +
+                                "; now family='" + arch + "'" +
+                                ", embeddings=" + embeddings + ", completions=" + completions +
+                                ") - updating database");
+
+                            mf.Embeddings = embeddings;
+                            mf.Completions = completions;
+                            if (!String.IsNullOrEmpty(detectedArch)) mf.Family = detectedArch;
+                            _ModelFileService.Update(mf);
+                            updated++;
+                        }
+                        else
+                        {
+                            _Logging.Debug(_Header + "capability detection: '" + mf.Name +
+                                "' architecture='" + arch + "' - " + capabilityDesc + " (already correct in database)");
+                            unchanged++;
                         }
                     }
                     catch (Exception ex)
                     {
-                        _Logging.Warn(_Header + "capability detection: failed to inspect '" + mf.Name + "': " + ex.Message);
+                        _Logging.Warn(_Header + "capability detection: failed to inspect '" + mf.Name + "':" + Environment.NewLine + ex.ToString());
                         failed++;
                     }
 
@@ -500,7 +526,7 @@ namespace SharpAI.Server
                 .WithDescription(
                     "Returns the list of models that are currently loaded in memory, matching the Ollama " +
                     "'/api/ps' (ollama ps) endpoint. The size_vram field reports the full model size when " +
-                    "the CUDA backend is active and 0 when the CPU backend is active. SharpAI does not " +
+                    "the CUDA or Metal backend is active and 0 when the CPU backend is active. SharpAI does not " +
                     "implement keep-alive unloads, so expires_at is always null.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Running models", OpenApiSchemaMetadata.Create("object"))));
 

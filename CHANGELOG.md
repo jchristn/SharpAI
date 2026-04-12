@@ -2,7 +2,54 @@
 
 ## Current Version
 
-v4.0.0
+v4.1.0
+
+### Added
+
+- **Apple Metal GPU acceleration** for macOS Apple Silicon (M1/M2/M3/M4)
+  - Auto-detected on Apple Silicon Macs when `libggml-metal.dylib` is present
+  - Configurable via `ForceBackend: "metal"` or `SHARPAI_FORCE_BACKEND=metal`
+  - New `MetalBackendPath` setting for custom Metal library location
+  - VRAM reporting in `/api/ps` and dashboard now works for Metal backend
+  - Only available for bare-metal macOS installs, not Docker containers
+- **Pure-C# GGUF metadata reader** (`GgufMetadataReader`) for lightweight capability detection
+  - Reads model architecture and capabilities from GGUF file header without loading weights
+  - Falls back to full engine initialization only if header read fails
+  - Enables successful model registration even when llama.cpp doesn't support the architecture
+- **Thinking token filter** for models like Qwen3 that emit `<think>...</think>` blocks
+  - Strips thinking tokens from responses by default (both streaming and non-streaming)
+  - New `display_thinking` option to show thinking tokens when desired
+  - "Display Thinking" toggle in dashboard chat settings
+- **Format-aware default stop sequences** derived from the model's chat template
+  - ChatML models get `<|im_end|>`, Llama3 gets `<|eot_id|>`, etc.
+  - Prevents completions from running indefinitely when client doesn't send stop sequences
+- New `PreLoadMacOSDependencies()` in `NativeLibraryBootstrapper` for reliable macOS library loading
+- Metal GPU readiness reporting in `start-mac.sh` and `diagnose-mac.sh`
+- "Metal (Apple GPU)" option in dashboard Configuration page Force Backend dropdown
+- Metal Backend Path configuration field in dashboard
+- METAL.md implementation plan for Apple Metal GPU support
+
+### Changed
+
+- **Upgraded LLamaSharp from v0.25.0 to v0.26.0** with newer llama.cpp and broader architecture support
+- `ForceBackend` now accepts `"metal"` in addition to `"cpu"` and `"cuda"`
+- `GetOptimalGpuLayers()` now returns all-layer offload for both CUDA and Metal backends
+- Updated platform support table: macOS Apple Silicon now shows GPU ✅ (Metal)
+- Model pull error handling: orphaned files cleaned up on failure, full exceptions logged
+- General exception catch in pull handler prevents silent 500 errors
+- Embedding-only architecture list consolidated into `GgufMetadataReader.EmbeddingOnlyArchitectures` (single source of truth)
+- Updated `ChatFormatHelper` model family mappings for Qwen3/3.5, Llama 3.3/4, Gemma 3, DeepSeek2, Phi-4, SmolLM
+- Dashboard logo left-justified in sidebar to match nav item alignment
+- Replaced `react-toggle-dark-mode` with inline SVG toggle (eliminates react-spring dependency tree warnings)
+
+### Removed
+
+- Vision/multimodal code (`VisionDriver`, `LLavaWeights` usage) — removed due to LLamaSharp 0.26.0 API change (LLaVA replaced by MTMD)
+- Noisy "no models currently loaded" debug log on every `/api/ps` poll
+
+---
+
+## v4.0.0
 
 ### Server
 

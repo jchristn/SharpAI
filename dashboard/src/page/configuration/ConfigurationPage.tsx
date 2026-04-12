@@ -624,6 +624,7 @@ const ConfigurationPage = () => {
                     { label: "Auto-detect", value: "auto" },
                     { label: "CPU", value: "cpu" },
                     { label: "CUDA (GPU)", value: "cuda" },
+                    { label: "Metal (Apple GPU)", value: "metal" },
                   ]}
                 />
               </Form.Item>
@@ -639,6 +640,14 @@ const ConfigurationPage = () => {
                 label="GPU Backend Path"
                 name={["Runtime", "GpuBackendPath"]}
                 tooltip={t.runtimeGpuBackendPath}
+                style={{ flex: 1, minWidth: 200 }}
+              >
+                <Input placeholder="Auto-detect" allowClear />
+              </Form.Item>
+              <Form.Item
+                label="Metal Backend Path"
+                name={["Runtime", "MetalBackendPath"]}
+                tooltip={t.runtimeMetalBackendPath}
                 style={{ flex: 1, minWidth: 200 }}
               >
                 <Input placeholder="Auto-detect" allowClear />

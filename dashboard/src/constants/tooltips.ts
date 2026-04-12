@@ -44,7 +44,7 @@ export const tooltips = {
     quantization: "Quantization level of the loaded weights.",
     size: "Full size of the model file on disk.",
     vram:
-      "Video memory currently occupied by this model. Zero when SharpAI is running on CPU — the model lives entirely in system RAM instead. Set Runtime.ForceBackend to 'cuda' in Configuration to use GPU.",
+      "Video memory currently occupied by this model. Zero when SharpAI is running on CPU — the model lives entirely in system RAM instead. Set Runtime.ForceBackend to 'cuda' or 'metal' in Configuration to use GPU.",
   },
 
   // -------- Pulling Models table --------
@@ -139,9 +139,11 @@ export const tooltips = {
       "Context window size in tokens. Larger windows let the model see more of the prompt and prior conversation, at the cost of RAM and latency.",
     numBatch: "Batch size for prompt processing. Larger = faster prompt evaluation, more memory.",
     numGpu:
-      "Number of model layers to offload to GPU. 0 = CPU only. Ignored if Runtime.ForceBackend is 'cpu'.",
+      "Number of model layers to offload to GPU. 0 = CPU only. Ignored if Runtime.ForceBackend is 'cpu'. Applies to both CUDA and Metal backends.",
     mainGpu: "Index of the primary GPU to use when multiple GPUs are available.",
     lowVram: "When on, uses a memory-saving code path suitable for GPUs with limited VRAM.",
+    displayThinking:
+      "When on, shows the model's internal reasoning tokens (e.g. <think>...</think> blocks from Qwen3 and similar models). When off, thinking tokens are stripped from the response.",
     f16Kv:
       "Store the key/value cache in 16-bit floats instead of 32-bit. Halves the KV cache memory with minimal accuracy loss.",
     vocabOnly:
@@ -241,11 +243,13 @@ export const tooltips = {
 
     // Runtime
     runtimeForceBackend:
-      "Force a specific inference backend. 'Auto' picks GPU if CUDA is available, else CPU. 'CPU' disables GPU even on CUDA machines. 'CUDA' requires the CUDA runtime to be installed.",
+      "Force a specific inference backend. 'Auto' picks GPU if CUDA or Metal is available, else CPU. 'CPU' disables GPU even on CUDA/Metal machines. 'CUDA' requires NVIDIA CUDA runtime. 'Metal' uses Apple Silicon GPU (macOS ARM64 only).",
     runtimeCpuBackendPath:
       "Absolute path to the CPU native library (llama.dll/libllama.so). Leave blank to use the bundled default.",
     runtimeGpuBackendPath:
       "Absolute path to the CUDA native library. Leave blank to use the bundled default.",
+    runtimeMetalBackendPath:
+      "Absolute path to the Metal native library (libllama.dylib on macOS ARM64). Leave blank to use the bundled default.",
     runtimeNativeLogging:
       "When on, log output from the underlying llama.cpp native library is forwarded to the server log.",
 

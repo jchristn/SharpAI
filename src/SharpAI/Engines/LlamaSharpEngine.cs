@@ -147,9 +147,6 @@
         private bool _IsInitialized = false;
         private bool _Disposed = false;
         private int _EmbeddingDimensions = -1;
-        private string _MultiModalProjectorPath = null;
-        private LLavaWeights _ClipProjector = null;
-        private InteractiveExecutor _VisionExecutor = null;
         private readonly SemaphoreSlim _EmbedderSemaphore = new SemaphoreSlim(1, 1);
         private readonly SemaphoreSlim _GenerationSemaphore = new SemaphoreSlim(1, 1);
         #endregion
@@ -184,11 +181,9 @@
                 _ChatSession = null;
                 _Executor = null;
                 _StatelessExecutor = null;
-                _VisionExecutor = null;
 
                 _Embedder?.Dispose();
                 _EmbeddingModel?.Dispose();
-                _ClipProjector?.Dispose();
                 _Context?.Dispose();
                 _Model?.Dispose();
 
@@ -282,10 +277,11 @@
                 // Check which backend was selected by NativeLibraryBootstrapper
                 string selectedBackend = SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend;
 
-                if (selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase))
+                if (selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase)
+                    || selectedBackend.Equals("metal", StringComparison.OrdinalIgnoreCase))
                 {
                     long gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
-                    _Logging.Debug(_Header + $"CUDA backend selected, {gpuDeviceCount} GPU device(s) available");
+                    _Logging.Debug(_Header + $"{selectedBackend} backend selected, {gpuDeviceCount} GPU device(s) available");
                     return 999; // big positive -> clamp to all layers
                 }
                 else
@@ -513,263 +509,9 @@
 
         #endregion
 
-        #region Vision-Implementation
-
-        /// <summary>
-        /// Configure LLaVA projector (mmproj) for vision. If a path is provided it must exist.
-        /// </summary>
-        /// <param name="multiModalProjectorPath">Full path to mmproj GGUF or a directory to search; optional.</param>
-        public void ConfigureVision(string multiModalProjectorPath = null)
-        {
-            if (!string.IsNullOrWhiteSpace(multiModalProjectorPath))
-            {
-                if (Directory.Exists(multiModalProjectorPath))
-                {
-                    string selected = Directory.EnumerateFiles(multiModalProjectorPath, "*.gguf", SearchOption.TopDirectoryOnly)
-                        .Where(f => f.IndexOf("mmproj", StringComparison.OrdinalIgnoreCase) >= 0)
-                        .OrderByDescending(f => f.IndexOf("f16", StringComparison.OrdinalIgnoreCase) >= 0)
-                        .ThenBy(f => Path.GetFileName(f).Length)
-                        .FirstOrDefault();
-
-                    if (string.IsNullOrWhiteSpace(selected))
-                        throw new FileNotFoundException("No mmproj GGUF found in the specified directory.", multiModalProjectorPath);
-
-                    _MultiModalProjectorPath = selected;
-                    _Logging?.Debug(_Header + $"vision projector configured from directory: {_MultiModalProjectorPath}");
-                    return;
-                }
-
-                if (!File.Exists(multiModalProjectorPath))
-                    throw new FileNotFoundException("LLaVA projector (mmproj) not found.", multiModalProjectorPath);
-
-                _MultiModalProjectorPath = multiModalProjectorPath;
-                _Logging?.Debug(_Header + $"vision projector configured: {_MultiModalProjectorPath}");
-                return;
-            }
-
-            _Logging?.Warn(_Header + "no mmproj GGUF found next to the model; vision will be disabled until ConfigureVision() is called.");
-        }
-
-        /// <summary>
-        /// Generate vision completion with image bytes
-        /// </summary>
-        /// <param name="imagesBytes">Collection of image byte arrays</param>
-        /// <param name="prompt">Text prompt to combine with the images</param>
-        /// <param name="maxTokens">Maximum number of tokens to generate</param>
-        /// <param name="temperature">Sampling temperature (0.0 to 1.0)</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>Generated text response</returns>
-        public async Task<string> GenerateVisionCompletionAsync(
-            IEnumerable<byte[]> imagesBytes,
-            string prompt = "Provide a full description of the image.",
-            int maxTokens = 1024,
-            float temperature = 0.1f,
-            CancellationToken token = default)
-        {
-            ThrowIfNotInitialized();
-
-            List<byte[]> imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
-                .Where(b => b != null && b.Length > 0)
-                .ToList();
-
-            if (string.IsNullOrWhiteSpace(_MultiModalProjectorPath) || !File.Exists(_MultiModalProjectorPath))
-                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _MultiModalProjectorPath);
-
-            if (_ClipProjector == null)
-            {
-                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_MultiModalProjectorPath);
-                _Logging?.Debug(_Header + "LLaVA projector loaded");
-            }
-
-            if (_VisionExecutor == null)
-            {
-                _VisionExecutor = new InteractiveExecutor(_Context, _ClipProjector);
-                _Logging?.Debug(_Header + "vision executor initialized");
-            }
-
-            bool hasImages = imageList.Count > 0;
-            string instruction = string.IsNullOrWhiteSpace(prompt) ? "Provide a full description of the image." : prompt.Trim();
-            string formattedPrompt = hasImages
-                ? $"<image>\nUSER:\n{instruction}\nASSISTANT:\n"
-                : $"USER:\n{instruction}\nASSISTANT:\n";
-
-            InferenceParams inferenceParams = new InferenceParams
-            {
-                MaxTokens = Math.Max(maxTokens, 100),
-                SamplingPipeline = new DefaultSamplingPipeline
-                {
-                    Temperature = Math.Clamp(temperature, 0f, 1f)
-                },
-                AntiPrompts = new List<string>()
-            };
-
-            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                if (hasImages)
-                {
-                    _VisionExecutor.Context.NativeHandle.MemorySequenceRemove(LLamaSeqId.Zero, -1, -1);
-                    _VisionExecutor.Images.Clear();
-                    foreach (byte[] imageBytes in imageList)
-                    {
-                        _VisionExecutor.Images.Add(imageBytes);
-                    }
-
-                    _Logging?.Debug(_Header + $"processing {imageList.Count} image(s) with vision model");
-                }
-
-                StringBuilder result = new StringBuilder();
-                int tokenCount = 0;
-
-                await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
-                {
-                    if (!string.IsNullOrEmpty(textChunk))
-                    {
-                        result.Append(textChunk);
-                        tokenCount++;
-                    }
-                }
-
-                string response = result.ToString();
-
-                if (tokenCount == 0)
-                {
-                    _Logging?.Debug(_Header + "No tokens generated with anti-prompts, retrying without");
-
-                    InferenceParams noStopParams = new InferenceParams
-                    {
-                        MaxTokens = Math.Max(maxTokens, 100),
-                        SamplingPipeline = new DefaultSamplingPipeline
-                        {
-                            Temperature = Math.Clamp(temperature, 0f, 1f)
-                        },
-                        AntiPrompts = new List<string>()
-                    };
-
-                    result.Clear();
-                    await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, noStopParams, token).ConfigureAwait(false))
-                    {
-                        result.Append(textChunk);
-                    }
-                    response = result.ToString();
-                }
-                return response ?? string.Empty;
-            }
-            catch (Exception ex)
-            {
-                _Logging?.Error(_Header + "Exception during vision completion:" + Environment.NewLine + ex.ToString());
-                throw new Exception($"Failed to generate vision completion: {ex.Message}", ex);
-            }
-            finally
-            {
-                _GenerationSemaphore.Release();
-            }
-        }
-
-        /// <summary>
-        /// Generate streaming vision completion with image bytes.
-        /// Provides real-time token streaming for vision model responses.
-        /// </summary>
-        /// <param name="imagesBytes">Collection of image byte arrays</param>
-        /// <param name="prompt">Text prompt to combine with the images</param>
-        /// <param name="maxTokens">Maximum number of tokens to generate</param>
-        /// <param name="temperature">Sampling temperature (0.0 to 1.0)</param>
-        /// <param name="token">Cancellation token</param>
-        /// <returns>Async enumerable of text chunks</returns>
-        public async IAsyncEnumerable<string> GenerateVisionCompletionStreamAsync(
-            IEnumerable<byte[]> imagesBytes,
-            string prompt = "Provide a full description of the image.",
-            int maxTokens = 1024,
-            float temperature = 0.1f,
-            [EnumeratorCancellation] CancellationToken token = default)
-        {
-            ThrowIfNotInitialized();
-
-            List<byte[]> imageList = (imagesBytes ?? Enumerable.Empty<byte[]>())
-                .Where(b => b != null && b.Length > 0)
-                .ToList();
-
-            if (string.IsNullOrWhiteSpace(_MultiModalProjectorPath) || !File.Exists(_MultiModalProjectorPath))
-                throw new FileNotFoundException("Configured LLaVA mmproj GGUF not found.", _MultiModalProjectorPath);
-
-            if (_ClipProjector == null)
-            {
-                _ClipProjector = await LLavaWeights.LoadFromFileAsync(_MultiModalProjectorPath);
-                _Logging?.Debug(_Header + "LLaVA projector loaded");
-            }
-
-            if (_VisionExecutor == null)
-            {
-                _VisionExecutor = new InteractiveExecutor(_Context, _ClipProjector);
-                _Logging?.Debug(_Header + "vision executor initialized");
-            }
-
-            bool hasImages = imageList.Count > 0;
-            string instruction = string.IsNullOrWhiteSpace(prompt) ? "Provide a full description of the image." : prompt.Trim();
-
-            string formattedPrompt = hasImages
-                ? $"<image>\nUSER:\n{instruction}\nASSISTANT:\n"
-                : $"USER:\n{instruction}\nASSISTANT:\n";
-
-            InferenceParams inferenceParams = new InferenceParams
-            {
-                MaxTokens = Math.Max(maxTokens, 100),
-                SamplingPipeline = new DefaultSamplingPipeline
-                {
-                    Temperature = Math.Clamp(temperature, 0f, 1f)
-                },
-                AntiPrompts = new List<string>()
-            };
-
-            await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
-            try
-            {
-                if (hasImages)
-                {
-                    _VisionExecutor.Context.NativeHandle.MemorySequenceRemove(LLamaSeqId.Zero, -1, -1);
-                    _VisionExecutor.Images.Clear();
-                    foreach (byte[] imageBytes in imageList)
-                    {
-                        _VisionExecutor.Images.Add(imageBytes);
-                    }
-                }
-
-                await foreach (string textChunk in _VisionExecutor.InferAsync(formattedPrompt, inferenceParams, token).ConfigureAwait(false))
-                {
-                    if (!string.IsNullOrEmpty(textChunk))
-                    {
-                        yield return textChunk;
-                    }
-                }
-            }
-            finally
-            {
-                _GenerationSemaphore.Release();
-            }
-        }
-
-        #endregion
-
         #endregion
 
         #region Private-Methods
-
-        // Architectures that produce embeddings only (encoder-only, BERT family, etc.).
-        // Source: llama.cpp's gguf-py/gguf/constants.py MODEL_ARCH enum — these arches
-        // route to encoder-only code paths with no causal text generation.
-        private static readonly HashSet<string> _EmbeddingOnlyArchitectures = new HashSet<string>(
-            StringComparer.OrdinalIgnoreCase)
-        {
-            "bert",
-            "nomic-bert",
-            "nomic-bert-moe",
-            "jina-bert-v2",
-            "jina-bert-v3",
-            "t5encoder",
-            "gte",
-            "bge",
-            "gritlm",
-        };
 
         private bool DetectSupportsEmbeddings()
         {
@@ -783,7 +525,7 @@
             }
 
             string arch = Architecture;
-            if (!string.IsNullOrEmpty(arch) && _EmbeddingOnlyArchitectures.Contains(arch))
+            if (!string.IsNullOrEmpty(arch) && SharpAI.Helpers.GgufMetadataReader.EmbeddingOnlyArchitectures.Contains(arch))
             {
                 return true;
             }
@@ -794,7 +536,7 @@
         private bool DetectSupportsGeneration()
         {
             string arch = Architecture;
-            if (!string.IsNullOrEmpty(arch) && _EmbeddingOnlyArchitectures.Contains(arch))
+            if (!string.IsNullOrEmpty(arch) && SharpAI.Helpers.GgufMetadataReader.EmbeddingOnlyArchitectures.Contains(arch))
             {
                 return false;
             }

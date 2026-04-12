@@ -11,7 +11,7 @@ namespace SharpAI.Server.Classes.Settings
 
         /// <summary>
         /// Force a specific backend.
-        /// Valid values: "cpu", "cuda", or null for auto-detection.
+        /// Valid values: "cpu", "cuda", "metal", or null for auto-detection.
         /// </summary>
         public string ForceBackend
         {
@@ -46,7 +46,7 @@ namespace SharpAI.Server.Classes.Settings
         /// Path to the GPU backend native library.
         /// Default: "./runtimes/cuda/libllama.so" (Linux), "./runtimes/cuda/llama.dll" (Windows).
         /// Supports environment variable expansion.
-        /// Note: GPU acceleration is not available on macOS Apple Silicon.
+        /// Note: On macOS Apple Silicon, use MetalBackendPath instead.
         /// </summary>
         public string GpuBackendPath
         {
@@ -57,6 +57,24 @@ namespace SharpAI.Server.Classes.Settings
             set
             {
                 _GpuBackendPath = value;
+            }
+        }
+
+        /// <summary>
+        /// Path to the Metal backend native library.
+        /// Default: "./runtimes/osx-arm64/native/libllama.dylib" (macOS Apple Silicon).
+        /// Supports environment variable expansion.
+        /// Note: Only available on macOS Apple Silicon (ARM64).
+        /// </summary>
+        public string MetalBackendPath
+        {
+            get
+            {
+                return _MetalBackendPath;
+            }
+            set
+            {
+                _MetalBackendPath = value;
             }
         }
 
@@ -84,6 +102,7 @@ namespace SharpAI.Server.Classes.Settings
         private string _ForceBackend = null;
         private string _CpuBackendPath = null;
         private string _GpuBackendPath = null;
+        private string _MetalBackendPath = null;
         private bool _EnableNativeLogging = false;
 
         #endregion

@@ -1,3 +1,6 @@
+# For Apple Metal GPU acceleration, run SharpAI directly on macOS (not in Docker).
+# Docker on Apple Silicon runs Linux containers which cannot access Metal.
+
 services:
 
   #
@@ -7,7 +10,7 @@ services:
   #
   sharpai:
     container_name: 'sharpai'
-    image: 'jchristn77/sharpai:v4.0.0'
+    image: 'jchristn77/sharpai:v4.1.0'
     ports:
       - '8000:8000'
     stdin_open: true
@@ -27,7 +30,7 @@ services:
   #
   sharpai-ui:
     container_name: 'sharpai-ui'
-    image: 'jchristn77/sharpai-ui:v4.0.0'
+    image: 'jchristn77/sharpai-ui:v4.1.0'
     ports:
       - '3000:3000'
     depends_on:

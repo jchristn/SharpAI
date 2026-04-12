@@ -106,7 +106,7 @@
         <member name="P:SharpAI.Server.Classes.Settings.RuntimeSettings.ForceBackend">
             <summary>
             Force a specific backend.
-            Valid values: "cpu", "cuda", or null for auto-detection.
+            Valid values: "cpu", "cuda", "metal", or null for auto-detection.
             </summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.RuntimeSettings.CpuBackendPath">
@@ -121,7 +121,15 @@
             Path to the GPU backend native library.
             Default: "./runtimes/cuda/libllama.so" (Linux), "./runtimes/cuda/llama.dll" (Windows).
             Supports environment variable expansion.
-            Note: GPU acceleration is not available on macOS Apple Silicon.
+            Note: On macOS Apple Silicon, use MetalBackendPath instead.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Settings.RuntimeSettings.MetalBackendPath">
+            <summary>
+            Path to the Metal backend native library.
+            Default: "./runtimes/osx-arm64/native/libllama.dylib" (macOS Apple Silicon).
+            Supports environment variable expansion.
+            Note: Only available on macOS Apple Silicon (ARM64).
             </summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.RuntimeSettings.EnableNativeLogging">

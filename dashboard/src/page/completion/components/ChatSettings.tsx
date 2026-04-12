@@ -502,6 +502,20 @@ const ChatSettings: React.FC<ChatSettingsProps> = ({
 
                 <div className={styles.optionItem}>
                   <L
+                    text="Display Thinking"
+                    tooltip={tooltips.chatSettings.displayThinking}
+                  />
+                  <Switch
+                    checked={currentOptions.display_thinking}
+                    onChange={(value) =>
+                      onOptionChange("display_thinking", value)
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+
+                <div className={styles.optionItem}>
+                  <L
                     text="F16 KV Cache"
                     tooltip={tooltips.chatSettings.f16Kv}
                   />

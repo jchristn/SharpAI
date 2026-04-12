@@ -29,17 +29,7 @@
             Model APIs.
             </summary>
         </member>
-        <member name="P:SharpAI.AIDriver.Vision">
-            <summary>
-            Vision APIs.
-            </summary>
-        </member>
-        <member name="P:SharpAI.AIDriver.VisionProjectorPath">
-            <summary>
-            Gets the configured projector path (mmproj GGUF) or empty string if not configured.
-            </summary>
-        </member>
-        <member name="M:SharpAI.AIDriver.#ctor(SyslogLogging.LoggingModule,System.String,System.String,System.String,System.String)">
+        <member name="M:SharpAI.AIDriver.#ctor(SyslogLogging.LoggingModule,System.String,System.String,System.String)">
             <summary>
             AI driver.
             </summary>
@@ -47,7 +37,6 @@
             <param name="databaseFilename">Database filename.</param>
             <param name="huggingFaceApiKey">HuggingFace API key.</param>
             <param name="modelDirectory">Model storage directory.</param>
-            <param name="multiModalProjectorPath">Path to a LLaVA projector GGUF.</param>
         </member>
         <member name="T:SharpAI.ChatDriver">
             <summary>
@@ -543,35 +532,6 @@
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.ConfigureVision(System.String)">
-            <summary>
-            Configure LLaVA projector (mmproj) for vision. If a path is provided it must exist.
-            </summary>
-            <param name="multiModalProjectorPath">Full path to mmproj GGUF or a directory to search; optional.</param>
-        </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateVisionCompletionAsync(System.Collections.Generic.IEnumerable{System.Byte[]},System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
-            <summary>
-            Generate vision completion with image bytes
-            </summary>
-            <param name="imagesBytes">Collection of image byte arrays</param>
-            <param name="prompt">Text prompt to combine with the images</param>
-            <param name="maxTokens">Maximum number of tokens to generate</param>
-            <param name="temperature">Sampling temperature (0.0 to 1.0)</param>
-            <param name="token">Cancellation token</param>
-            <returns>Generated text response</returns>
-        </member>
-        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateVisionCompletionStreamAsync(System.Collections.Generic.IEnumerable{System.Byte[]},System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
-            <summary>
-            Generate streaming vision completion with image bytes.
-            Provides real-time token streaming for vision model responses.
-            </summary>
-            <param name="imagesBytes">Collection of image byte arrays</param>
-            <param name="prompt">Text prompt to combine with the images</param>
-            <param name="maxTokens">Maximum number of tokens to generate</param>
-            <param name="temperature">Sampling temperature (0.0 to 1.0)</param>
-            <param name="token">Cancellation token</param>
-            <returns>Async enumerable of text chunks</returns>
-        </member>
         <member name="T:SharpAI.Helpers.DataTableHelper">
             <summary>
             Data table helper.
@@ -780,6 +740,59 @@
             </summary>
             <param name="baseDir">Base directory.</param>
             <param name="deleteRootDirectory">True to delete the root directory.</param>
+        </member>
+        <member name="T:SharpAI.Helpers.GgufMetadataReader">
+            <summary>
+            Lightweight pure-C# reader for GGUF file metadata.
+            Reads only the header and key-value metadata section without loading tensor weights.
+            Supports GGUF format versions 2 and 3.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufMetadataReader.ReadMetadata(System.String)">
+            <summary>
+            Read all metadata key-value pairs from a GGUF file header.
+            Only the metadata section is read; tensor data is not touched.
+            </summary>
+            <param name="filePath">Path to the GGUF file.</param>
+            <returns>Dictionary of metadata key-value pairs with string keys and object values.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when filePath is null or empty.</exception>
+            <exception cref="T:System.IO.FileNotFoundException">Thrown when the file does not exist.</exception>
+            <exception cref="T:System.IO.InvalidDataException">Thrown when the file is not a valid GGUF file.</exception>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufMetadataReader.ReadValue(System.String,System.String)">
+            <summary>
+            Read a specific metadata value by key from a GGUF file.
+            Returns null if the key is not found.
+            </summary>
+            <param name="filePath">Path to the GGUF file.</param>
+            <param name="key">Metadata key to look up.</param>
+            <returns>The value if found, null otherwise.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufMetadataReader.ReadStringValue(System.String,System.String)">
+            <summary>
+            Read a specific metadata value as a string from a GGUF file.
+            Returns null if the key is not found or the value is not a string.
+            </summary>
+            <param name="filePath">Path to the GGUF file.</param>
+            <param name="key">Metadata key to look up.</param>
+            <returns>The string value if found, null otherwise.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(System.String,System.String@,System.Boolean@,System.Boolean@)">
+            <summary>
+            Detect model capabilities from GGUF metadata without loading the model.
+            </summary>
+            <param name="filePath">Path to the GGUF file.</param>
+            <param name="architecture">Detected architecture string, or null if not found.</param>
+            <param name="supportsEmbeddings">True if the model supports embeddings.</param>
+            <param name="supportsCompletions">True if the model supports text generation.</param>
+        </member>
+        <member name="F:SharpAI.Helpers.GgufMetadataReader.EmbeddingOnlyArchitectures">
+            <summary>
+            Architectures that produce embeddings only (encoder-only, BERT family, etc.).
+            Source: llama.cpp's gguf-py/gguf/constants.py MODEL_ARCH enum — these arches
+            route to encoder-only code paths with no causal text generation.
+            This is the single source of truth; LlamaSharpEngine references this set.
+            </summary>
         </member>
         <member name="T:SharpAI.Helpers.GgufSelector">
             <summary>
@@ -1010,6 +1023,39 @@
             </summary>
             <param name="domainPart">The domain part to validate</param>
             <returns>True if valid, false otherwise</returns>
+        </member>
+        <member name="T:SharpAI.Helpers.ThinkingFilter">
+            <summary>
+            Filters model thinking/reasoning tokens from generated output.
+            Models like Qwen3 emit &lt;think&gt;...&lt;/think&gt; blocks containing chain-of-thought
+            reasoning that should typically be hidden from end users.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Helpers.ThinkingFilter.InsideThinkingBlock">
+            <summary>
+            Gets a value indicating whether the filter is currently inside a thinking block.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Helpers.ThinkingFilter.RemoveThinkingBlocks(System.String)">
+            <summary>
+            Filter a complete (non-streaming) response, removing all thinking blocks.
+            </summary>
+            <param name="text">The full response text.</param>
+            <returns>Text with thinking blocks removed.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.ThinkingFilter.ProcessToken(System.String)">
+            <summary>
+            Process a streaming token. Returns the token to emit, or null/empty if it should be suppressed.
+            Call this for each token in the stream to filter thinking blocks in real time.
+            </summary>
+            <param name="token">The next token from the stream.</param>
+            <returns>The text to emit (may be empty if inside a thinking block), or the buffered text if a partial tag match was resolved.</returns>
+        </member>
+        <member name="M:SharpAI.Helpers.ThinkingFilter.Flush">
+            <summary>
+            Flush any remaining buffered content. Call this when the stream ends.
+            </summary>
+            <returns>Any remaining buffered text that should be emitted.</returns>
         </member>
         <member name="T:SharpAI.Helpers.TimeHelper">
             <summary>
@@ -2447,6 +2493,12 @@
         <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Stop">
             <summary>
             Stop sequences for generation (optional).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.DisplayThinking">
+            <summary>
+            When true, include model thinking/reasoning tokens (e.g. &lt;think&gt;...&lt;/think&gt;) in the response.
+            When false (default), thinking tokens are stripped from the output.
             </summary>
         </member>
         <member name="P:SharpAI.Models.Ollama.OllamaCompletionOptions.Numa">
@@ -5950,6 +6002,14 @@
             Checks if a model family explicitly uses the Simple format.
             </summary>
         </member>
+        <member name="M:SharpAI.Prompts.ChatFormatHelper.GetDefaultStopSequences(SharpAI.Prompts.ChatFormatEnum)">
+            <summary>
+            Returns the default stop sequences (anti-prompts) for a given chat format.
+            These are the tokens that signal the model has finished its response.
+            </summary>
+            <param name="format">The chat format.</param>
+            <returns>Array of stop sequence strings.</returns>
+        </member>
         <member name="M:SharpAI.Prompts.ChatFormatHelper.GetFormatDescription(SharpAI.Prompts.ChatFormatEnum)">
             <summary>
             Gets a description of the chat format.
@@ -6508,51 +6568,6 @@
             Delete.
             </summary>
             <param name="guid">GUID.</param>
-        </member>
-        <member name="T:SharpAI.VisionDriver">
-            <summary>
-            Vision driver to handle image-based prompts (base64 images) with supported engines.
-            </summary>
-        </member>
-        <member name="M:SharpAI.VisionDriver.#ctor(SyslogLogging.LoggingModule,SharpAI.Serialization.Serializer,SharpAI.ModelDriver,System.String)">
-            <summary>
-            Vision driver.
-            </summary>
-            <param name="logging">Logging module.</param>
-            <param name="serializer">Serializer.</param>
-            <param name="models">Model driver.</param>
-            <param name="multiModalProjectorPath">Path to a LLaVA projector GGUF.</param>
-        </member>
-        <member name="M:SharpAI.VisionDriver.GenerateCompletion(System.String,System.Collections.Generic.IEnumerable{System.String},System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
-            <summary>
-            Generate a vision-enabled completion by providing one or more images in base64 format
-            </summary>
-            <param name="model">The model identifier to use.</param>
-            <param name="imagesBase64">A collection of base64-encoded images. At least one must be valid.</param>
-            <param name="prompt">Optional accompanying user prompt.</param>
-            <param name="maxTokens">Maximum number of tokens to generate 1024 (minimum is 100).</param>
-            <param name="temperature">Sampling temperature (0.0�1.0).</param>
-            <param name="token">Cancellation token.</param>
-            <returns>The generated text response from the model.</returns>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if maxTokens &lt; 100 or temperature is outside [0.0,1.0].</exception>
-            <exception cref="T:System.ArgumentException">Thrown if no valid images are provided.</exception>
-            <exception cref="T:System.ArgumentNullException">Thrown if imagesBase64 is null.</exception>
-        </member>
-        <member name="M:SharpAI.VisionDriver.GenerateCompletionStream(System.String,System.Collections.Generic.IEnumerable{System.String},System.String,System.Int32,System.Single,System.Threading.CancellationToken)">
-            <summary>
-            Generate a streaming vision-enabled completion by providing one or more images in base64 format.
-            This method provides real-time token streaming for vision model responses.
-            </summary>
-            <param name="model">The model identifier to use.</param>
-            <param name="imagesBase64">A collection of base64-encoded images. At least one must be valid.</param>
-            <param name="prompt">Optional accompanying user prompt.</param>
-            <param name="maxTokens">Maximum number of tokens to generate (minimum is 100).</param>
-            <param name="temperature">Sampling temperature (0.0�1.0).</param>
-            <param name="token">Cancellation token.</param>
-            <returns>An async enumerable of text chunks as they are generated.</returns>
-            <exception cref="T:System.ArgumentOutOfRangeException">Thrown if maxTokens &lt; 100 or temperature is outside [0.0,1.0].</exception>
-            <exception cref="T:System.ArgumentException">Thrown if no valid images are provided.</exception>
-            <exception cref="T:System.ArgumentNullException">Thrown if imagesBase64 is null.</exception>
         </member>
     </members>
 </doc>

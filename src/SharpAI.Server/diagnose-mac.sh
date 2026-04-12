@@ -95,6 +95,42 @@ else
     echo "   ✗ Accelerate framework missing"
 fi
 
+# Check for Metal framework (GPU acceleration on Apple Silicon)
+if [ -d "/System/Library/Frameworks/Metal.framework" ]; then
+    echo "   ✓ Metal framework found"
+else
+    echo "   ✗ Metal framework missing"
+fi
+
+echo ""
+echo "5b. Checking Metal GPU readiness..."
+if [ "$ARCH" = "arm64" ]; then
+    NATIVE_DIR="$SCRIPT_DIR/runtimes/osx-arm64/native"
+    METAL_LIB="$NATIVE_DIR/libggml-metal.dylib"
+    METAL_SHADER="$NATIVE_DIR/ggml-metal.metal"
+
+    if [ -f "$METAL_LIB" ]; then
+        echo "   ✓ Metal library found: $METAL_LIB"
+        file "$METAL_LIB" | sed 's/^/   /'
+    else
+        echo "   ✗ Metal library missing: $METAL_LIB"
+    fi
+
+    if [ -f "$METAL_SHADER" ]; then
+        echo "   ✓ Metal shader found: $METAL_SHADER"
+    else
+        echo "   ✗ Metal shader missing: $METAL_SHADER"
+    fi
+
+    if [ -f "$METAL_LIB" ] && [ -f "$METAL_SHADER" ]; then
+        echo "   → Metal GPU: Ready"
+    else
+        echo "   → Metal GPU: Not available (missing files)"
+    fi
+else
+    echo "   → Metal GPU: Not applicable (requires Apple Silicon ARM64)"
+fi
+
 echo ""
 echo "6. Checking .NET environment..."
 dotnet --info | grep -E "RID|Version|OS"

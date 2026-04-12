@@ -49,6 +49,7 @@ export interface GenerateEmbeddingsResponse {
 }
 
 export interface CompletionsOptions {
+  display_thinking: boolean;
   f16_kv: boolean;
   frequency_penalty: number;
   low_vram: boolean;
@@ -243,6 +244,7 @@ export interface RuntimeSettings {
   ForceBackend: string | null;
   CpuBackendPath: string | null;
   GpuBackendPath: string | null;
+  MetalBackendPath: string | null;
   EnableNativeLogging: boolean;
 }
 

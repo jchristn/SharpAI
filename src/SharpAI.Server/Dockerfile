@@ -47,6 +47,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install NVIDIA CUDA runtime libraries (amd64 only - ARM64 doesn't support NVIDIA GPUs)
+# Note: Apple Metal GPU acceleration is only available for bare-metal macOS installs.
+# Docker containers on Apple Silicon run Linux and cannot access the Metal framework.
+# Use bare-metal deployment on macOS for GPU acceleration.
 # Using Ubuntu 22.04 repository for stable CUDA 12 packages
 RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
         apt-get update && apt-get install -y --no-install-recommends \

@@ -23,7 +23,8 @@
             {
                 // Llama family
                 "llama" or "llama2" or "llama-2" => ChatFormatEnum.Llama2,
-                "llama3" or "llama-3" or "llama3.1" or "llama-3.1" or "llama3.2" or "llama-3.2" => ChatFormatEnum.Llama3,
+                "llama3" or "llama-3" or "llama3.1" or "llama-3.1" or "llama3.2" or "llama-3.2"
+                    or "llama3.3" or "llama-3.3" or "llama4" or "llama-4" => ChatFormatEnum.Llama3,
 
                 // Alpaca and derivatives
                 "alpaca" => ChatFormatEnum.Alpaca,
@@ -42,16 +43,16 @@
                 "gpt" or "gpt-3.5" or "gpt-4" or "chatgpt" or "openai" or "gpt-4-turbo" => ChatFormatEnum.ChatML,
 
                 // Microsoft Phi series
-                "phi" or "phi-2" or "phi-3" or "microsoft-phi" or "phi-3-mini" => ChatFormatEnum.Phi,
+                "phi" or "phi-2" or "phi-3" or "phi-4" or "microsoft-phi" or "phi-3-mini" => ChatFormatEnum.Phi,
 
                 // Zephyr
                 "zephyr" or "huggingfaceh4" or "zephyr-7b" => ChatFormatEnum.Zephyr,
 
                 // DeepSeek
-                "deepseek" or "deepseek-coder" or "deepseek-chat" or "deepseek-llm" => ChatFormatEnum.DeepSeek,
+                "deepseek" or "deepseek2" or "deepseek-coder" or "deepseek-chat" or "deepseek-llm" => ChatFormatEnum.DeepSeek,
 
                 // Google Gemma
-                "gemma" or "google-gemma" or "gemma-2b" or "gemma-7b" or "gemma2" => ChatFormatEnum.Gemma,
+                "gemma" or "google-gemma" or "gemma-2b" or "gemma-7b" or "gemma2" or "gemma3" or "gemma3n" => ChatFormatEnum.Gemma,
 
                 // Cohere Command-R
                 "command-r" or "command-r-plus" or "cohere-command-r" => ChatFormatEnum.CommandR,
@@ -63,11 +64,13 @@
                 "stablelm" or "stability" or "stable-lm" or "stablelm-3b" or "stablelm-7b" => ChatFormatEnum.StableLM,
 
                 // Models that typically use ChatML
-                "qwen" or "qwen2" or "qwen-7b" or "qwen-14b" or "qwen-72b" => ChatFormatEnum.ChatML,
+                "qwen" or "qwen2" or "qwen2moe" or "qwen3" or "qwen3moe" or "qwen35"
+                    or "qwen-7b" or "qwen-14b" or "qwen-72b" => ChatFormatEnum.ChatML,
                 "yi" or "yi-6b" or "yi-34b" or "01-ai" => ChatFormatEnum.ChatML,
                 "starling" or "openchat" or "openchat-3.5" => ChatFormatEnum.ChatML,
                 "nous-hermes" or "nous-hermes-2" => ChatFormatEnum.ChatML,
                 "dolphin" or "dolphin-mixtral" => ChatFormatEnum.ChatML,
+                "smollm" or "smollm2" or "smollm3" => ChatFormatEnum.ChatML,
 
                 // Orca models (Microsoft) typically use Alpaca-like format
                 "orca" or "orca-2" or "microsoft-orca" => ChatFormatEnum.Alpaca,
@@ -139,6 +142,34 @@
                 "redpajama" or "red-pajama" => true,
                 "pygmalion" or "pygmalion-7b" or "pygmalion-13b" => true,
                 _ => false
+            };
+        }
+
+        /// <summary>
+        /// Returns the default stop sequences (anti-prompts) for a given chat format.
+        /// These are the tokens that signal the model has finished its response.
+        /// </summary>
+        /// <param name="format">The chat format.</param>
+        /// <returns>Array of stop sequence strings.</returns>
+        public static string[] GetDefaultStopSequences(ChatFormatEnum format)
+        {
+            return format switch
+            {
+                ChatFormatEnum.ChatML => new[] { "<|im_end|>", "<|endoftext|>" },
+                ChatFormatEnum.Llama2 => new[] { "</s>", "[INST]" },
+                ChatFormatEnum.Llama3 => new[] { "<|eot_id|>", "<|end_of_text|>" },
+                ChatFormatEnum.Alpaca => new[] { "### Instruction:", "### System:" },
+                ChatFormatEnum.Mistral => new[] { "</s>", "[INST]" },
+                ChatFormatEnum.HumanAssistant => new[] { "Human:", "\nHuman:" },
+                ChatFormatEnum.Zephyr => new[] { "</s>", "<|user|>" },
+                ChatFormatEnum.Phi => new[] { "Instruct:", "\nInstruct:" },
+                ChatFormatEnum.DeepSeek => new[] { "User:", "\nUser:" },
+                ChatFormatEnum.Gemma => new[] { "<end_of_turn>", "<start_of_turn>" },
+                ChatFormatEnum.CommandR => new[] { "<|END_OF_TURN_TOKEN|>" },
+                ChatFormatEnum.Vicuna => new[] { "USER:", "\nUSER:" },
+                ChatFormatEnum.StableLM => new[] { "<|USER|>", "<|SYSTEM|>" },
+                ChatFormatEnum.Simple => new[] { "user:", "User:", "\nuser:", "\nUser:" },
+                _ => new[] { "user:", "User:", "\nuser:", "\nUser:" }
             };
         }
 

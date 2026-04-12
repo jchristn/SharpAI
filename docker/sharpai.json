@@ -1,6 +1,6 @@
 {
   "CreatedUtc": "2026-04-11T00:00:00.000000Z",
-  "SoftwareVersion": "4.0.0",
+  "SoftwareVersion": "4.1.0",
   "Logging": {
     "Servers": [
       {
@@ -130,6 +130,7 @@
     "ForceBackend": null,
     "CpuBackendPath": null,
     "GpuBackendPath": null,
+    "MetalBackendPath": null,
     "EnableNativeLogging": false
   },
   "Debug": {

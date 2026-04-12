@@ -125,6 +125,17 @@ else
 fi
 
 echo ""
+
+# Report Metal GPU availability for ARM64
+if [ "$ARCH" = "arm64" ]; then
+    if [ -f "$NATIVE_DIR/libggml-metal.dylib" ]; then
+        echo "✓ Metal GPU acceleration available"
+    else
+        echo "! Metal GPU acceleration not available (libggml-metal.dylib missing)"
+    fi
+    echo ""
+fi
+
 echo "All dependencies verified successfully"
 echo "Starting SharpAI.Server"
 echo ""

@@ -66,7 +66,7 @@ build-docker.bat <tag>
 
 ## Key Dependencies
 
-- **LLamaSharp** - Local model inference engine with CPU and CUDA12 backends
+- **LLamaSharp** - Local model inference engine with CPU, CUDA12, and Metal backends
 - **Watson.ORM.Sqlite** - Database layer for model metadata
 - **SwiftStack** - REST API framework for the server
 - **RestWrapper** - HTTP client utilities
@@ -94,8 +94,9 @@ Add your HuggingFace API key to `sharpai.json` before pulling models:
 
 The server automatically detects CPU/GPU capabilities:
 - **Windows/Linux**: Auto-detects NVIDIA GPU for CUDA acceleration
-- **macOS**: Uses CPU (Metal GPU not supported)
-- Can be overridden with `"Runtime": {"ForceBackend": "cpu"}` or `"cuda"`
+- **macOS Apple Silicon**: Auto-detects Metal GPU acceleration
+- **macOS Intel**: Uses CPU
+- Can be overridden with `"Runtime": {"ForceBackend": "cpu"}`, `"cuda"`, or `"metal"`
 
 ## API Compatibility
 
