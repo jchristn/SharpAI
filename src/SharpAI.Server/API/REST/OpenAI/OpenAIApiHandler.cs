@@ -613,7 +613,7 @@
             OpenAIGenerateChatCompletionResult ret = new OpenAIGenerateChatCompletionResult
             {
                 Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                Object = "text_completion",
+                Object = "chat.completion",
                 Created = ToUnixTimestamp(DateTime.UtcNow),
                 Model = gcr.Model,
                 Usage = null,
@@ -651,7 +651,7 @@
 
                 string nextToken = null;
 
-                req.Http.Response.ContentType = Constants.NdJsonContentType;
+                req.Http.Response.ContentType = Constants.EventStreamContentType;
                 req.Http.Response.ServerSentEvents = true;
 
                 await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
@@ -663,18 +663,22 @@
                 {
                     if (nextToken != null)
                     {
-                        OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
+                        OpenAIGenerateChatCompletionResult currEvent = new OpenAIGenerateChatCompletionResult
                         {
                             Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                            Object = "text_completion",
+                            Object = "chat.completion.chunk",
                             Created = ToUnixTimestamp(DateTime.UtcNow),
                             Model = gcr.Model,
                             Usage = null,
-                            Choices = new List<OpenAICompletionChoice>
+                            Choices = new List<OpenAIChatChoice>
                             {
-                                new OpenAICompletionChoice
+                                new OpenAIChatChoice
                                 {
-                                    Text = nextToken,
+                                    Delta = new OpenAIChatMessage
+                                    {
+                                        Role = "assistant",
+                                        Content = nextToken
+                                    },
                                     Index = 0
                                 }
                             }
@@ -692,18 +696,22 @@
 
                 if (nextToken != null)
                 {
-                    OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
+                    OpenAIGenerateChatCompletionResult currEvent = new OpenAIGenerateChatCompletionResult
                     {
                         Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                        Object = "text_completion",
+                        Object = "chat.completion.chunk",
                         Created = ToUnixTimestamp(DateTime.UtcNow),
                         Model = gcr.Model,
                         Usage = null,
-                        Choices = new List<OpenAICompletionChoice>
+                        Choices = new List<OpenAIChatChoice>
                             {
-                                new OpenAICompletionChoice
+                                new OpenAIChatChoice
                                 {
-                                    Text = nextToken,
+                                    Delta = new OpenAIChatMessage
+                                    {
+                                        Role = "assistant",
+                                        Content = nextToken
+                                    },
                                     Index = 0
                                 }
                             }

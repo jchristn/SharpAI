@@ -161,11 +161,9 @@ const ChatComplitionPage = () => {
                     if (!(item as any).Error && item.trim()) {
                       const itemData: CompletionsOpenAIResponse | null =
                         parseJSON(item);
-                      const data = !(itemData as any)?.Error
-                        ? itemData?.choices[0]?.text
-                        : null;
-                      //   console.log(itemData);
-                      return data;
+                      if ((itemData as any)?.Error) return null;
+                      const choice = itemData?.choices[0];
+                      return choice?.delta?.content ?? choice?.text ?? null;
                     }
                   })
                   .join("");

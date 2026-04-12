@@ -4,6 +4,13 @@
 
 v4.0.0
 
+### Fixed
+
+- **OpenAI streaming chat completions now use the standard response format** — The `/v1/chat/completions` streaming endpoint previously returned chunks using the text completion format (`choices[0].text`) instead of the chat completion format (`choices[0].delta.content`). This caused OpenAI-compatible clients (e.g. Mux) to silently drop streamed tokens. Streaming chunks now use `chat.completion.chunk` object type with `delta` payloads per the OpenAI specification.
+- **Corrected Content-Type for streaming chat completions** — Changed from `application/x-ndjson` to `text/event-stream` (SSE) to match the OpenAI streaming protocol
+- **Corrected object type for non-streaming chat completions** — Changed from `text_completion` to `chat.completion`
+- **Dashboard streaming parser updated** to read from `delta.content` with fallback to `text` for backwards compatibility
+
 ### Added
 
 - **Apple Metal GPU acceleration** for macOS Apple Silicon (M1/M2/M3/M4)

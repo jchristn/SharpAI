@@ -274,6 +274,10 @@ export interface CompletionsOpenAIResponse {
 }
 
 export interface Choice {
-  text: string;
+  text?: string;
   index: number;
+  delta?: {
+    role?: string;
+    content?: string;
+  };
 }
