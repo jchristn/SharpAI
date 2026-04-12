@@ -11,7 +11,7 @@ services:
 
   sharpai:
     container_name: 'sharpai'
-    image: 'jchristn77/sharpai:v4.1.0'
+    image: 'jchristn77/sharpai:v4.0.0'
     network_mode: 'host'
     stdin_open: true
     tty: true

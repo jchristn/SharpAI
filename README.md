@@ -543,12 +543,12 @@ SharpAI.Server is available as a Docker image, providing an easy way to deploy t
 
 For Windows:
 ```batch
-run.bat v4.1.0
+run.bat v4.0.0
 ```
 
 For Linux/macOS:
 ```bash
-./run.sh v4.1.0
+./run.sh v4.0.0
 ```
 
 #### Using Docker Compose
@@ -619,10 +619,10 @@ You can access OpenAI APIs at:
 3. Run the container:
    ```bash
    # Windows
-   run.bat v4.1.0
+   run.bat v4.0.0
    
    # Linux/macOS
-   ./run.sh v4.1.0
+   ./run.sh v4.0.0
    ```
 
 4. Download a model using the API (GGUF format required):
@@ -648,7 +648,7 @@ For production deployments, you can use Docker Compose. Create a `compose.yaml` 
 ```yaml
 services:
   sharpai:
-    image: jchristn77/sharpai:v4.1.0
+    image: jchristn77/sharpai:v4.0.0
     ports:
       - "8000:8000"
     volumes:
@@ -680,7 +680,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn77/sharpai:v4.1.0
+  jchristn77/sharpai:v4.0.0
 ```
 
 For Docker Compose, add:
