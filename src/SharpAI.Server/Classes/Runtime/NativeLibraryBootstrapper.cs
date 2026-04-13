@@ -317,8 +317,12 @@ namespace SharpAI.Server.Classes.Runtime
                     NativeLogConfig.LLamaLogCallback logCallback = (LLamaLogLevel level, string message) =>
                     {
                         if (String.IsNullOrEmpty(message)) return;
-                        string trimmed = message.TrimEnd('\r', '\n');
+                        string trimmed = message.TrimEnd('\r', '\n', ' ');
                         if (String.IsNullOrEmpty(trimmed)) return;
+
+                        // Skip progress indicator dots and other noise
+                        if (trimmed == "." || trimmed == ".." || trimmed == "..." || trimmed.All(c => c == '.'))
+                            return;
 
                         switch (level)
                         {
