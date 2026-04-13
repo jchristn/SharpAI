@@ -309,11 +309,40 @@ namespace SharpAI.Server.Classes.Runtime
                 SharpAIEnvironment.EnableNativeLogging,
                 settings.Runtime?.EnableNativeLogging ?? false);
 
-            if (!enableLogging)
+            try
             {
-                // Disable native logging by setting a no-op callback that discards all messages
-                try
+                if (enableLogging)
                 {
+                    // Redirect native logging to our logging module
+                    NativeLogConfig.LLamaLogCallback logCallback = (LLamaLogLevel level, string message) =>
+                    {
+                        if (String.IsNullOrEmpty(message)) return;
+                        string trimmed = message.TrimEnd('\r', '\n');
+                        if (String.IsNullOrEmpty(trimmed)) return;
+
+                        switch (level)
+                        {
+                            case LLamaLogLevel.Error:
+                                logging.Warn("[llama.cpp] " + trimmed);
+                                break;
+                            case LLamaLogLevel.Warning:
+                                logging.Warn("[llama.cpp] " + trimmed);
+                                break;
+                            case LLamaLogLevel.Info:
+                                logging.Info("[llama.cpp] " + trimmed);
+                                break;
+                            default:
+                                logging.Debug("[llama.cpp] " + trimmed);
+                                break;
+                        }
+                    };
+
+                    NativeLogConfig.llama_log_set(logCallback);
+                    logging.Debug("[NativeLibraryBootstrapper] native library logging enabled and redirected to log file");
+                }
+                else
+                {
+                    // Disable native logging by setting a no-op callback that discards all messages
                     NativeLogConfig.LLamaLogCallback noOpCallback = (LLamaLogLevel level, string message) =>
                     {
                         // Discard all log messages by doing nothing
@@ -322,14 +351,10 @@ namespace SharpAI.Server.Classes.Runtime
                     NativeLogConfig.llama_log_set(noOpCallback);
                     logging.Debug("[NativeLibraryBootstrapper] native library logging disabled");
                 }
-                catch (Exception ex)
-                {
-                    logging.Debug($"[NativeLibraryBootstrapper] failed to disable native logging:{Environment.NewLine}{ex.ToString()}");
-                }
             }
-            else
+            catch (Exception ex)
             {
-                logging.Debug("[NativeLibraryBootstrapper] native library logging enabled");
+                logging.Debug($"[NativeLibraryBootstrapper] failed to configure native logging:{Environment.NewLine}{ex.ToString()}");
             }
         }
 
