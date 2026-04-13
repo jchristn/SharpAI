@@ -73,8 +73,8 @@ RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
         curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/3bf863cc.pub | gpg --dearmor -o /usr/share/keyrings/cuda-archive-keyring.gpg && \
         echo "deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg] https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/ /" > /etc/apt/sources.list.d/cuda.list && \
         apt-get update && apt-get install -y --no-install-recommends \
-        cuda-cudart-12-4 \
-        libcublas-12-4 && \
+        cuda-cudart-12-6 \
+        libcublas-12-6 && \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
