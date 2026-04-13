@@ -101,11 +101,25 @@ if [ ! -f "$CPU_NATIVE_DIR/libllama.so" ]; then
     exit 1
 fi
 
+# Create versioned symlinks for ggml libraries if missing
+# libllama.so expects libggml.so.0 and libggml-base.so.0
+create_versioned_symlinks() {
+    local dir="$1"
+    for lib in libggml.so libggml-base.so libggml-cpu.so libggml-cuda.so; do
+        if [ -f "$dir/$lib" ] && [ ! -e "$dir/${lib}.0" ]; then
+            ln -sf "$lib" "$dir/${lib}.0"
+        fi
+    done
+}
+
+create_versioned_symlinks "$CPU_NATIVE_DIR"
+
 CUDA_NATIVE_DIR="$SCRIPT_DIR/runtimes/$RID/native/cuda12"
 LD_PATHS="$CPU_NATIVE_DIR"
 
 if [ -d "$CUDA_NATIVE_DIR" ]; then
     LD_PATHS="$LD_PATHS:$CUDA_NATIVE_DIR"
+    create_versioned_symlinks "$CUDA_NATIVE_DIR"
 fi
 
 if [ "$ARCH" = "x86_64" ]; then
