@@ -19,7 +19,7 @@ services:
       - ./sharpai.json:/app/sharpai.json
       - ./sharpai.db:/app/sharpai.db
       - ./logs/:/app/logs/
-      - ./models/:/app/models/
+      - sharpai-models:/app/models/
     environment:
       DOTNET_GC_SERVER: "1"
       SHARPAI_FORCE_BACKEND: "cpu"
@@ -38,10 +38,10 @@ services:
       SHARPAI_FLASH_ATTENTION: "false"
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]
-      interval: 30s
-      timeout: 10s
+      interval: 5s
+      timeout: 3s
       retries: 5
-      start_period: 30s
+      start_period: 5s
     restart: unless-stopped
 
   #
@@ -57,3 +57,6 @@ services:
       sharpai:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  sharpai-models:

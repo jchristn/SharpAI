@@ -19,7 +19,7 @@ services:
       - ./sharpai.json:/app/sharpai.json
       - ./sharpai.db:/app/sharpai.db
       - ./logs/:/app/logs/
-      - ./models/:/app/models/
+      - sharpai-models:/app/models/
     environment:
       DOTNET_GC_SERVER: "1"
       SHARPAI_FORCE_BACKEND: "cuda"
@@ -66,3 +66,6 @@ services:
       sharpai:
         condition: service_healthy
     restart: unless-stopped
+
+volumes:
+  sharpai-models:

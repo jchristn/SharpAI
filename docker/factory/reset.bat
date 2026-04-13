@@ -7,16 +7,12 @@ REM
 REM This script stops SharpAI containers, destroys runtime state, and restores
 REM factory-default docker/sharpai.json and docker/sharpai.db.
 REM
-REM Usage: factory\reset.bat [--include-models]
-REM   --include-models  Also remove downloaded GGUF models (requires re-download)
+REM Usage: factory\reset.bat
 REM ==========================================================================
 
 set "SCRIPT_DIR=%~dp0"
 set "DOCKER_DIR=%SCRIPT_DIR%..\"
 set "FACTORY_DIR=%SCRIPT_DIR%"
-set "INCLUDE_MODELS=false"
-
-if "%~1"=="--include-models" set "INCLUDE_MODELS=true"
 
 if not exist "%FACTORY_DIR%sharpai.json" (
     echo ERROR: Factory config not found: %FACTORY_DIR%sharpai.json
@@ -41,11 +37,7 @@ echo   - docker\sharpai.db restored from factory defaults
 echo   - SQLite WAL/SHM sidecar files
 echo   - All Docker log files
 echo   - All Docker temp files
-if "%INCLUDE_MODELS%"=="true" (
-    echo   - All downloaded GGUF models under docker\models
-) else (
-    echo   - Downloaded GGUF models are preserved
-)
+echo   - All downloaded GGUF models (sharpai-models volume)
 echo.
 set /p "CONFIRM=Type 'RESET' to confirm: "
 echo.
@@ -74,7 +66,6 @@ echo         Restored sharpai.json and sharpai.db
 
 echo [3/5] Resetting runtime directories...
 if not exist "%DOCKER_DIR%logs" mkdir "%DOCKER_DIR%logs" 2>nul
-if not exist "%DOCKER_DIR%models" mkdir "%DOCKER_DIR%models" 2>nul
 if not exist "%DOCKER_DIR%temp" mkdir "%DOCKER_DIR%temp" 2>nul
 
 del /q "%DOCKER_DIR%logs\*" 2>nul
@@ -83,14 +74,9 @@ for /d %%d in ("%DOCKER_DIR%logs\*") do rd /s /q "%%d" 2>nul
 for /d %%d in ("%DOCKER_DIR%temp\*") do rd /s /q "%%d" 2>nul
 echo         Cleared logs and temp files
 
-echo [4/5] Handling downloaded models...
-if "%INCLUDE_MODELS%"=="true" (
-    rd /s /q "%DOCKER_DIR%models" 2>nul
-    mkdir "%DOCKER_DIR%models" 2>nul
-    echo         Cleared downloaded models
-) else (
-    echo         Preserved downloaded models
-)
+echo [4/5] Removing downloaded models...
+docker volume rm sharpai-models 2>nul
+echo         Removed sharpai-models volume
 
 echo [5/5] Factory reset complete.
 echo.
