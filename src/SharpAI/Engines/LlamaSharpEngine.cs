@@ -222,9 +222,9 @@
                 try
                 {
                     int gpuLayers = GetOptimalGpuLayers();
-                    _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} {(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
+                    _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? $"GPU ({gpuLayers} layers requested)" : "CPU")}");
 
-                    ModelParams parameters = CreateModelParams(modelPath, gpuLayers, false);
+                    ModelParams parameters = CreateModelParams(modelPath, gpuLayers, false, true);
 
                     _Model = LLamaWeights.LoadFromFile(parameters);
                     _Context = _Model.CreateContext(parameters);
@@ -236,7 +236,7 @@
                     // For embeddings, try to create a separate instance
                     try
                     {
-                        ModelParams embeddingParams = CreateModelParams(modelPath, gpuLayers, true);
+                        ModelParams embeddingParams = CreateModelParams(modelPath, gpuLayers, true, false);
 
                         _EmbeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
                         _Embedder = new LLamaEmbedder(_EmbeddingModel, embeddingParams);
@@ -313,7 +313,7 @@
 
         #region Runtime-Parameters
 
-        private ModelParams CreateModelParams(string modelPath, int gpuLayers, bool embeddings)
+        private ModelParams CreateModelParams(string modelPath, int gpuLayers, bool embeddings, bool logParams)
         {
             int threads = GetConfiguredThreadCount();
             int batchThreads = SharpAIEnvironment.GetInt(SharpAIEnvironment.BatchThreads, threads, 1);
@@ -341,18 +341,21 @@
             if (batchSize > 0) parameters.BatchSize = batchSize;
             if (uBatchSize > 0) parameters.UBatchSize = uBatchSize;
 
-            _Logging.Debug(_Header + "model params: "
-                + "threads=" + threads
-                + ", batchThreads=" + batchThreads
-                + ", gpuLayers=" + gpuLayers
-                + ", mainGpu=" + (mainGpu >= 0 ? mainGpu.ToString() : "auto")
-                + ", contextSize=" + (contextSize > 0 ? contextSize.ToString() : "model-default")
-                + ", batchSize=" + (batchSize > 0 ? batchSize.ToString() : "default")
-                + ", uBatchSize=" + (uBatchSize > 0 ? uBatchSize.ToString() : "default")
-                + ", useMmap=" + useMmap
-                + ", useMlock=" + useMlock
-                + ", flashAttention=" + flashAttention
-                + ", embeddings=" + embeddings);
+            if (logParams)
+            {
+                _Logging.Debug(_Header + "model params: "
+                    + "threads=" + threads
+                    + ", batchThreads=" + batchThreads
+                    + ", gpuLayers=" + gpuLayers
+                    + ", mainGpu=" + (mainGpu >= 0 ? mainGpu.ToString() : "auto")
+                    + ", contextSize=" + (contextSize > 0 ? contextSize.ToString() : "model-default")
+                    + ", batchSize=" + (batchSize > 0 ? batchSize.ToString() : "default")
+                    + ", uBatchSize=" + (uBatchSize > 0 ? uBatchSize.ToString() : "default")
+                    + ", useMmap=" + useMmap
+                    + ", useMlock=" + useMlock
+                    + ", flashAttention=" + flashAttention
+                    + ", embeddings=" + embeddings);
+            }
 
             return parameters;
         }
