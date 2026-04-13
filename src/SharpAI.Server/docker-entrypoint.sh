@@ -120,6 +120,13 @@ LD_PATHS="$CPU_NATIVE_DIR"
 if [ -d "$CUDA_NATIVE_DIR" ]; then
     LD_PATHS="$LD_PATHS:$CUDA_NATIVE_DIR"
     create_versioned_symlinks "$CUDA_NATIVE_DIR"
+
+    # CUDA libllama.so requires libggml-cpu.so which only exists in CPU variant dirs
+    # Create symlink in cuda12 pointing to the CPU variant's library
+    if [ ! -e "$CUDA_NATIVE_DIR/libggml-cpu.so" ] && [ -f "$CPU_NATIVE_DIR/libggml-cpu.so" ]; then
+        ln -sf "$CPU_NATIVE_DIR/libggml-cpu.so" "$CUDA_NATIVE_DIR/libggml-cpu.so"
+        ln -sf "$CPU_NATIVE_DIR/libggml-cpu.so" "$CUDA_NATIVE_DIR/libggml-cpu.so.0"
+    fi
 fi
 
 if [ "$ARCH" = "x86_64" ]; then
