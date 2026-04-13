@@ -105,7 +105,7 @@ fi
 # libllama.so expects libggml.so.0 and libggml-base.so.0
 create_versioned_symlinks() {
     local dir="$1"
-    for lib in libggml.so libggml-base.so libggml-cpu.so libggml-cuda.so; do
+    for lib in libllama.so libggml.so libggml-base.so libggml-cpu.so libggml-cuda.so; do
         if [ -f "$dir/$lib" ] && [ ! -e "$dir/${lib}.0" ]; then
             ln -sf "$lib" "$dir/${lib}.0"
         fi
