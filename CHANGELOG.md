@@ -13,6 +13,12 @@ v4.0.0
 
 ### Added
 
+- **Docker runtime hardening for CPU/CUDA deployments**
+  - Added Docker/runtime environment controls for backend selection, CPU native variant selection, strict backend loading, native logging, generation threads, batch threads, GPU layer offload, main GPU selection, context/batch sizing, mmap/mlock, and flash attention
+  - Added all-caps `DOTNET_GC_SERVER` Docker control, mapped by the container entrypoint to .NET's canonical `DOTNET_gcServer` runtime setting
+  - Added `/health` and `/ready` operational endpoints; Docker health checks now use `/ready` so containers are marked healthy only after backend initialization, database initialization, and writable runtime directories are confirmed
+  - Added a Docker entrypoint that selects the compatible x64 CPU native library variant and orders native library search paths for CPU and CUDA backends
+  - Added a Docker-safe default `sharpai.json` inside the image so plain `docker run` starts with usable port, storage, logging, and database defaults
 - **Apple Metal GPU acceleration** for macOS Apple Silicon (M1/M2/M3/M4)
   - Auto-detected on Apple Silicon Macs when `libggml-metal.dylib` is present
   - Configurable via `ForceBackend: "metal"` or `SHARPAI_FORCE_BACKEND=metal`

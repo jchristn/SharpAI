@@ -1,9 +1,11 @@
 namespace SharpAI.Server.Classes.Runtime
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.InteropServices;
+    using System.Runtime.Intrinsics.X86;
     using LLama.Native;
     using SharpAI.Classes.Runtime;
     using SharpAI.Server.Classes.Settings;
@@ -65,6 +67,7 @@ namespace SharpAI.Server.Classes.Runtime
                 NativeBackendInfo.SelectedBackend = backend;
 
                 string libraryPath = GetLibraryPath(backend, settings, logging);
+                bool requireBackend = SharpAIEnvironment.GetBool(SharpAIEnvironment.RequireBackend, false);
 
                 if (!String.IsNullOrEmpty(libraryPath))
                 {
@@ -113,6 +116,11 @@ namespace SharpAI.Server.Classes.Runtime
                         catch (Exception ex)
                         {
                             logging.Warn($"[NativeLibraryBootstrapper] failed to configure {backend} backend, will attempt fallback: {ex.Message}" + Environment.NewLine + ex.ToString());
+
+                            if (requireBackend)
+                            {
+                                throw;
+                            }
 
                             // Try CPU fallback
                             if (!backend.Equals("cpu", StringComparison.OrdinalIgnoreCase))
@@ -169,6 +177,10 @@ namespace SharpAI.Server.Classes.Runtime
                     else
                     {
                         logging.Warn($"[NativeLibraryBootstrapper] library file not found: {libraryPath}");
+                        if (requireBackend)
+                        {
+                            throw new FileNotFoundException($"Required {backend} backend library was not found.", libraryPath);
+                        }
                     }
                 }
                 else
@@ -191,7 +203,9 @@ namespace SharpAI.Server.Classes.Runtime
             {
                 "libggml-base.so",
                 "libggml-cpu.so",
-                "libggml.so"
+                "libggml-cuda.so",
+                "libggml.so",
+                "libmtmd.so"
             };
 
             foreach (string dep in dependencies)
@@ -291,7 +305,9 @@ namespace SharpAI.Server.Classes.Runtime
 
         private static void ConfigureNativeLogging(Settings settings, LoggingModule logging)
         {
-            bool enableLogging = settings.Runtime?.EnableNativeLogging ?? false;
+            bool enableLogging = SharpAIEnvironment.GetBool(
+                SharpAIEnvironment.EnableNativeLogging,
+                settings.Runtime?.EnableNativeLogging ?? false);
 
             if (!enableLogging)
             {
@@ -320,20 +336,36 @@ namespace SharpAI.Server.Classes.Runtime
         private static string DetermineBackend(Settings settings, LoggingModule logging)
         {
             // Check for environment variable override (highest priority)
-            string envBackend = Environment.GetEnvironmentVariable("SHARPAI_FORCE_BACKEND");
+            string envBackend = SharpAIEnvironment.GetString(SharpAIEnvironment.ForceBackend);
             if (!String.IsNullOrEmpty(envBackend))
             {
                 string forced = envBackend.ToLowerInvariant();
-                logging.Info($"[NativeLibraryBootstrapper] backend forced by environment variable to: {forced}");
-                return forced;
+                if (!forced.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (IsValidBackend(forced))
+                    {
+                        logging.Info($"[NativeLibraryBootstrapper] backend forced by environment variable to: {forced}");
+                        return forced;
+                    }
+
+                    logging.Warn($"[NativeLibraryBootstrapper] ignoring invalid {SharpAIEnvironment.ForceBackend} value: {envBackend}");
+                }
             }
 
             // Check for forced backend setting
             if (!String.IsNullOrEmpty(settings.Runtime?.ForceBackend))
             {
                 string forced = settings.Runtime.ForceBackend.ToLowerInvariant();
-                logging.Info($"[NativeLibraryBootstrapper] backend forced by settings to: {forced}");
-                return forced;
+                if (!forced.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (IsValidBackend(forced))
+                    {
+                        logging.Info($"[NativeLibraryBootstrapper] backend forced by settings to: {forced}");
+                        return forced;
+                    }
+
+                    logging.Warn($"[NativeLibraryBootstrapper] ignoring invalid Runtime.ForceBackend value: {settings.Runtime.ForceBackend}");
+                }
             }
 
             OSPlatform platform = GetCurrentPlatform();
@@ -386,7 +418,9 @@ namespace SharpAI.Server.Classes.Runtime
 
             // Method 2: Check environment variable set by NVIDIA Docker runtime
             string nvidiaVisible = Environment.GetEnvironmentVariable("NVIDIA_VISIBLE_DEVICES");
-            if (!String.IsNullOrEmpty(nvidiaVisible) && !nvidiaVisible.Equals("void", StringComparison.OrdinalIgnoreCase))
+            if (!String.IsNullOrEmpty(nvidiaVisible)
+                && !nvidiaVisible.Equals("void", StringComparison.OrdinalIgnoreCase)
+                && !nvidiaVisible.Equals("none", StringComparison.OrdinalIgnoreCase))
             {
                 logging.Debug($"[NativeLibraryBootstrapper] NVIDIA_VISIBLE_DEVICES detected: {nvidiaVisible}");
                 return true;
@@ -570,8 +604,8 @@ namespace SharpAI.Server.Classes.Runtime
                 }
                 else
                 {
-                    // For x64, try AVX variants in order of preference: avx2, avx512, avx, noavx
-                    string[] avxVariants = new string[] { "avx2", "avx512", "avx", "noavx" };
+                    // For x64, select the fastest variant supported by the current host CPU.
+                    string[] avxVariants = GetCpuVariantOrder(logging);
                     foreach (string variant in avxVariants)
                     {
                         string avxPath = Path.Combine(baseDirectory, "runtimes", rid, "native", variant, libraryName);
@@ -592,6 +626,114 @@ namespace SharpAI.Server.Classes.Runtime
             }
 
             return null;
+        }
+
+        private static bool IsValidBackend(string backend)
+        {
+            if (String.IsNullOrWhiteSpace(backend)) return false;
+
+            return backend.Equals("cpu", StringComparison.OrdinalIgnoreCase)
+                || backend.Equals("cuda", StringComparison.OrdinalIgnoreCase)
+                || backend.Equals("metal", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string[] GetCpuVariantOrder(LoggingModule logging)
+        {
+            string requested = SharpAIEnvironment.GetString(SharpAIEnvironment.CpuVariant);
+            string[] automatic = GetAutomaticCpuVariantOrder();
+
+            if (!String.IsNullOrEmpty(requested) && !requested.Equals("auto", StringComparison.OrdinalIgnoreCase))
+            {
+                string normalized = NormalizeCpuVariant(requested);
+                if (String.IsNullOrEmpty(normalized))
+                {
+                    logging.Warn($"[NativeLibraryBootstrapper] ignoring invalid {SharpAIEnvironment.CpuVariant} value: {requested}");
+                    return automatic;
+                }
+
+                if (!IsCpuVariantSupported(normalized))
+                {
+                    logging.Warn($"[NativeLibraryBootstrapper] requested CPU variant '{normalized}' is not supported by this CPU, using automatic selection");
+                    return automatic;
+                }
+
+                logging.Debug($"[NativeLibraryBootstrapper] CPU variant forced by environment variable to: {normalized}");
+                return MoveVariantFirst(automatic, normalized);
+            }
+
+            logging.Debug("[NativeLibraryBootstrapper] CPU variant order: " + String.Join(", ", automatic));
+            return automatic;
+        }
+
+        private static string[] GetAutomaticCpuVariantOrder()
+        {
+            List<string> variants = new List<string>();
+
+            if (IsCpuVariantSupported("avx512")) variants.Add("avx512");
+            if (IsCpuVariantSupported("avx2")) variants.Add("avx2");
+            if (IsCpuVariantSupported("avx")) variants.Add("avx");
+
+            variants.Add("noavx");
+            return variants.ToArray();
+        }
+
+        private static string NormalizeCpuVariant(string variant)
+        {
+            if (String.IsNullOrWhiteSpace(variant)) return null;
+
+            string normalized = variant.Trim().ToLowerInvariant().Replace("-", "");
+            if (normalized.Equals("auto", StringComparison.OrdinalIgnoreCase)) return "auto";
+            if (normalized.Equals("avx512", StringComparison.OrdinalIgnoreCase)) return "avx512";
+            if (normalized.Equals("avx2", StringComparison.OrdinalIgnoreCase)) return "avx2";
+            if (normalized.Equals("avx", StringComparison.OrdinalIgnoreCase)) return "avx";
+            if (normalized.Equals("noavx", StringComparison.OrdinalIgnoreCase)) return "noavx";
+
+            return null;
+        }
+
+        private static bool IsCpuVariantSupported(string variant)
+        {
+            if (String.IsNullOrWhiteSpace(variant)) return false;
+
+            if (variant.Equals("noavx", StringComparison.OrdinalIgnoreCase)) return true;
+            if (variant.Equals("avx", StringComparison.OrdinalIgnoreCase)) return Avx.IsSupported || CpuFeatureFlagPresent("avx");
+            if (variant.Equals("avx2", StringComparison.OrdinalIgnoreCase)) return Avx2.IsSupported || CpuFeatureFlagPresent("avx2");
+            if (variant.Equals("avx512", StringComparison.OrdinalIgnoreCase)) return CpuFeatureFlagPresent("avx512f");
+
+            return false;
+        }
+
+        private static bool CpuFeatureFlagPresent(string flag)
+        {
+            try
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists("/proc/cpuinfo"))
+                {
+                    string cpuInfo = File.ReadAllText("/proc/cpuinfo");
+                    return cpuInfo.IndexOf(flag, StringComparison.OrdinalIgnoreCase) >= 0;
+                }
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+        private static string[] MoveVariantFirst(string[] variants, string requested)
+        {
+            List<string> ordered = new List<string>();
+            ordered.Add(requested);
+
+            foreach (string variant in variants)
+            {
+                if (!variant.Equals(requested, StringComparison.OrdinalIgnoreCase))
+                {
+                    ordered.Add(variant);
+                }
+            }
+
+            return ordered.ToArray();
         }
 
         private static string GetRuntimeIdentifier(OSPlatform platform)

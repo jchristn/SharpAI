@@ -8,6 +8,7 @@ namespace SharpAI.Server
 
     using SharpAI;
     using SharpAI.Engines;
+    using SharpAI.Classes.Runtime;
     using SharpAI.Hosting;
     using SharpAI.Models.Ollama;
     using SharpAI.Models.OpenAI;
@@ -304,6 +305,14 @@ namespace SharpAI.Server
             {
                 Console.WriteLine("WARNING: Native library bootstrapper initialization failed:");
                 Console.WriteLine(ex.ToString());
+
+                if (SharpAIEnvironment.GetBool(SharpAIEnvironment.RequireBackend, false))
+                {
+                    Console.WriteLine(SharpAIEnvironment.RequireBackend + "=true; terminating startup.");
+                    Environment.Exit(1);
+                    return;
+                }
+
                 Console.WriteLine("Continuing with default LlamaSharp library loading...");
             }
         }
@@ -442,6 +451,57 @@ namespace SharpAI.Server
 
             _Server.Head("/", async (req) => null, api => Describe(api, "General", "Server liveness check")
                 .WithDescription("HEAD probe that returns 200 OK when the server is reachable."));
+
+            _Server.Get("/health", async (req) =>
+            {
+                req.Http.Response.ContentType = Constants.JsonContentType;
+                return new
+                {
+                    status = "healthy",
+                    version = _Version,
+                    backend = NativeLibraryBootstrapper.SelectedBackend,
+                    native_initialized = NativeLibraryBootstrapper.IsInitialized,
+                    utc = DateTime.UtcNow
+                };
+            }, api => Describe(api, "General", "Health check")
+                .WithDescription("Lightweight liveness check for container and process monitoring.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Health status", OpenApiSchemaMetadata.Create("object"))));
+
+            _Server.Head("/health", async (req) => null, api => Describe(api, "General", "Health HEAD probe"));
+
+            _Server.Get("/ready", async (req) =>
+            {
+                bool modelsDirectoryReady = DirectoryExistsAndWritable(_Settings?.Storage?.ModelsDirectory);
+
+                bool logsDirectoryReady = DirectoryExistsAndWritable(_Settings?.Logging?.LogDirectory);
+
+                bool ready = NativeLibraryBootstrapper.IsInitialized
+                    && _ORM != null
+                    && _ModelFileService != null
+                    && _ModelEngineService != null
+                    && modelsDirectoryReady
+                    && logsDirectoryReady;
+
+                req.Http.Response.ContentType = Constants.JsonContentType;
+                if (!ready) req.Http.Response.StatusCode = 503;
+
+                return new
+                {
+                    status = ready ? "ready" : "not_ready",
+                    version = _Version,
+                    backend = NativeLibraryBootstrapper.SelectedBackend,
+                    native_initialized = NativeLibraryBootstrapper.IsInitialized,
+                    database_initialized = _ORM != null,
+                    models_directory = _Settings?.Storage?.ModelsDirectory,
+                    models_directory_ready = modelsDirectoryReady,
+                    logs_directory = _Settings?.Logging?.LogDirectory,
+                    logs_directory_ready = logsDirectoryReady,
+                    utc = DateTime.UtcNow
+                };
+            }, api => Describe(api, "General", "Readiness check")
+                .WithDescription("Readiness check that verifies startup initialization and writable runtime directories.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Ready status", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(503, OpenApiResponseMetadata.Json("Not ready status", OpenApiSchemaMetadata.Create("object"))));
 
             _Server.Head("/favicon.ico", async (req) => null, api => Describe(api, "General", "Favicon HEAD probe"));
 
@@ -597,6 +657,38 @@ namespace SharpAI.Server
                 .WithResponse(200, OpenApiResponseMetadata.Json("Chat completion response", OpenApiSchemaMetadata.Create("object"))));
 
             #endregion
+        }
+
+        private static bool DirectoryExistsAndWritable(string directory)
+        {
+            if (String.IsNullOrWhiteSpace(directory)) return false;
+            if (!Directory.Exists(directory)) return false;
+
+            string testFile = Path.Combine(directory, ".sharpai-write-test-" + Guid.NewGuid().ToString("N"));
+
+            try
+            {
+                using (FileStream stream = new FileStream(testFile, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    byte[] buffer = new byte[] { 0 };
+                    stream.Write(buffer, 0, buffer.Length);
+                }
+
+                File.Delete(testFile);
+                return true;
+            }
+            catch
+            {
+                try
+                {
+                    if (File.Exists(testFile)) File.Delete(testFile);
+                }
+                catch
+                {
+                }
+
+                return false;
+            }
         }
 
         private static async Task DefaultRoute(HttpContextBase ctx)

@@ -105,6 +105,88 @@
             Gets or sets the backend that was selected during initialization.
             </summary>
         </member>
+        <member name="T:SharpAI.Classes.Runtime.SharpAIEnvironment">
+            <summary>
+            Environment variable names and parsing helpers for runtime/container controls.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.ForceBackend">
+            <summary>Forces backend selection. Values: auto, cpu, cuda, metal.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.CpuVariant">
+            <summary>Forces an x64 CPU native library variant. Values: auto, avx512, avx2, avx, noavx.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.RequireBackend">
+            <summary>When true, startup fails instead of falling back if the selected backend cannot load.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.EnableNativeLogging">
+            <summary>Enables llama.cpp native logging.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.NumThreads">
+            <summary>Generation thread count. Set to 0 or unset for automatic sizing.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.BatchThreads">
+            <summary>Batch processing thread count. Set to 0 or unset to match generation threads.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.GpuLayers">
+            <summary>GPU layer count. Values: auto, -1 for all, 0 for none, or a positive layer count.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.MainGpu">
+            <summary>Main GPU index for llama.cpp model loading.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.ContextSize">
+            <summary>Context size override. Set to 0 or unset to use model/library defaults.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.BatchSize">
+            <summary>Prompt batch size override. Set to 0 or unset to use library defaults.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.UBatchSize">
+            <summary>Physical micro-batch size override. Set to 0 or unset to use library defaults.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.UseMmap">
+            <summary>Enables memory-mapped model loading.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.UseMlock">
+            <summary>Enables memory locking for loaded model pages.</summary>
+        </member>
+        <member name="F:SharpAI.Classes.Runtime.SharpAIEnvironment.FlashAttention">
+            <summary>Enables llama.cpp flash attention when supported by the selected backend/model.</summary>
+        </member>
+        <member name="M:SharpAI.Classes.Runtime.SharpAIEnvironment.GetString(System.String)">
+            <summary>
+            Gets a normalized environment variable value, or null when unset, empty, or "null".
+            </summary>
+            <param name="name">Environment variable name.</param>
+            <returns>Normalized string value or null.</returns>
+        </member>
+        <member name="M:SharpAI.Classes.Runtime.SharpAIEnvironment.GetBool(System.String,System.Boolean)">
+            <summary>
+            Gets a boolean environment variable value.
+            </summary>
+            <param name="name">Environment variable name.</param>
+            <param name="defaultValue">Default value when unset or invalid.</param>
+            <returns>Parsed boolean value.</returns>
+        </member>
+        <member name="M:SharpAI.Classes.Runtime.SharpAIEnvironment.GetInt(System.String,System.Int32,System.Nullable{System.Int32},System.Nullable{System.Int32})">
+            <summary>
+            Gets an integer environment variable value.
+            </summary>
+            <param name="name">Environment variable name.</param>
+            <param name="defaultValue">Default value when unset or invalid.</param>
+            <param name="minimum">Optional inclusive minimum.</param>
+            <param name="maximum">Optional inclusive maximum.</param>
+            <returns>Parsed integer value.</returns>
+        </member>
+        <member name="M:SharpAI.Classes.Runtime.SharpAIEnvironment.GetUInt(System.String,System.UInt32,System.Nullable{System.UInt32},System.Nullable{System.UInt32})">
+            <summary>
+            Gets an unsigned integer environment variable value.
+            </summary>
+            <param name="name">Environment variable name.</param>
+            <param name="defaultValue">Default value when unset or invalid.</param>
+            <param name="minimum">Optional inclusive minimum.</param>
+            <param name="maximum">Optional inclusive maximum.</param>
+            <returns>Parsed unsigned integer value.</returns>
+        </member>
         <member name="T:SharpAI.CompletionDriver">
             <summary>
             Completion driver.

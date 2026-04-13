@@ -34,7 +34,7 @@ docker run -d -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 docker run -d --gpus all -p 8000:8000 --name sharpai jchristn77/sharpai:latest
 
 # Verify
-curl http://localhost:8000/
+curl http://localhost:8000/health
 ```
 
 **That's it!** Skip to [Using SharpAI](#using-sharpai).
@@ -112,18 +112,27 @@ docker run -d -e SHARPAI_FORCE_BACKEND=cpu -p 8000:8000 --name sharpai jchristn7
 
 **GPU Mode:**
 ```bash
-docker run -d --gpus all -p 8000:8000 --name sharpai jchristn77/sharpai:latest
+docker run -d --gpus all \
+  -e SHARPAI_FORCE_BACKEND=cuda \
+  -e SHARPAI_REQUIRE_BACKEND=true \
+  -p 8000:8000 \
+  --name sharpai \
+  jchristn77/sharpai:latest
 ```
 
 **With persistent storage:**
 ```bash
 docker run -d \
   -p 8000:8000 \
-  -v $(pwd)/models:/app/models \
   -v $(pwd)/sharpai.json:/app/sharpai.json \
+  -v $(pwd)/sharpai.db:/app/sharpai.db \
+  -v $(pwd)/logs:/app/logs \
+  -v $(pwd)/models:/app/models \
   --name sharpai \
   jchristn77/sharpai:latest
 ```
+
+The image includes a Docker-safe `/app/sharpai.json` default, so a config mount is optional for quick smoke tests. Mount `sharpai.json`, `sharpai.db`, `logs`, and `models` for persistent deployments.
 
 ### Docker Compose
 
@@ -138,10 +147,32 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./models:/app/models
       - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs:/app/logs
+      - ./models:/app/models
     environment:
-      - SHARPAI_FORCE_BACKEND=cpu  # Force CPU even if GPU is available
+      DOTNET_GC_SERVER: "1"
+      SHARPAI_FORCE_BACKEND: "cpu"
+      SHARPAI_CPU_VARIANT: "auto"
+      SHARPAI_REQUIRE_BACKEND: "true"
+      SHARPAI_ENABLE_NATIVE_LOGGING: "false"
+      SHARPAI_NUM_THREADS: "0"
+      SHARPAI_BATCH_THREADS: "0"
+      SHARPAI_GPU_LAYERS: "auto"
+      SHARPAI_MAIN_GPU: "0"
+      SHARPAI_CONTEXT_SIZE: "0"
+      SHARPAI_BATCH_SIZE: "0"
+      SHARPAI_UBATCH_SIZE: "0"
+      SHARPAI_USE_MMAP: "true"
+      SHARPAI_USE_MLOCK: "false"
+      SHARPAI_FLASH_ATTENTION: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 ```
 
@@ -154,8 +185,34 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./models:/app/models
       - ./sharpai.json:/app/sharpai.json
+      - ./sharpai.db:/app/sharpai.db
+      - ./logs:/app/logs
+      - ./models:/app/models
+    environment:
+      DOTNET_GC_SERVER: "1"
+      SHARPAI_FORCE_BACKEND: "cuda"
+      SHARPAI_CPU_VARIANT: "auto"
+      SHARPAI_REQUIRE_BACKEND: "true"
+      SHARPAI_ENABLE_NATIVE_LOGGING: "false"
+      SHARPAI_NUM_THREADS: "0"
+      SHARPAI_BATCH_THREADS: "0"
+      SHARPAI_GPU_LAYERS: "auto"
+      SHARPAI_MAIN_GPU: "0"
+      SHARPAI_CONTEXT_SIZE: "0"
+      SHARPAI_BATCH_SIZE: "0"
+      SHARPAI_UBATCH_SIZE: "0"
+      SHARPAI_USE_MMAP: "true"
+      SHARPAI_USE_MLOCK: "false"
+      SHARPAI_FLASH_ATTENTION: "false"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
     deploy:
       resources:
@@ -508,6 +565,30 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 2. `Runtime.ForceBackend` in configuration file
 3. Automatic GPU detection (lowest)
 
+### Container Runtime Environment Variables
+
+The Docker image exposes these environment variables. The compose files under `docker/` include placeholders for all of them so deployments can be tuned without rebuilding the image.
+
+| Variable | Default | Values / Notes |
+|----------|---------|----------------|
+| `DOTNET_GC_SERVER` | `1` | Enables .NET server GC. The Docker entrypoint maps this to .NET's canonical `DOTNET_gcServer` setting. |
+| `SHARPAI_FORCE_BACKEND` | `auto` | `auto`, `cpu`, `cuda`, or `metal`. Docker cannot use Metal because containers run Linux. |
+| `SHARPAI_CPU_VARIANT` | `auto` | `auto`, `avx512`, `avx2`, `avx`, or `noavx`. Automatic mode selects the fastest CPU variant supported by the host and falls back to `noavx`. |
+| `SHARPAI_REQUIRE_BACKEND` | `false` | Set `true` for strict CPU/CUDA deployments; failed backend load exits instead of falling back. |
+| `SHARPAI_ENABLE_NATIVE_LOGGING` | `false` | Enables llama.cpp native logs. Useful for diagnosing GPU fallback. |
+| `SHARPAI_NUM_THREADS` | `0` | Generation thread count; `0` means automatic. |
+| `SHARPAI_BATCH_THREADS` | `0` | Batch thread count; `0` means use generation thread count. |
+| `SHARPAI_GPU_LAYERS` | `auto` | `auto`, `-1`, `0`, or a positive layer count. Use lower values to reduce VRAM pressure. |
+| `SHARPAI_MAIN_GPU` | `0` | Main GPU index when multiple GPUs are visible. |
+| `SHARPAI_CONTEXT_SIZE` | `0` | Context size override; `0` keeps model/library defaults. |
+| `SHARPAI_BATCH_SIZE` | `0` | Prompt batch size override; `0` keeps library defaults. |
+| `SHARPAI_UBATCH_SIZE` | `0` | Physical micro-batch size override; `0` keeps library defaults. |
+| `SHARPAI_USE_MMAP` | `true` | Keeps model loading memory-mapped. |
+| `SHARPAI_USE_MLOCK` | `false` | Locks model pages in memory. Requires container `memlock` ulimit if enabled. |
+| `SHARPAI_FLASH_ATTENTION` | `false` | Enables flash attention when supported. Validate before enabling in production. |
+| `NVIDIA_VISIBLE_DEVICES` | `all` | CUDA compose only. Selects visible NVIDIA GPUs. |
+| `NVIDIA_DRIVER_CAPABILITIES` | `compute,utility` | CUDA compose only. Required for CUDA compute and `nvidia-smi`. |
+
 ### How Auto-Detection Works
 
 At startup, SharpAI:
@@ -615,7 +696,7 @@ After installation, verify everything works:
 
 ```bash
 # 1. Check server health
-curl http://localhost:8000/
+curl http://localhost:8000/health
 
 # 2. Pull test model
 curl -X POST http://localhost:8000/api/pull \
@@ -816,7 +897,7 @@ taskkill /PID <PID> /F
 - [ ] Set resource limits (RAM/VRAM)
 - [ ] Enable persistent storage (volumes)
 - [ ] Configure logging directory
-- [ ] Set up monitoring (health check on `/`)
+- [ ] Set up monitoring (health check on `/health`, readiness check on `/ready`)
 - [ ] Configure reverse proxy (nginx/traefik) if public
 - [ ] Enable HTTPS if public
 - [ ] Set up backup for models directory
@@ -853,7 +934,8 @@ taskkill /PID <PID> /F
 
 **Health check:**
 ```bash
-curl http://localhost:8000/
+curl http://localhost:8000/health
+curl http://localhost:8000/ready
 ```
 
 **View logs:**

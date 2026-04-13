@@ -16,11 +16,11 @@ echo ==================================
 echo Building SharpAI Docker Image
 echo ==================================
 echo Image: %FULL_IMAGE_NAME%
-echo Build directory: %~dp0src
+echo Build directory: %~dp0..\src
 echo.
 
 REM Navigate to src directory
-cd /d "%~dp0src"
+cd /d "%~dp0..\src"
 
 REM Build the Docker image
 echo Starting Docker build...

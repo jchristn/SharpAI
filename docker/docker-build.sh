@@ -15,11 +15,11 @@ echo "=================================="
 echo "Building SharpAI Docker Image"
 echo "=================================="
 echo "Image: ${FULL_IMAGE_NAME}"
-echo "Build directory: ${SCRIPT_DIR}/src"
+echo "Build directory: ${SCRIPT_DIR}/../src"
 echo ""
 
 # Navigate to src directory
-cd "${SCRIPT_DIR}/src"
+cd "${SCRIPT_DIR}/../src"
 
 # Build the Docker image
 echo "Starting Docker build..."

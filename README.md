@@ -447,6 +447,10 @@ Settings API:
 - `GET /api/settings` — Return the full live in-memory `Settings` object
 - `PUT /api/settings` — Replace the in-memory settings and rewrite `sharpai.json` to disk. `CreatedUtc` and `SoftwareVersion` are preserved server-side so clients cannot overwrite them. Some settings (REST `Hostname`/`Port`/`Ssl`, `Database`) take effect only on the next restart.
 
+Operational endpoints:
+- `GET /health` - Lightweight liveness check for process monitoring
+- `GET /ready` - Readiness check for native backend initialization, database initialization, and writable runtime directories
+
 API documentation:
 - `GET /openapi.json` — Complete OpenAPI 3.0 document describing every route, tag, request body, and response schema
 - `GET /swagger` — Interactive Swagger UI served from the same server
@@ -565,16 +569,38 @@ For Linux/macOS:
 
 ### Prerequisites
 
-Before running the Docker container, ensure you have:
+Before running the Docker container, decide what you want to persist:
 
-1. **Configuration file**: Create a `sharpai.json` configuration file in your working directory
-2. **Directory structure**: The container expects the following directories to exist:
-   - `./logs/` - For application logs
-   - `./models/` - For storing downloaded GGUF models
+1. **Configuration file**: The image includes a Docker-safe `/app/sharpai.json` default. Mount your own `sharpai.json` when you want persistent/custom settings.
+2. **Directory structure**: The image creates `/app/logs`, `/app/models`, and `/app/temp`. Bind mount `./logs/` and `./models/` when you want logs and downloaded GGUF models to survive container replacement.
 
 ### Docker Image
 
 The official Docker image is available at: [`jchristn77/sharpai`](https://hub.docker.com/r/jchristn77/sharpai).  Refer to the `docker` directory for assets useful for running in Docker and Docker Compose.
+
+### Docker Runtime Controls
+
+The Docker image contains CPU and CUDA-capable Linux native libraries and selects the backend at container startup/runtime. These environment variables are available in the image and are included with placeholder defaults in the compose files under `docker/`.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DOTNET_GC_SERVER` | `1` | Enables .NET server GC for sustained server workloads. The Docker entrypoint maps this to .NET's canonical `DOTNET_gcServer` setting. |
+| `SHARPAI_FORCE_BACKEND` | `auto` | Backend selection: `auto`, `cpu`, `cuda`, or `metal`. In Docker, `metal` cannot be used because containers run Linux. |
+| `SHARPAI_CPU_VARIANT` | `auto` | CPU native library variant: `auto`, `avx512`, `avx2`, `avx`, or `noavx`. |
+| `SHARPAI_REQUIRE_BACKEND` | `false` | When `true`, startup fails if the selected backend cannot load instead of falling back to CPU. |
+| `SHARPAI_ENABLE_NATIVE_LOGGING` | `false` | Enables llama.cpp native logging for backend troubleshooting. |
+| `SHARPAI_NUM_THREADS` | `0` | Generation thread count. `0` means automatic sizing from the container CPU allocation. |
+| `SHARPAI_BATCH_THREADS` | `0` | Batch evaluation thread count. `0` means use the generation thread count. |
+| `SHARPAI_GPU_LAYERS` | `auto` | GPU offload layers for CUDA/Metal: `auto` or `-1` means all layers, `0` disables offload, positive values offload that many layers. |
+| `SHARPAI_MAIN_GPU` | `0` | Main GPU index used by llama.cpp when multiple GPUs are visible. |
+| `SHARPAI_CONTEXT_SIZE` | `0` | Context size override. `0` keeps model/library defaults. |
+| `SHARPAI_BATCH_SIZE` | `0` | Prompt batch size override. `0` keeps library defaults. |
+| `SHARPAI_UBATCH_SIZE` | `0` | Physical micro-batch size override. `0` keeps library defaults. |
+| `SHARPAI_USE_MMAP` | `true` | Enables memory-mapped model loading for faster loads and lower duplicate memory pressure. |
+| `SHARPAI_USE_MLOCK` | `false` | Locks model pages in RAM. If set to `true`, configure container `memlock` ulimits. |
+| `SHARPAI_FLASH_ATTENTION` | `false` | Enables flash attention when supported by the selected backend/model. Leave off unless validated with your models. |
+
+For NVIDIA Docker deployments, the CUDA compose file also sets `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=compute,utility`.
 
 ### Volume Mappings
 
@@ -607,14 +633,18 @@ You can access OpenAI APIs at:
 - `http://localhost:8000/v1/completions` - Generate text
 - `http://localhost:8000/v1/chat/completions` - Chat completions
 
+Operational endpoints:
+- `http://localhost:8000/health` - Liveness check
+- `http://localhost:8000/ready` - Readiness check
+
 ### Example Usage
 
-1. Create the required directory structure:
+1. Create persistent directories when you want host-side logs and models:
    ```bash
    mkdir logs models
    ```
 
-2. Create your `sharpai.json` configuration file
+2. Create or mount `sharpai.json` when you need custom settings. The image includes a default for quick smoke tests.
 
 3. Run the container:
    ```bash
@@ -657,7 +687,27 @@ services:
       - ./logs:/app/logs
       - ./models:/app/models
     environment:
-      - TERM=xterm-256color
+      DOTNET_GC_SERVER: "1"
+      SHARPAI_FORCE_BACKEND: "auto"
+      SHARPAI_CPU_VARIANT: "auto"
+      SHARPAI_REQUIRE_BACKEND: "false"
+      SHARPAI_ENABLE_NATIVE_LOGGING: "false"
+      SHARPAI_NUM_THREADS: "0"
+      SHARPAI_BATCH_THREADS: "0"
+      SHARPAI_GPU_LAYERS: "auto"
+      SHARPAI_MAIN_GPU: "0"
+      SHARPAI_CONTEXT_SIZE: "0"
+      SHARPAI_BATCH_SIZE: "0"
+      SHARPAI_UBATCH_SIZE: "0"
+      SHARPAI_USE_MMAP: "true"
+      SHARPAI_USE_MLOCK: "false"
+      SHARPAI_FLASH_ATTENTION: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 ```
 
@@ -688,6 +738,11 @@ For Docker Compose, add:
 services:
   sharpai:
     # ... other configuration ...
+    environment:
+      SHARPAI_FORCE_BACKEND: "cuda"
+      SHARPAI_REQUIRE_BACKEND: "true"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
     deploy:
       resources:
         reservations:

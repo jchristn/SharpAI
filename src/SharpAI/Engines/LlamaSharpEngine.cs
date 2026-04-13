@@ -12,6 +12,7 @@
     using LLama.Common;
     using LLama.Native;
     using LLama.Sampling;
+    using SharpAI.Classes.Runtime;
     using SyslogLogging;
 
     /// <summary>
@@ -223,11 +224,7 @@
                     int gpuLayers = GetOptimalGpuLayers();
                     _Logging.Debug(_Header + $"initializing LlamaSharp with {(gpuLayers != 0 ? "GPU" : "CPU")} {(gpuLayers != 0 ? $" ({gpuLayers} layers requested)" : "")}");
 
-                    ModelParams parameters = new ModelParams(modelPath)
-                    {
-                        GpuLayerCount = gpuLayers,
-                        Threads = Math.Max(1, Environment.ProcessorCount - 1),
-                    };
+                    ModelParams parameters = CreateModelParams(modelPath, gpuLayers, false);
 
                     _Model = LLamaWeights.LoadFromFile(parameters);
                     _Context = _Model.CreateContext(parameters);
@@ -239,12 +236,7 @@
                     // For embeddings, try to create a separate instance
                     try
                     {
-                        ModelParams embeddingParams = new ModelParams(modelPath)
-                        {
-                            GpuLayerCount = gpuLayers,
-                            Embeddings = true,
-                            Threads = Math.Max(1, Environment.ProcessorCount - 1),
-                        };
+                        ModelParams embeddingParams = CreateModelParams(modelPath, gpuLayers, true);
 
                         _EmbeddingModel = LLamaWeights.LoadFromFile(embeddingParams);
                         _Embedder = new LLamaEmbedder(_EmbeddingModel, embeddingParams);
@@ -282,6 +274,26 @@
                 {
                     long gpuDeviceCount = LLama.Native.NativeApi.llama_max_devices();
                     _Logging.Debug(_Header + $"{selectedBackend} backend selected, {gpuDeviceCount} GPU device(s) available");
+
+                    string configuredGpuLayers = SharpAIEnvironment.GetString(SharpAIEnvironment.GpuLayers);
+                    if (!String.IsNullOrEmpty(configuredGpuLayers)
+                        && !configuredGpuLayers.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (Int32.TryParse(configuredGpuLayers, out int parsedGpuLayers) && parsedGpuLayers >= -1)
+                        {
+                            if (parsedGpuLayers == -1)
+                            {
+                                _Logging.Debug(_Header + "GPU layer override requests all layers");
+                                return 999;
+                            }
+
+                            _Logging.Debug(_Header + $"GPU layer override requests {parsedGpuLayers} layer(s)");
+                            return parsedGpuLayers;
+                        }
+
+                        _Logging.Warn(_Header + $"{SharpAIEnvironment.GpuLayers} value '" + configuredGpuLayers + "' is invalid, using automatic GPU layer selection");
+                    }
+
                     return 999; // big positive -> clamp to all layers
                 }
                 else
@@ -295,6 +307,60 @@
                 _Logging.Debug(_Header + "GPU detection exception, using CPU:" + Environment.NewLine + ex.ToString());
                 return 0;
             }
+        }
+
+        #endregion
+
+        #region Runtime-Parameters
+
+        private ModelParams CreateModelParams(string modelPath, int gpuLayers, bool embeddings)
+        {
+            int threads = GetConfiguredThreadCount();
+            int batchThreads = SharpAIEnvironment.GetInt(SharpAIEnvironment.BatchThreads, threads, 1);
+            int mainGpu = SharpAIEnvironment.GetInt(SharpAIEnvironment.MainGpu, -1, 0);
+            uint contextSize = SharpAIEnvironment.GetUInt(SharpAIEnvironment.ContextSize, 0, 0);
+            uint batchSize = SharpAIEnvironment.GetUInt(SharpAIEnvironment.BatchSize, 0, 0);
+            uint uBatchSize = SharpAIEnvironment.GetUInt(SharpAIEnvironment.UBatchSize, 0, 0);
+            bool useMmap = SharpAIEnvironment.GetBool(SharpAIEnvironment.UseMmap, true);
+            bool useMlock = SharpAIEnvironment.GetBool(SharpAIEnvironment.UseMlock, false);
+            bool flashAttention = SharpAIEnvironment.GetBool(SharpAIEnvironment.FlashAttention, false);
+
+            ModelParams parameters = new ModelParams(modelPath)
+            {
+                GpuLayerCount = gpuLayers,
+                Threads = threads,
+                BatchThreads = batchThreads,
+                Embeddings = embeddings,
+                UseMemorymap = useMmap,
+                UseMemoryLock = useMlock,
+                FlashAttention = flashAttention
+            };
+
+            if (mainGpu >= 0) parameters.MainGpu = mainGpu;
+            if (contextSize > 0) parameters.ContextSize = contextSize;
+            if (batchSize > 0) parameters.BatchSize = batchSize;
+            if (uBatchSize > 0) parameters.UBatchSize = uBatchSize;
+
+            _Logging.Debug(_Header + "model params: "
+                + "threads=" + threads
+                + ", batchThreads=" + batchThreads
+                + ", gpuLayers=" + gpuLayers
+                + ", mainGpu=" + (mainGpu >= 0 ? mainGpu.ToString() : "auto")
+                + ", contextSize=" + (contextSize > 0 ? contextSize.ToString() : "model-default")
+                + ", batchSize=" + (batchSize > 0 ? batchSize.ToString() : "default")
+                + ", uBatchSize=" + (uBatchSize > 0 ? uBatchSize.ToString() : "default")
+                + ", useMmap=" + useMmap
+                + ", useMlock=" + useMlock
+                + ", flashAttention=" + flashAttention
+                + ", embeddings=" + embeddings);
+
+            return parameters;
+        }
+
+        private int GetConfiguredThreadCount()
+        {
+            int defaultThreads = Math.Max(1, Environment.ProcessorCount - 1);
+            return SharpAIEnvironment.GetInt(SharpAIEnvironment.NumThreads, defaultThreads, 1);
         }
 
         #endregion

@@ -21,8 +21,23 @@ services:
       - ./logs/:/app/logs/
       - ./models/:/app/models/
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      DOTNET_GC_SERVER: "1"
+      SHARPAI_FORCE_BACKEND: "cuda"
+      SHARPAI_CPU_VARIANT: "auto"
+      SHARPAI_REQUIRE_BACKEND: "true"
+      SHARPAI_ENABLE_NATIVE_LOGGING: "false"
+      SHARPAI_NUM_THREADS: "0"
+      SHARPAI_BATCH_THREADS: "0"
+      SHARPAI_GPU_LAYERS: "auto"
+      SHARPAI_MAIN_GPU: "0"
+      SHARPAI_CONTEXT_SIZE: "0"
+      SHARPAI_BATCH_SIZE: "0"
+      SHARPAI_UBATCH_SIZE: "0"
+      SHARPAI_USE_MMAP: "true"
+      SHARPAI_USE_MLOCK: "false"
+      SHARPAI_FLASH_ATTENTION: "false"
+      NVIDIA_VISIBLE_DEVICES: "all"
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
     deploy:
       resources:
         reservations:
@@ -31,7 +46,11 @@ services:
               count: all
               capabilities: [gpu]
     healthcheck:
-      test: curl --fail http://localhost:8000
+      test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   #
@@ -44,5 +63,6 @@ services:
     ports:
       - '3000:3000'
     depends_on:
-      - sharpai
+      sharpai:
+        condition: service_healthy
     restart: unless-stopped

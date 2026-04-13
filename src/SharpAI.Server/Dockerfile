@@ -14,7 +14,7 @@ WORKDIR /src
 COPY . .
 
 # Build and publish
-# SharpAI and SharpAI.Server multi-target net8.0;net10.0 — pin to net10.0 so the
+# SharpAI and SharpAI.Server multi-target net8.0;net10.0 - pin to net10.0 so the
 # publish command produces a single output directory rather than trying to write
 # both TFMs into /app/publish.
 WORKDIR /src/SharpAI.Server
@@ -28,6 +28,22 @@ RUN dotnet publish SharpAI.Server.csproj -c Release -f net10.0 -o /app/publish \
 # Using Ubuntu 24.04 (Noble) base for glibc 2.39 (ARM64 native libs need 2.38+)
 #
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-noble AS final
+
+ENV DOTNET_GC_SERVER=1 \
+    SHARPAI_FORCE_BACKEND=auto \
+    SHARPAI_CPU_VARIANT=auto \
+    SHARPAI_REQUIRE_BACKEND=false \
+    SHARPAI_ENABLE_NATIVE_LOGGING=false \
+    SHARPAI_NUM_THREADS=0 \
+    SHARPAI_BATCH_THREADS=0 \
+    SHARPAI_GPU_LAYERS=auto \
+    SHARPAI_MAIN_GPU=0 \
+    SHARPAI_CONTEXT_SIZE=0 \
+    SHARPAI_BATCH_SIZE=0 \
+    SHARPAI_UBATCH_SIZE=0 \
+    SHARPAI_USE_MMAP=true \
+    SHARPAI_USE_MLOCK=false \
+    SHARPAI_FLASH_ATTENTION=false
 
 # Install runtime dependencies required by LlamaSharp native libraries
 # - libgomp1: OpenMP runtime for parallel processing
@@ -63,41 +79,16 @@ RUN if [ "$(dpkg --print-architecture)" = "amd64" ]; then \
     fi
 
 WORKDIR /app
+RUN mkdir -p /app/logs /app/models /app/temp
 COPY --from=build /app/publish .
+COPY SharpAI.Server/sharpai.docker.json ./sharpai.json
+COPY SharpAI.Server/docker-entrypoint.sh ./start-linux.sh
 
-# Create startup script dynamically (avoids Windows line ending issues)
-RUN printf '#!/bin/bash\n\
-set -e\n\
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n\
-cd "$SCRIPT_DIR"\n\
-\n\
-echo ""\n\
-echo "SharpAI.Server - Linux Startup"\n\
-echo ""\n\
-\n\
-ARCH=$(uname -m)\n\
-if [ "$ARCH" = "x86_64" ]; then\n\
-    RID="linux-x64"\n\
-elif [ "$ARCH" = "aarch64" ]; then\n\
-    RID="linux-arm64"\n\
-else\n\
-    echo "ERROR: Unsupported architecture: $ARCH"\n\
-    exit 1\n\
-fi\n\
-\n\
-echo "Detected architecture: $ARCH (RID: $RID)"\n\
-echo ""\n\
-\n\
-export LD_LIBRARY_PATH="$SCRIPT_DIR/runtimes/$RID/native/avx2:$SCRIPT_DIR/runtimes/$RID/native/cuda12:$SCRIPT_DIR/runtimes/$RID/native:${LD_LIBRARY_PATH}"\n\
-\n\
-if [ -f "./SharpAI.Server" ]; then\n\
-    exec ./SharpAI.Server "$@"\n\
-else\n\
-    exec dotnet SharpAI.Server.dll "$@"\n\
-fi\n' > start-linux.sh
-
-# Make startup script executable
-RUN chmod +x start-linux.sh
+# Normalize line endings in case the source checkout used CRLF.
+RUN sed -i 's/\r$//' start-linux.sh && chmod +x start-linux.sh
 
 EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
+    CMD curl --fail http://localhost:8000/ready || exit 1
+
 ENTRYPOINT ["./start-linux.sh"]
