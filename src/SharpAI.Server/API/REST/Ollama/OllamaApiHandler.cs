@@ -450,6 +450,69 @@
             }
         }
 
+        internal async Task<object> UnloadModel(
+            ApiRequest req,
+            OllamaUnloadModelRequest umr,
+            CancellationToken token = default)
+        {
+            req.Http.Response.ContentType = Constants.JsonContentType;
+
+            // If no model specified, unload all models
+            if (String.IsNullOrEmpty(umr?.Model))
+            {
+                int count = _ModelEngineService.UnloadAllModels();
+                _Logging.Info(_Header + "unloaded " + count + " model(s)");
+
+                return new
+                {
+                    status = "success",
+                    unloaded = count,
+                    message = $"Unloaded {count} model(s) from memory"
+                };
+            }
+
+            // Find the model by name
+            ModelFile modelFile = _ModelFileService.GetByName(umr.Model);
+            if (modelFile == null)
+            {
+                _Logging.Warn(_Header + "model " + umr.Model + " not found");
+
+                req.Http.Response.StatusCode = 404;
+
+                return new
+                {
+                    error = $"model '{umr.Model}' not found"
+                };
+            }
+
+            // Build the file path and attempt to unload
+            string modelPath = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+            bool unloaded = _ModelEngineService.UnloadModel(modelPath);
+
+            if (unloaded)
+            {
+                _Logging.Info(_Header + "unloaded model " + umr.Model);
+
+                return new
+                {
+                    status = "success",
+                    model = umr.Model,
+                    message = $"Model '{umr.Model}' unloaded from memory"
+                };
+            }
+            else
+            {
+                _Logging.Debug(_Header + "model " + umr.Model + " was not loaded");
+
+                return new
+                {
+                    status = "not_loaded",
+                    model = umr.Model,
+                    message = $"Model '{umr.Model}' was not loaded in memory"
+                };
+            }
+        }
+
         internal async Task<object> ListLocalModels(
             ApiRequest req,
             CancellationToken token = default)

@@ -7,7 +7,7 @@ import SharpButton from "../button/Button";
 import { SendOutlined, StopOutlined } from "@ant-design/icons";
 import { LoadingOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import SharpTitle from "../typograpghy/Title";
-import MarkdownRenderer from "react-markdown-renderer";
+import MarkdownRenderer from "../markdown/MarkdownRenderer";
 import ResponseDetailsModal from "./ResponseDetailsModal";
 import { RequestFormatEnum } from "#/types/types";
 import SharpTag from "../tag/Tag";

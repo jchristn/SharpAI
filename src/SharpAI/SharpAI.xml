@@ -4640,6 +4640,23 @@
             Ollama tool parameters.
             </summary>
         </member>
+        <member name="T:SharpAI.Models.Ollama.OllamaUnloadModelRequest">
+            <summary>
+            Ollama unload model request.
+            Unloads a model from memory, freeing GPU/CPU resources.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.Ollama.OllamaUnloadModelRequest.Model">
+            <summary>
+            Name of the model to unload (required).
+            Following Ollama convention, this uses 'name' in JSON but 'Model' in code.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.Ollama.OllamaUnloadModelRequest.#ctor">
+            <summary>
+            Ollama unload model request.
+            </summary>
+        </member>
         <member name="T:SharpAI.Models.OpenAI.OpenAIChatChoice">
             <summary>
             OpenAI chat completion choice.
@@ -6551,6 +6568,19 @@
             Disposed engines encountered during enumeration are removed from the cache.
             </summary>
             <returns>List of model file paths for currently loaded engines.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.UnloadModel(System.String)">
+            <summary>
+            Unload a model by its file path, disposing the engine and freeing GPU/CPU memory.
+            </summary>
+            <param name="filename">Path and filename to the model.</param>
+            <returns>True if the model was found and unloaded, false if no engine was loaded for this path.</returns>
+        </member>
+        <member name="M:SharpAI.Services.ModelEngineService.UnloadAllModels">
+            <summary>
+            Unload all currently loaded models, disposing all engines and freeing GPU/CPU memory.
+            </summary>
+            <returns>The number of models that were unloaded.</returns>
         </member>
         <member name="M:SharpAI.Services.ModelEngineService.GetByModelFile(System.String)">
             <summary>

@@ -572,6 +572,19 @@ namespace SharpAI.Server
                 .WithResponse(200, OpenApiResponseMetadata.Json("Deletion result", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(404, OpenApiResponseMetadata.NotFound()));
 
+            _Server.Post<OllamaUnloadModelRequest>("/api/unload", async (req) =>
+            {
+                OllamaUnloadModelRequest umr = req.GetData<OllamaUnloadModelRequest>();
+                return await _OllamaApiHandler.UnloadModel(req, umr, _TokenSource.Token).ConfigureAwait(false);
+            }, api => Describe(api, "Ollama - Models", "Unload a model from memory")
+                .WithDescription(
+                    "Unloads a model from memory, freeing GPU/CPU resources. " +
+                    "If no model name is provided, all loaded models are unloaded. " +
+                    "This is useful when switching between models on memory-constrained systems.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Unload model request", false))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Unload result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
             _Server.Get("/api/tags", async (req) =>
             {
                 return await _OllamaApiHandler.ListLocalModels(req, _TokenSource.Token).ConfigureAwait(false);

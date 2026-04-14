@@ -80,6 +80,16 @@ const apiSliceInstance = enhancedSdk.injectEndpoints({
         data: { name: model },
       }),
     }),
+    unloadModel: build.mutation<
+      { status: string; model?: string; unloaded?: number; message: string },
+      { model?: string }
+    >({
+      query: ({ model }) => ({
+        url: "/api/unload",
+        method: "POST",
+        data: model ? { name: model } : {},
+      }),
+    }),
     generateEmbeddings: build.mutation<
       GenerateEmbeddingsResponse,
       GenerateEmbeddingsPaylaod
@@ -179,6 +189,7 @@ export const {
   useUpdateSettingsMutation,
   usePullModelsMutation,
   useDeleteModelMutation,
+  useUnloadModelMutation,
   useGenerateEmbeddingsMutation,
   useCompletionsMutation,
   useChatCompletionsMutation,

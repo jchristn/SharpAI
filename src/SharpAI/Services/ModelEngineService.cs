@@ -79,6 +79,73 @@
         }
 
         /// <summary>
+        /// Unload a model by its file path, disposing the engine and freeing GPU/CPU memory.
+        /// </summary>
+        /// <param name="filename">Path and filename to the model.</param>
+        /// <returns>True if the model was found and unloaded, false if no engine was loaded for this path.</returns>
+        public bool UnloadModel(string filename)
+        {
+            if (String.IsNullOrEmpty(filename)) throw new ArgumentNullException(nameof(filename));
+
+            lock (_EnginesLock)
+            {
+                if (_Engines.TryGetValue(filename, out LlamaSharpEngine engine))
+                {
+                    _Engines.Remove(filename);
+
+                    if (engine != null && !engine.IsDisposed)
+                    {
+                        try
+                        {
+                            engine.Dispose();
+                            _Logging.Info(_Header + "unloaded model: " + filename);
+                        }
+                        catch (Exception ex)
+                        {
+                            _Logging.Warn(_Header + "exception during model unload:" + Environment.NewLine + ex.ToString());
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Unload all currently loaded models, disposing all engines and freeing GPU/CPU memory.
+        /// </summary>
+        /// <returns>The number of models that were unloaded.</returns>
+        public int UnloadAllModels()
+        {
+            lock (_EnginesLock)
+            {
+                int count = 0;
+
+                foreach (KeyValuePair<string, LlamaSharpEngine> kvp in _Engines)
+                {
+                    if (kvp.Value != null && !kvp.Value.IsDisposed)
+                    {
+                        try
+                        {
+                            kvp.Value.Dispose();
+                            count++;
+                            _Logging.Info(_Header + "unloaded model: " + kvp.Key);
+                        }
+                        catch (Exception ex)
+                        {
+                            _Logging.Warn(_Header + "exception during model unload:" + Environment.NewLine + ex.ToString());
+                        }
+                    }
+                }
+
+                _Engines.Clear();
+                return count;
+            }
+        }
+
+        /// <summary>
         /// Get the engine for a given model file.
         /// </summary>
         /// <param name="filename">Path and filename to the model.</param>

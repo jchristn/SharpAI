@@ -4,6 +4,7 @@ namespace SharpAI.Server.Classes.Runtime
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Runtime.InteropServices;
     using System.Runtime.Intrinsics.X86;
     using LLama.Native;

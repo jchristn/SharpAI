@@ -1,0 +1,125 @@
+.markdownContent {
+  line-height: 1.6;
+  word-wrap: break-word;
+
+  p {
+    margin: 0 0 0.75em 0;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 1em 0 0.5em 0;
+    font-weight: 600;
+    line-height: 1.4;
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  h1 {
+    font-size: 1.5em;
+  }
+  h2 {
+    font-size: 1.3em;
+  }
+  h3 {
+    font-size: 1.15em;
+  }
+
+  ul,
+  ol {
+    margin: 0.5em 0;
+    padding-left: 1.5em;
+  }
+
+  li {
+    margin: 0.25em 0;
+  }
+
+  blockquote {
+    margin: 0.75em 0;
+    padding: 0.5em 1em;
+    border-left: 4px solid var(--ant-color-primary);
+    background: var(--ant-color-fill-tertiary);
+    border-radius: 0 var(--ant-border-radius) var(--ant-border-radius) 0;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  hr {
+    margin: 1em 0;
+    border: none;
+    border-top: 1px solid var(--ant-color-border);
+  }
+
+  a {
+    color: var(--ant-color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.inlineCode {
+  padding: 0.15em 0.4em;
+  background: var(--ant-color-fill-secondary);
+  border-radius: var(--ant-border-radius-sm);
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace;
+  font-size: 0.9em;
+  color: var(--ant-color-primary);
+}
+
+.codeBlock {
+  margin: 0.75em 0 !important;
+  border-radius: var(--ant-border-radius) !important;
+  font-size: 0.875em !important;
+
+  &:first-child {
+    margin-top: 0 !important;
+  }
+
+  &:last-child {
+    margin-bottom: 0 !important;
+  }
+}
+
+.tableWrapper {
+  overflow-x: auto;
+  margin: 0.75em 0;
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 300px;
+    border: 1px solid var(--ant-color-border);
+
+    th,
+    td {
+      padding: 0.5em 0.75em;
+      border: 1px solid var(--ant-color-border);
+      text-align: left;
+    }
+
+    th {
+      background: var(--ant-color-fill-secondary);
+      font-weight: 600;
+    }
+
+    tbody tr:nth-child(even) {
+      background: var(--ant-color-fill-quaternary);
+    }
+  }
+}

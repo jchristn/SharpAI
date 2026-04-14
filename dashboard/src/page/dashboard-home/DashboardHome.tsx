@@ -6,6 +6,7 @@ import {
   useGetLocalModelsQuery,
   useGetRunningModelsQuery,
   useDeleteModelMutation,
+  useUnloadModelMutation,
 } from "#/lib/reducer/apiSlice";
 import { LocalModel, RunningModel } from "#/lib/reducer/types";
 import PageLoading from "#/components/base/loading/PageLoading";
@@ -20,6 +21,7 @@ import {
   LinkOutlined,
   LoadingOutlined,
   PlayCircleOutlined,
+  PoweroffOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import PullModelModal from "./PullModelModal";
@@ -53,6 +55,18 @@ const DashboardHome = () => {
   const runningModels: RunningModel[] = runningModelsData?.models ?? [];
 
   const [deleteModel, { isLoading: isDeleting }] = useDeleteModelMutation();
+  const [unloadModel, { isLoading: isUnloading }] = useUnloadModelMutation();
+
+  // Handle unload operations
+  const handleUnloadModel = async (modelName: string) => {
+    try {
+      await unloadModel({ model: modelName }).unwrap();
+      message.success(`Successfully unloaded model: ${modelName}`);
+      refetchRunning();
+    } catch (error) {
+      message.error(`Failed to unload model: ${formatError(error)}`);
+    }
+  };
 
   // Handle delete operations
   const handleDeleteClick = (model: LocalModel) => {
@@ -268,6 +282,26 @@ const DashboardHome = () => {
                         <span style={{ cursor: "help" }}>—</span>
                       </SharpTooltip>
                     ),
+                },
+                {
+                  title: "",
+                  key: "actions",
+                  width: 80,
+                  align: "center",
+                  render: (_: any, record: RunningModel) => (
+                    <SharpTooltip title="Unload model from memory">
+                      <SharpButton
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<PoweroffOutlined />}
+                        loading={isUnloading}
+                        onClick={() => handleUnloadModel(record.name)}
+                      >
+                        Unload
+                      </SharpButton>
+                    </SharpTooltip>
+                  ),
                 },
               ] as any
             }
