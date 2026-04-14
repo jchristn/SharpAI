@@ -79,12 +79,17 @@ const ChatComplitionPage = () => {
       setSelectedModel(matches[0].name);
     }
   }, [localModels, selectedModel]);
-  const handleSendMessage = async (userMessage: string) => {
+  const handleSendMessage = (userMessage: string) => {
     if (!selectedModel) {
       message.error("Please select a model first!");
-      return;
+      return false;
     }
 
+    void submitMessage(userMessage);
+    return true;
+  };
+
+  const submitMessage = async (userMessage: string) => {
     // Add user message
     const userMsg: Message = {
       id: Date.now().toString(),

@@ -36,7 +36,7 @@ export interface Message {
 
 interface ChatProps {
   messages: Message[];
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string) => boolean | void;
   isLoading?: boolean;
   placeholder?: string;
   emptyStateText?: string;
@@ -115,7 +115,9 @@ const Chat: React.FC<ChatProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && !disabled) {
-      onSendMessage(inputValue);
+      const accepted = onSendMessage(inputValue);
+      if (accepted === false) return;
+
       setInputValue("");
       // Reset scroll state when user sends a message to ensure auto-scroll
       setIsUserScrolling(false);
