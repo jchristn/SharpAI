@@ -21,7 +21,6 @@ import {
   LinkOutlined,
   LoadingOutlined,
   PlayCircleOutlined,
-  PoweroffOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import PullModelModal from "./PullModelModal";
@@ -286,7 +285,7 @@ const DashboardHome = () => {
                 {
                   title: "",
                   key: "actions",
-                  width: 80,
+                  width: 48,
                   align: "center",
                   render: (_: any, record: RunningModel) => (
                     <SharpTooltip title="Unload model from memory">
@@ -294,12 +293,10 @@ const DashboardHome = () => {
                         type="text"
                         danger
                         size="small"
-                        icon={<PoweroffOutlined />}
+                        icon={<CloseCircleOutlined />}
                         loading={isUnloading}
                         onClick={() => handleUnloadModel(record.name)}
-                      >
-                        Unload
-                      </SharpButton>
+                      />
                     </SharpTooltip>
                   ),
                 },
