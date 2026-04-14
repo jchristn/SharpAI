@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { Col, Form, Input, message, Row } from "antd";
+import { Col, Form, message, Row, Tag } from "antd";
 import PageContainer from "#/components/base/pageContainer/PageContainer";
 import SharpSelect from "#/components/base/select/Select";
 import SharpInput from "#/components/base/input/Input";
@@ -31,7 +31,6 @@ import { tooltips, pageDescriptions } from "#/constants/tooltips";
 
 interface FormValues {
   model: string;
-  input: string;
   requestFormat: RequestFormatEnum;
 }
 
@@ -40,6 +39,8 @@ const EmbeddingsPage = () => {
   const [embeddings, setEmbeddings] = useState<
     { text: string; embedding: number[] }[]
   >([]);
+  const [inputValues, setInputValues] = useState<string[]>([]);
+  const [inputDraft, setInputDraft] = useState("");
 
   const {
     data: localModels,
@@ -60,7 +61,43 @@ const EmbeddingsPage = () => {
       form.setFieldValue("model", matches[0].name);
     }
   }, [localModels, form]);
+  const getCurrentInputs = () => {
+    const draft = inputDraft.trim();
+    return draft ? [...inputValues, draft] : inputValues;
+  };
+
+  const commitInputDraft = () => {
+    const draft = inputDraft.trim();
+    if (!draft) return;
+
+    setInputValues((current) => [...current, draft]);
+    setInputDraft("");
+  };
+
+  const removeInputValue = (index: number) => {
+    setInputValues((current) => current.filter((_, idx) => idx !== index));
+  };
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitInputDraft();
+    }
+  };
+
   const handleSubmit = async (values: FormValues) => {
+    const inputs = getCurrentInputs();
+
+    if (inputs.length === 0) {
+      message.error("Please enter input text!");
+      return;
+    }
+
+    if (inputDraft.trim()) {
+      setInputValues(inputs);
+      setInputDraft("");
+    }
+
     try {
       let response:
         | GenerateEmbeddingsResponse
@@ -69,23 +106,23 @@ const EmbeddingsPage = () => {
       if (values.requestFormat === RequestFormatEnum.OLLAMA) {
         response = await generateEmbeddings({
           model: values.model,
-          input: values.input,
+          input: inputs,
         }).unwrap();
 
         setEmbeddings(
           response.embeddings.map((embedding, index) => ({
-            text: values.input[index],
+            text: inputs[index],
             embedding,
           }))
         );
       } else {
         response = await generateEmbeddingsOpenAI({
           model: values.model,
-          input: values.input,
+          input: inputs,
         }).unwrap();
         setEmbeddings(
           response.data.map((embedding, index) => ({
-            text: values.input[index],
+            text: inputs[index],
             embedding: embedding.embedding,
           }))
         );
@@ -177,18 +214,32 @@ const EmbeddingsPage = () => {
             <Col span={12}>
               <SharpFormItem
                 label="Input"
-                name="input"
                 tooltip={tooltips.embeddings.input}
-                rules={[
-                  { required: true, message: "Please enter input text!" },
-                ]}
+                required
                 style={{ flex: 1 }}
               >
-                <SharpSelect
-                  mode="tags"
-                  placeholder="Enter text to generate embeddings for..."
-                  style={{ width: "100%" }}
-                />
+                <div className={styles.inputTagEditor}>
+                  {inputValues.map((value, index) => (
+                    <Tag
+                      key={`${value}-${index}`}
+                      closable
+                      className={styles.inputTag}
+                      onClose={(event) => {
+                        event.preventDefault();
+                        removeInputValue(index);
+                      }}
+                    >
+                      <span className={styles.inputTagText}>{value}</span>
+                    </Tag>
+                  ))}
+                  <SharpInput
+                    value={inputDraft}
+                    onChange={(event) => setInputDraft(event.target.value)}
+                    onKeyDown={handleInputKeyDown}
+                    placeholder="Enter text to generate embeddings for..."
+                    className={styles.inputTagField}
+                  />
+                </div>
               </SharpFormItem>
             </Col>
           </Row>

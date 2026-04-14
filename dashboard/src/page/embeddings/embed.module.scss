@@ -5,3 +5,31 @@
   word-break: break-all;
   font-family: "Courier Prime", monospace;
 }
+
+.inputTagEditor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.inputTag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin: 0;
+}
+
+.inputTagText {
+  display: inline-block;
+  max-width: min(520px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inputTagField {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
