@@ -22,10 +22,15 @@
         public List<OllamaChatMessage> Messages { get; set; } = null;
 
         /// <summary>
-        /// Additional model parameters (optional).
+        /// Additional model parameters (optional). Never null; a default
+        /// instance is substituted when the client omits the field or sends null.
         /// </summary>
         [JsonPropertyName("options")]
-        public OllamaCompletionOptions Options { get; set; } = null;
+        public OllamaCompletionOptions Options
+        {
+            get => _Options;
+            set => _Options = value ?? new OllamaCompletionOptions();
+        }
 
         /// <summary>
         /// Format to return the response in. Currently only "json" is supported (optional).
@@ -57,6 +62,8 @@
         /// </summary>
         [JsonPropertyName("tools")]
         public List<OllamaTool> Tools { get; set; } = null;
+
+        private OllamaCompletionOptions _Options = new OllamaCompletionOptions();
 
         /// <summary>
         /// Ollama generate chat completion request.

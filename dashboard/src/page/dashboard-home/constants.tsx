@@ -1,59 +1,49 @@
 import { LocalModel } from "#/lib/reducer/types";
-import { formatSize, formatDate } from "#/utils/utils";
+import { formatSize } from "#/utils/utils";
 import React from "react";
 import SharpButton from "#/components/base/button/Button";
-import { DeleteOutlined } from "@ant-design/icons";
+import SharpDropdown from "#/components/base/dropdown/Dropdown";
+import {
+  DeleteOutlined,
+  InfoCircleOutlined,
+  MoreOutlined,
+  CodeOutlined,
+  PlayCircleOutlined,
+} from "@ant-design/icons";
 import TooltipHeader from "#/components/base/tooltip/TooltipHeader";
-import SharpTooltip from "#/components/base/tooltip/Tooltip";
 import { tooltips } from "#/constants/tooltips";
+
+interface ActionHandlers {
+  onViewDetails: (model: LocalModel) => void;
+  onViewJson: (model: LocalModel) => void;
+  onLoad: (model: LocalModel) => void;
+  onDelete: (model: LocalModel) => void;
+  isModelLoaded?: (model: LocalModel) => boolean;
+}
 
 // Column configuration factory
 export const createColumnConfig = (
-  localModels: LocalModel[] | undefined,
-  onDelete?: (model: LocalModel) => void
+  _localModels: LocalModel[] | undefined,
+  handlers: ActionHandlers
 ) => [
   {
     title: <TooltipHeader label="Model Name" tooltip={tooltips.models.name} />,
     dataIndex: "name",
     key: "name",
-    width: 200,
+    width: 240,
   },
   {
     title: <TooltipHeader label="Model ID" tooltip={tooltips.models.model} />,
     dataIndex: "model",
     key: "model",
-    width: 250,
+    width: 300,
     ellipsis: true,
-  },
-  {
-    title: <TooltipHeader label="Family" tooltip={tooltips.models.family} />,
-    dataIndex: ["details", "family"],
-    key: "family",
-    width: 150,
-    filters:
-      localModels && localModels?.length > 0
-        ? Array.from(
-            new Set(localModels.map((model) => model.details.family))
-          ).map((family) => ({ text: family, value: family }))
-        : [],
-  },
-  {
-    title: <TooltipHeader label="Format" tooltip={tooltips.models.format} />,
-    dataIndex: ["details", "format"],
-    key: "format",
-    width: 100,
-    filters:
-      localModels && localModels?.length > 0
-        ? Array.from(
-            new Set(localModels.map((model) => model.details.format))
-          ).map((format) => ({ text: format, value: format }))
-        : [],
   },
   {
     title: <TooltipHeader label="Size" tooltip={tooltips.models.size} />,
     dataIndex: "size",
     key: "size",
-    width: 120,
+    width: 140,
     render: formatSize,
   },
   {
@@ -65,29 +55,60 @@ export const createColumnConfig = (
     ),
     dataIndex: ["details", "quantization_level"],
     key: "quantization_level",
-    width: 130,
-  },
-  {
-    title: <TooltipHeader label="Modified" tooltip={tooltips.models.modified} />,
-    dataIndex: "modified_at",
-    key: "modified_at",
-    width: 180,
-    render: formatDate,
+    width: 150,
   },
   {
     title: <TooltipHeader label="Actions" tooltip={tooltips.models.actions} />,
     key: "actions",
-    width: 100,
-    render: (_: any, record: LocalModel) => (
-      <SharpTooltip title="Delete this model">
+    width: 90,
+    align: "center" as const,
+    render: (_: any, record: LocalModel) => {
+      const alreadyLoaded = handlers.isModelLoaded?.(record) ?? false;
+      return (
+      <SharpDropdown
+        trigger={["click"]}
+        placement="bottomRight"
+        getPopupContainer={() => document.body}
+        menu={{
+          items: [
+            {
+              key: "load",
+              icon: <PlayCircleOutlined />,
+              label: "Load Model",
+              disabled: alreadyLoaded,
+              onClick: () => handlers.onLoad(record),
+            },
+            {
+              key: "details",
+              icon: <InfoCircleOutlined />,
+              label: "View Details",
+              onClick: () => handlers.onViewDetails(record),
+            },
+            {
+              key: "json",
+              icon: <CodeOutlined />,
+              label: "View JSON",
+              onClick: () => handlers.onViewJson(record),
+            },
+            { type: "divider" as const },
+            {
+              key: "delete",
+              icon: <DeleteOutlined />,
+              label: "Delete",
+              danger: true,
+              onClick: () => handlers.onDelete(record),
+            },
+          ],
+        }}
+      >
         <SharpButton
           type="text"
-          danger
           size="small"
-          icon={<DeleteOutlined />}
-          onClick={() => onDelete?.(record)}
+          icon={<MoreOutlined style={{ fontSize: 18 }} />}
+          onClick={(e) => e.preventDefault()}
         />
-      </SharpTooltip>
-    ),
+      </SharpDropdown>
+      );
+    },
   },
 ];

@@ -17,11 +17,11 @@
   align-items: center;
   justify-content: center;
   height: 32px;
-  color: var(--ant-color-text-base);
+  color: var(--ant-color-primary);
   line-height: 1;
 
   &:hover {
-    color: var(--ant-color-primary);
+    color: var(--ant-color-primary-hover, var(--ant-color-primary));
   }
 }
 

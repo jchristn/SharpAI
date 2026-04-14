@@ -7,6 +7,8 @@ import {
   useGetRunningModelsQuery,
   useDeleteModelMutation,
   useUnloadModelMutation,
+  useLoadModelMutation,
+  useGenerateEmbeddingsMutation,
 } from "#/lib/reducer/apiSlice";
 import { LocalModel, RunningModel } from "#/lib/reducer/types";
 import PageLoading from "#/components/base/loading/PageLoading";
@@ -24,6 +26,7 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import PullModelModal from "./PullModelModal";
+import ModelDetailsModal from "./ModelDetailsModal";
 import ConfirmationModal from "#/components/common/ConfirmationModal";
 import { message, Progress } from "antd";
 import { formatSize } from "#/utils/utils";
@@ -36,6 +39,9 @@ const DashboardHome = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [modelToDelete, setModelToDelete] = useState<LocalModel | null>(null);
+  const [modelToUnload, setModelToUnload] = useState<RunningModel | null>(null);
+  const [detailsModel, setDetailsModel] = useState<LocalModel | null>(null);
+  const [detailsMode, setDetailsMode] = useState<"details" | "json">("details");
   const { activePulls, cancelPull } = usePullProgress();
 
   const {
@@ -55,15 +61,63 @@ const DashboardHome = () => {
 
   const [deleteModel, { isLoading: isDeleting }] = useDeleteModelMutation();
   const [unloadModel, { isLoading: isUnloading }] = useUnloadModelMutation();
+  const [loadModel] = useLoadModelMutation();
+  const [generateEmbeddings] = useGenerateEmbeddingsMutation();
 
   // Handle unload operations
-  const handleUnloadModel = async (modelName: string) => {
+  const handleUnloadClick = (model: RunningModel) => {
+    setModelToUnload(model);
+  };
+
+  const handleUnloadConfirm = async () => {
+    if (!modelToUnload) return;
     try {
-      await unloadModel({ model: modelName }).unwrap();
-      message.success(`Successfully unloaded model: ${modelName}`);
+      await unloadModel({ model: modelToUnload.name }).unwrap();
+      message.success(`Successfully unloaded model: ${modelToUnload.name}`);
+      setModelToUnload(null);
       refetchRunning();
     } catch (error) {
       message.error(`Failed to unload model: ${formatError(error)}`);
+    }
+  };
+
+  const handleUnloadCancel = () => {
+    setModelToUnload(null);
+  };
+
+  // Handle load operations
+  const handleLoadModel = async (model: LocalModel) => {
+    if (runningModels.some((r) => r.name === model.name)) {
+      message.info(`Model "${model.name}" is already loaded.`);
+      return;
+    }
+    const hideLoading = message.loading(
+      `Loading "${model.name}" into memory...`,
+      0
+    );
+    try {
+      // Prefer completions-based warm if the model supports it; fall back to
+      // an embeddings warm for embeddings-only models. `/api/generate` returns
+      // an error for embeddings-only models even though the engine loads.
+      const supportsCompletions = model.capabilities?.completions ?? true;
+      const supportsEmbeddings = model.capabilities?.embeddings ?? false;
+
+      if (supportsCompletions) {
+        await loadModel({ model: model.name }).unwrap();
+      } else if (supportsEmbeddings) {
+        await generateEmbeddings({ model: model.name, input: "" }).unwrap();
+      } else {
+        throw new Error(
+          "Model reports neither completion nor embedding capability."
+        );
+      }
+
+      hideLoading();
+      message.success(`Successfully loaded model: ${model.name}`);
+      refetchRunning();
+    } catch (error) {
+      hideLoading();
+      message.error(`Failed to load model: ${formatError(error)}`);
     }
   };
 
@@ -92,8 +146,28 @@ const DashboardHome = () => {
     setModelToDelete(null);
   };
 
+  const handleViewDetails = (model: LocalModel) => {
+    setDetailsModel(model);
+    setDetailsMode("details");
+  };
+
+  const handleViewJson = (model: LocalModel) => {
+    setDetailsModel(model);
+    setDetailsMode("json");
+  };
+
+  const handleCloseDetails = () => {
+    setDetailsModel(null);
+  };
+
   // Define table columns using utilities
-  const columns = createColumnConfig(localModels, handleDeleteClick);
+  const columns = createColumnConfig(localModels, {
+    onViewDetails: handleViewDetails,
+    onViewJson: handleViewJson,
+    onLoad: handleLoadModel,
+    onDelete: handleDeleteClick,
+    isModelLoaded: (model) => runningModels.some((r) => r.name === model.name),
+  });
 
   // Handle modal operations
   const handleOpenModal = () => {
@@ -294,8 +368,7 @@ const DashboardHome = () => {
                         danger
                         size="small"
                         icon={<CloseCircleOutlined />}
-                        loading={isUnloading}
-                        onClick={() => handleUnloadModel(record.name)}
+                        onClick={() => handleUnloadClick(record)}
                       />
                     </SharpTooltip>
                   ),
@@ -447,6 +520,31 @@ const DashboardHome = () => {
         cancelText="Cancel"
         type="danger"
         isLoading={isDeleting}
+      />
+
+      {/* Unload Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={modelToUnload !== null}
+        onClose={handleUnloadCancel}
+        onConfirm={handleUnloadConfirm}
+        title="Unload Model"
+        message={
+          modelToUnload
+            ? `Are you sure you want to unload "${modelToUnload.name}" from memory? Subsequent requests will need to reload it.`
+            : ""
+        }
+        confirmText="Unload"
+        cancelText="Cancel"
+        type="warning"
+        isLoading={isUnloading}
+      />
+
+      {/* Model Details / JSON Modal */}
+      <ModelDetailsModal
+        isOpen={detailsModel !== null}
+        onClose={handleCloseDetails}
+        model={detailsModel}
+        mode={detailsMode}
       />
     </PageContainer>
   );

@@ -21,10 +21,15 @@
         public string Prompt { get; set; } = null;
 
         /// <summary>
-        /// Additional model parameters (optional).
+        /// Additional model parameters (optional). Never null; a default
+        /// instance is substituted when the client omits the field or sends null.
         /// </summary>
         [JsonPropertyName("options")]
-        public OllamaCompletionOptions Options { get; set; } = null;
+        public OllamaCompletionOptions Options
+        {
+            get => _Options;
+            set => _Options = value ?? new OllamaCompletionOptions();
+        }
 
         /// <summary>
         /// System message to use (overrides what is defined in the Modelfile) (optional).
@@ -85,6 +90,7 @@
 
         private List<int> _Context = new List<int>();
         private List<string> _Images = new List<string>();
+        private OllamaCompletionOptions _Options = new OllamaCompletionOptions();
 
         /// <summary>
         /// Ollama generate completion request.

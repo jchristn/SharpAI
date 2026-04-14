@@ -90,6 +90,13 @@ const apiSliceInstance = enhancedSdk.injectEndpoints({
         data: model ? { name: model } : {},
       }),
     }),
+    loadModel: build.mutation<unknown, { model: string }>({
+      query: ({ model }) => ({
+        url: "/api/generate",
+        method: "POST",
+        data: { model, prompt: "", stream: false },
+      }),
+    }),
     generateEmbeddings: build.mutation<
       GenerateEmbeddingsResponse,
       GenerateEmbeddingsPaylaod
@@ -190,6 +197,7 @@ export const {
   usePullModelsMutation,
   useDeleteModelMutation,
   useUnloadModelMutation,
+  useLoadModelMutation,
   useGenerateEmbeddingsMutation,
   useCompletionsMutation,
   useChatCompletionsMutation,

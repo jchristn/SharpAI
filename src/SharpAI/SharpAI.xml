@@ -2863,7 +2863,8 @@
         </member>
         <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Options">
             <summary>
-            Additional model parameters (optional).
+            Additional model parameters (optional). Never null; a default
+            instance is substituted when the client omits the field or sends null.
             </summary>
         </member>
         <member name="P:SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest.Format">
@@ -3106,7 +3107,8 @@
         </member>
         <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.Options">
             <summary>
-            Additional model parameters (optional).
+            Additional model parameters (optional). Never null; a default
+            instance is substituted when the client omits the field or sends null.
             </summary>
         </member>
         <member name="P:SharpAI.Models.Ollama.OllamaGenerateCompletionRequest.System">
