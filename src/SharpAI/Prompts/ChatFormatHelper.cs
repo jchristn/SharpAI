@@ -52,7 +52,9 @@
                 "deepseek" or "deepseek2" or "deepseek-coder" or "deepseek-chat" or "deepseek-llm" => ChatFormatEnum.DeepSeek,
 
                 // Google Gemma
-                "gemma" or "google-gemma" or "gemma-2b" or "gemma-7b" or "gemma2" or "gemma3" or "gemma3n" => ChatFormatEnum.Gemma,
+                "gemma" or "google-gemma" or "gemma-2b" or "gemma-7b"
+                    or "gemma2" or "gemma-2" or "gemma3" or "gemma-3"
+                    or "gemma3n" or "gemma-3n" or "gemma4" or "gemma-4" or "google-gemma-4" => ChatFormatEnum.Gemma,
 
                 // Cohere Command-R
                 "command-r" or "command-r-plus" or "cohere-command-r" => ChatFormatEnum.CommandR,
@@ -64,7 +66,9 @@
                 "stablelm" or "stability" or "stable-lm" or "stablelm-3b" or "stablelm-7b" => ChatFormatEnum.StableLM,
 
                 // Models that typically use ChatML
-                "qwen" or "qwen2" or "qwen2moe" or "qwen3" or "qwen3moe" or "qwen35"
+                "qwen" or "qwen2" or "qwen-2" or "qwen2moe" or "qwen2-moe"
+                    or "qwen3" or "qwen-3" or "qwen3moe" or "qwen3-moe"
+                    or "qwen35" or "qwen3.5" or "qwen-3.5"
                     or "qwen-7b" or "qwen-14b" or "qwen-72b" => ChatFormatEnum.ChatML,
                 "yi" or "yi-6b" or "yi-34b" or "01-ai" => ChatFormatEnum.ChatML,
                 "starling" or "openchat" or "openchat-3.5" => ChatFormatEnum.ChatML,

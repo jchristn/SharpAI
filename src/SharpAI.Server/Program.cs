@@ -40,7 +40,7 @@ namespace SharpAI.Server
         #region Private-Members
 
         private static string _Header = "[SharpAI] ";
-        private static string _Version = "4.0.0";
+        private static string _Version = "4.0.1";
         private static Serializer _Serializer = new Serializer();
         private static Settings _Settings = null;
         private static LoggingModule _Logging = null;

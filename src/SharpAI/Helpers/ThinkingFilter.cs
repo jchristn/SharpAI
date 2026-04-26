@@ -6,7 +6,7 @@ namespace SharpAI.Helpers
 
     /// <summary>
     /// Filters model thinking/reasoning tokens from generated output.
-    /// Models like Qwen3 emit &lt;think&gt;...&lt;/think&gt; blocks containing chain-of-thought
+    /// Models like Qwen3 and Qwen3.5 emit &lt;think&gt;...&lt;/think&gt; blocks containing chain-of-thought
     /// reasoning that should typically be hidden from end users.
     /// </summary>
     public class ThinkingFilter

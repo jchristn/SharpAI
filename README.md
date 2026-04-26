@@ -316,7 +316,7 @@ assistant:
 
 Supported chat formats:
 - `Simple` - Basic role: content format (generic models, base models)
-- `ChatML` - OpenAI ChatML format (GPT models, models fine-tuned with ChatML) including Qwen
+- `ChatML` - OpenAI ChatML format (GPT models, models fine-tuned with ChatML) including Qwen 2, Qwen 3, and Qwen 3.5
 - `Llama2` - Llama 2 instruction format (Llama-2-Chat models)
 - `Llama3` - Llama 3 format (Llama-3-Instruct models)
 - `Alpaca` - Alpaca instruction format (Alpaca, Vicuna, WizardLM, and many Llama-based fine-tunes)
@@ -325,8 +325,13 @@ Supported chat formats:
 - `Zephyr` - Zephyr model format (Zephyr beta/alpha models)
 - `Phi` - Microsoft Phi format (Phi-2, Phi-3 models)
 - `DeepSeek` - DeepSeek format (DeepSeek-Coder, DeepSeek-LLM models)
+- `Gemma` - Google Gemma turn-token format (Gemma 2, Gemma 3, and Gemma 4 models)
 
 If you are unsure which your model supports, choose `Simple`.
+
+SharpAI maps common architecture aliases automatically, including `qwen3.5`, `qwen-3.5`, `gemma4`, and `gemma-4`.
+
+These mappings align with the LLamaSharp 0.27.0 upgrade and help newer Qwen3.5 and Gemma4 GGUFs pick the correct prompt template automatically.
 
 ### Text Generation Formatting
 
@@ -547,12 +552,12 @@ SharpAI.Server is available as a Docker image, providing an easy way to deploy t
 
 For Windows:
 ```batch
-run.bat v4.0.0
+run.bat v4.0.1
 ```
 
 For Linux/macOS:
 ```bash
-./run.sh v4.0.0
+./run.sh v4.0.1
 ```
 
 #### Using Docker Compose
@@ -649,10 +654,10 @@ Operational endpoints:
 3. Run the container:
    ```bash
    # Windows
-   run.bat v4.0.0
+   run.bat v4.0.1
    
    # Linux/macOS
-   ./run.sh v4.0.0
+   ./run.sh v4.0.1
    ```
 
 4. Download a model using the API (GGUF format required):
@@ -678,7 +683,7 @@ For production deployments, you can use Docker Compose. Create a `compose.yaml` 
 ```yaml
 services:
   sharpai:
-    image: jchristn77/sharpai:v4.0.0
+    image: jchristn77/sharpai:v4.0.1
     ports:
       - "8000:8000"
     volumes:
@@ -730,7 +735,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn77/sharpai:v4.0.0
+  jchristn77/sharpai:v4.0.1
 ```
 
 For Docker Compose, add:

@@ -2,7 +2,17 @@
 
 ## Current Version
 
-v4.0.0
+v4.0.1
+
+### Added
+
+- Automated regression tests for `ChatFormatHelper`, `ChatPromptBuilder`, and `ThinkingFilter` covering the new `Qwen3.5` and `Gemma4` family aliases
+
+### Changed
+
+- **Upgraded LLamaSharp from v0.26.0 to v0.27.0** to pick up upstream Qwen3.5 and Gemma4 support
+- Expanded `ChatFormatHelper` family aliases so `qwen3.5`, `qwen-3.5`, `gemma4`, `gemma-4`, and `google-gemma-4` resolve to the correct chat templates
+- Bumped release patch versions: `SharpAI` package `1.0.17`, server/runtime `4.0.1`, and dashboard `4.0.1`
 
 ### Fixed
 

@@ -10,7 +10,7 @@ services:
   #
   sharpai:
     container_name: 'sharpai'
-    image: 'jchristn77/sharpai:v4.0.0'
+    image: 'jchristn77/sharpai:v4.0.1'
     ports:
       - '8000:8000'
     stdin_open: true
@@ -59,7 +59,7 @@ services:
   #
   sharpai-ui:
     container_name: 'sharpai-ui'
-    image: 'jchristn77/sharpai-ui:v4.0.0'
+    image: 'jchristn77/sharpai-ui:v4.0.1'
     ports:
       - '3000:3000'
     depends_on:
