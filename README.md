@@ -39,14 +39,14 @@ SharpAI is organized as a monorepo containing the core library, server, dashboar
 ```
 SharpAI/
 ├── src/                    # Core .NET library and server
-│   ├── SharpAI/           # Core library (NuGet: SharpAI)
-│   ├── SharpAI.Server/    # REST API server (Watson 7 + OpenAPI/Swagger)
-│   └── Test.*/            # Test projects
+│   ├── SharpAI/            # Core library (NuGet: SharpAI)
+│   ├── SharpAI.Server/     # REST API server (Watson 7 + OpenAPI/Swagger)
+│   └── Test.*/             # Test projects
 ├── dashboard/              # Vite + React + Ant Design web interface
 ├── sdk/
-│   ├── csharp/            # C# SDK (NuGet: SharpAI.Sdk)
-│   ├── python/            # Python SDK (coming soon)
-│   └── js/                # TypeScript/JavaScript SDK (npm: @sharpai/sdk)
+│   ├── csharp/             # C# SDK (NuGet: SharpAI.Sdk)
+│   ├── python/             # Python SDK (coming soon)
+│   └── js/                 # TypeScript/JavaScript SDK (npm: @sharpai/sdk)
 ├── docker/                 # Docker assets
 └── README.md
 ```
