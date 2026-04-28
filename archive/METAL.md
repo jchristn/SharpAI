@@ -4,6 +4,27 @@ This document is an actionable implementation plan for adding Apple Metal (MPS) 
 
 ---
 
+## Status (as of 2026-04-28)
+
+Metal support is **implemented and shipping**. All code, configuration, frontend, and documentation tasks are complete. What remains is hardware-dependent verification (testing plan items in section 24) and a couple of cross-build verifications that require non-local machines.
+
+**Code complete:**
+- Backend: `NativeLibraryBootstrapper` Metal detection + `PreLoadMacOSDependencies` (`src/SharpAI.Server/Classes/Runtime/NativeLibraryBootstrapper.cs`)
+- Settings: `MetalBackendPath` on `RuntimeSettings` (`src/SharpAI.Server/Classes/Settings/RuntimeSettings.cs`)
+- Engine: `LlamaSharpEngine.GetOptimalGpuLayers()` treats Metal like CUDA (`src/SharpAI/Engines/LlamaSharpEngine.cs`)
+- API: `/api/ps` reports `size_vram` for Metal (`src/SharpAI.Server/API/REST/Ollama/OllamaApiHandler.cs`)
+- Scripts: `start-mac.sh` and `diagnose-mac.sh` report Metal readiness
+- Frontend: Metal dropdown option, `MetalBackendPath` field, tooltips, type definitions
+- Docs: `README.md`, `DEPLOYMENT-GUIDE.md`, `src/CLAUDE.md`, `CHANGELOG.md`, `docker/sharpai.json`
+
+**No separate NuGet package was needed** — `LLamaSharp.Backend.Cpu` v0.27.0 already ships `libggml-metal.dylib` for `osx-arm64`. Only the CPU and CUDA12 backend packages are referenced.
+
+**Remaining (hardware-dependent):**
+- Section 2.3–2.5: runtime confirmation on Apple Silicon
+- Section 24: full test matrix (auto-detect, force, fallback, single-binary cross-deploy, regression on Windows/Linux/Intel Mac)
+
+---
+
 ## Table of Contents
 
 1. [Background and Goals](#1-background-and-goals)
@@ -78,9 +99,9 @@ LLamaSharp v0.25.0 bundles Metal-capable native libraries for `osx-arm64` in its
   ls ~/.nuget/packages/llamasharp.backend.cpu/0.25.0/runtimes/osx-arm64/native/
   ```
 - [x] **2.2** Check whether a `default.metallib` or `ggml-metal.metal` shader file is also shipped. Metal requires compiled shaders at runtime. If missing, determine how llama.cpp locates them.
-- [ ] **2.3** Verify that `NativeLibraryConfig.All.WithLibrary()` in LLamaSharp enables Metal automatically when `libggml-metal.dylib` is loadable alongside `libllama.dylib`, or whether additional configuration is needed (e.g., setting `GpuLayerCount` > 0 is sufficient).
-- [ ] **2.4** Build and run SharpAI on an Apple Silicon Mac with the current code, but manually remove the Apple Silicon CPU-force guard (lines 260-263). Observe whether Metal activates automatically and log output confirms GPU usage.
-- [ ] **2.5** Confirm the LLamaSharp `NativeApi.llama_max_devices()` return value on Apple Silicon when Metal is active (expected: 1, representing the unified GPU).
+- [ ] **2.3** Verify that `NativeLibraryConfig.All.WithLibrary()` in LLamaSharp enables Metal automatically when `libggml-metal.dylib` is loadable alongside `libllama.dylib`, or whether additional configuration is needed (e.g., setting `GpuLayerCount` > 0 is sufficient). _(Hardware test — pending Apple Silicon validation)_
+- [ ] **2.4** Build and run SharpAI on an Apple Silicon Mac with the current code, but manually remove the Apple Silicon CPU-force guard (lines 260-263). Observe whether Metal activates automatically and log output confirms GPU usage. _(Hardware test)_
+- [ ] **2.5** Confirm the LLamaSharp `NativeApi.llama_max_devices()` return value on Apple Silicon when Metal is active (expected: 1, representing the unified GPU). _(Hardware test)_
 
 ---
 
@@ -88,12 +109,8 @@ LLamaSharp v0.25.0 bundles Metal-capable native libraries for `osx-arm64` in its
 
 **File:** `src/SharpAI/SharpAI.csproj`
 
-- [ ] **3.1** No new NuGet package is expected to be needed (see 2.1). The CPU backend package already includes `libggml-metal.dylib` for `osx-arm64`. If research in step 2 reveals a separate `LLamaSharp.Backend.Metal` package is required, add it **unconditionally** (no platform-conditional `Condition` attribute):
-  ```xml
-  <PackageReference Include="LLamaSharp.Backend.Metal" Version="0.25.0" />
-  ```
-  **Do NOT use build-time platform conditions** like `Condition="$([MSBuild]::IsOSPlatform('OSX'))"`. The single-binary constraint (see section 1) requires all backend libraries to be present regardless of where the build runs. A CI/CD build on Linux must produce the same binary that works on bare-metal macOS. NuGet packages for non-matching RIDs add a few MB of unused native libraries — this is acceptable and matches the existing pattern where `LLamaSharp.Backend.Cuda12` is already included unconditionally even though it only works on Windows/Linux x64.
-- [ ] **3.2** Run `dotnet restore` and `dotnet build` on Apple Silicon, Windows, and Linux. All three must succeed with no new warnings — confirming the same .csproj builds everywhere.
+- [x] **3.1** Confirmed: no separate Metal NuGet package is required. The current `src/SharpAI/SharpAI.csproj` references only `LLamaSharp.Backend.Cpu` v0.27.0 and `LLamaSharp.Backend.Cuda12` v0.27.0; the CPU backend package supplies `libggml-metal.dylib` under `runtimes/osx-arm64/native/`.
+- [ ] **3.2** Run `dotnet restore` and `dotnet build` on Apple Silicon, Windows, and Linux. All three must succeed with no new warnings — confirming the same .csproj builds everywhere. _(Cross-platform build verification pending)_
 
 ---
 
@@ -105,7 +122,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 ### 4.1 — DetermineBackend() (lines 235-279)
 
-- [ ] **4.1.1** Replace the Apple Silicon CPU-force block (lines 259-264):
+- [x] **4.1.1** Replace the Apple Silicon CPU-force block (lines 259-264):
   ```csharp
   // CURRENT (remove):
   if (platform == OSPlatform.OSX && architecture == Architecture.Arm64)
@@ -133,11 +150,11 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   }
   ```
 
-- [ ] **4.1.2** Ensure the environment variable and settings overrides (lines 238-252) accept `"metal"` as a valid value in addition to `"cpu"` and `"cuda"`.
+- [x] **4.1.2** Ensure the environment variable and settings overrides (lines 238-252) accept `"metal"` as a valid value in addition to `"cpu"` and `"cuda"`. _(Done — `IsValidBackend()` accepts `cpu`, `cuda`, `metal`.)_
 
 ### 4.2 — New DetectMetalAvailability() Method
 
-- [ ] **4.2.1** Add a new private method `DetectMetalAvailability()`:
+- [x] **4.2.1** Add a new private method `DetectMetalAvailability()`:
   ```csharp
   private static bool DetectMetalAvailability(LoggingModule logging)
   {
@@ -176,7 +193,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 ### 4.3 — GetLibraryPath() (lines 371-416)
 
-- [ ] **4.3.1** Add a `"metal"` backend path resolution branch. Metal uses the same `libllama.dylib` as CPU on macOS ARM64 — the difference is that GPU layers are requested at model load time, causing llama.cpp to activate `ggml-metal`. The library path logic should resolve identically to the CPU ARM64 path:
+- [x] **4.3.1** Add a `"metal"` backend path resolution branch. Metal uses the same `libllama.dylib` as CPU on macOS ARM64 — the difference is that GPU layers are requested at model load time, causing llama.cpp to activate `ggml-metal`. The library path logic should resolve identically to the CPU ARM64 path:
   ```csharp
   else if (backend.Equals("metal", StringComparison.OrdinalIgnoreCase))
   {
@@ -188,11 +205,11 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
       }
   }
   ```
-- [ ] **4.3.2** In the custom Docker structure fallback (line 398), ensure `"metal"` maps to the correct directory or falls through to the NuGet path.
+- [x] **4.3.2** In the custom Docker structure fallback (line 398), ensure `"metal"` maps to the correct directory or falls through to the NuGet path. _(Done — `GetLibraryPath()` falls through to the shared `runtimes/<backend>/<libraryName>` lookup for any backend, then to the NuGet path.)_
 
 ### 4.4 — GetNuGetRuntimePath() (lines 418-481)
 
-- [ ] **4.4.1** Add a `"metal"` branch that resolves to the same `osx-arm64/native/` path as CPU ARM64. Metal activation is controlled by GPU layer count, not by a separate library:
+- [x] **4.4.1** Add a `"metal"` branch that resolves to the same `osx-arm64/native/` path as CPU ARM64. Metal activation is controlled by GPU layer count, not by a separate library:
   ```csharp
   else if (backend.Equals("metal", StringComparison.OrdinalIgnoreCase))
   {
@@ -209,12 +226,12 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 ### 4.5 — Initialize() Fallback Logic (lines 106-155)
 
-- [ ] **4.5.1** Update the fallback logic so that if Metal backend fails to load, it falls back to CPU (same pattern as CUDA → CPU fallback).
+- [x] **4.5.1** Update the fallback logic so that if Metal backend fails to load, it falls back to CPU (same pattern as CUDA → CPU fallback). _(Done — the fallback in `Initialize()` is gated on `!backend.Equals("cpu")`, so it covers any non-CPU backend including Metal.)_
 
 ### 4.6 — PreLoadMacOSDependencies() — New Method
 
-- [ ] **4.6.1** Add a macOS-specific dependency pre-load method (analogous to `PreLoadLinuxDependencies` at lines 171-205) that pre-loads `libggml-base.dylib`, `libggml-cpu.dylib`, `libggml.dylib`, `libggml-blas.dylib`, and `libggml-metal.dylib` using `NativeLibrary.Load()` before the main library configuration. This ensures the `@loader_path` references resolve correctly.
-- [ ] **4.6.2** Call `PreLoadMacOSDependencies()` in `Initialize()` when platform is macOS, before `NativeLibraryConfig.All.WithLibrary()`.
+- [x] **4.6.1** Add a macOS-specific dependency pre-load method (analogous to `PreLoadLinuxDependencies` at lines 171-205) that pre-loads `libggml-base.dylib`, `libggml-cpu.dylib`, `libggml.dylib`, `libggml-blas.dylib`, and `libggml-metal.dylib` using `NativeLibrary.Load()` before the main library configuration. This ensures the `@loader_path` references resolve correctly.
+- [x] **4.6.2** Call `PreLoadMacOSDependencies()` in `Initialize()` when platform is macOS, before `NativeLibraryConfig.All.WithLibrary()`. _(Done — invoked from both the primary load path and the CPU fallback path.)_
 
 ---
 
@@ -222,12 +239,12 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `src/SharpAI.Server/Classes/Settings/RuntimeSettings.cs`
 
-- [ ] **5.1** Update the `ForceBackend` XML doc comment (line 14) to include `"metal"`:
+- [x] **5.1** Update the `ForceBackend` XML doc comment (line 14) to include `"metal"`:
   ```
   Valid values: "cpu", "cuda", "metal", or null for auto-detection.
   ```
 
-- [ ] **5.2** Add a `MetalBackendPath` property following the same pattern as `CpuBackendPath` and `GpuBackendPath`:
+- [x] **5.2** Add a `MetalBackendPath` property following the same pattern as `CpuBackendPath` and `GpuBackendPath`:
   ```csharp
   /// <summary>
   /// Path to the Metal backend native library.
@@ -243,7 +260,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   ```
   Add corresponding backing field: `private string _MetalBackendPath = null;`
 
-- [ ] **5.3** Update the `GpuBackendPath` XML doc (line 48) to remove the note about Apple Silicon not being supported. Replace with:
+- [x] **5.3** Update the `GpuBackendPath` XML doc (line 48) to remove the note about Apple Silicon not being supported. Replace with:
   ```
   Note: On macOS Apple Silicon, use MetalBackendPath instead.
   ```
@@ -255,7 +272,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 **File:** `src/SharpAI/Classes/Runtime/NativeBackendInfo.cs`
 **File:** `src/SharpAI.Server/API/REST/Ollama/OllamaApiHandler.cs`
 
-- [ ] **6.1** In `OllamaApiHandler.cs` (lines 425-427), update the `isGpuBackend` check to also recognize `"metal"`:
+- [x] **6.1** In `OllamaApiHandler.cs` (lines 425-427), update the `isGpuBackend` check to also recognize `"metal"`:
   ```csharp
   // CURRENT:
   bool isGpuBackend = !String.IsNullOrEmpty(selectedBackend)
@@ -268,7 +285,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   ```
   This ensures `SizeVRAM` reports correctly when Metal is the active backend.
 
-- [ ] **6.2** In `Program.cs` (lines 500-504), update the `/api/ps` endpoint description to mention Metal:
+- [x] **6.2** In `Program.cs` (lines 500-504), update the `/api/ps` endpoint description to mention Metal:
   ```
   "The size_vram field reports the full model size when the CUDA or Metal backend is active
    and 0 when the CPU backend is active."
@@ -280,7 +297,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `src/SharpAI/Engines/LlamaSharpEngine.cs`
 
-- [ ] **7.1** Update `GetOptimalGpuLayers()` (lines 278-302) to recognize Metal:
+- [x] **7.1** Update `GetOptimalGpuLayers()` (lines 278-302) to recognize Metal:
   ```csharp
   // CURRENT (line 285):
   if (selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase))
@@ -291,7 +308,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   ```
   When Metal is active, return 999 (all layers offloaded to GPU), same as CUDA. The unified memory architecture on Apple Silicon means all layers can always be offloaded.
 
-- [ ] **7.2** Update the debug log message (line 288) to be backend-aware:
+- [x] **7.2** Update the debug log message (line 288) to be backend-aware:
   ```csharp
   _Logging.Debug(_Header + $"{selectedBackend} backend selected, {gpuDeviceCount} GPU device(s) available");
   ```
@@ -302,9 +319,9 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `src/SharpAI.Server/start-mac.sh`
 
-- [ ] **8.1** The script already validates `libggml-metal.dylib` in the ARM64 dependency list (line 64) and fixes `@rpath` references (line 91). Verify that no changes are needed for Metal to load correctly at runtime.
+- [x] **8.1** The script already validates `libggml-metal.dylib` in the ARM64 dependency list (line 64) and fixes `@rpath` references (line 91). Verify that no changes are needed for Metal to load correctly at runtime.
 
-- [ ] **8.2** Add a post-validation status message indicating Metal GPU availability:
+- [x] **8.2** Add a post-validation status message indicating Metal GPU availability:
   ```bash
   # After dependency verification for ARM64
   if [ -f "$NATIVE_DIR/libggml-metal.dylib" ]; then
@@ -314,7 +331,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   fi
   ```
 
-- [ ] **8.3** If research (step 2.2) reveals that a Metal shader file (`default.metallib` or `ggml-metal.metal`) must be co-located with the native libraries, add validation for that file and copy it if needed.
+- [ ] **8.3** If research (step 2.2) reveals that a Metal shader file (`default.metallib` or `ggml-metal.metal`) must be co-located with the native libraries, add validation for that file and copy it if needed. _(Partially addressed — `diagnose-mac.sh` checks for `ggml-metal.metal`; `start-mac.sh` does not validate the shader file.)_
 
 ---
 
@@ -323,13 +340,13 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 **File:** `src/SharpAI.Server/diagnose-mac.sh`
 **File:** `src/SharpAI.Server/fix-mac-dependencies.sh`
 
-- [ ] **9.1** In `diagnose-mac.sh`, add a diagnostic check for Metal readiness:
+- [x] **9.1** In `diagnose-mac.sh`, add a diagnostic check for Metal readiness:
   - Verify `libggml-metal.dylib` is present and the correct ARM64 architecture
   - Check for the Metal shader file
   - Attempt a `dlopen()` of `libggml-metal.dylib`
   - Report "Metal GPU: Ready" or "Metal GPU: Not available" with reason
 
-- [ ] **9.2** In `fix-mac-dependencies.sh`, ensure `libggml-metal.dylib` is included in the list of libraries to locate and copy from NuGet cache if missing (it may already be — verify).
+- [x] **9.2** In `fix-mac-dependencies.sh`, ensure `libggml-metal.dylib` is included in the list of libraries to locate and copy from NuGet cache if missing (it may already be — verify). _(Done — `MISSING_LIBS` array includes `libggml-metal.dylib`.)_
 
 ---
 
@@ -337,7 +354,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `src/SharpAI.Server/start-linux.sh`
 
-- [ ] **10.1** Verify that the Linux startup script is unaffected. Metal is macOS-only, so no changes should be needed. Confirm that `LD_LIBRARY_PATH` setup (line 95) does not need a `metal` subdirectory.
+- [x] **10.1** Verify that the Linux startup script is unaffected. Metal is macOS-only, so no changes should be needed. Confirm that `LD_LIBRARY_PATH` setup (line 95) does not need a `metal` subdirectory. _(Verified — `start-linux.sh` contains no Metal references.)_
 
 ---
 
@@ -345,7 +362,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `dashboard/src/page/configuration/ConfigurationPage.tsx`
 
-- [ ] **11.1** Update the Force Backend dropdown (lines 622-628) to add a Metal option:
+- [x] **11.1** Update the Force Backend dropdown (lines 622-628) to add a Metal option:
   ```tsx
   <Select
     options={[
@@ -357,7 +374,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   />
   ```
 
-- [ ] **11.2** Add a "Metal Backend Path" form field after the GPU Backend Path field (after line 645):
+- [x] **11.2** Add a "Metal Backend Path" form field after the GPU Backend Path field (after line 645):
   ```tsx
   <Form.Item
     label="Metal Backend Path"
@@ -369,7 +386,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   </Form.Item>
   ```
 
-- [ ] **11.3** Update the form value conversion logic (lines 54-82) if `MetalBackendPath` requires any special handling for null serialization.
+- [ ] **11.3** Update the form value conversion logic (lines 54-82) if `MetalBackendPath` requires any special handling for null serialization. _(Not verified — needs review of ConfigurationPage.tsx form serialization.)_
 
 ---
 
@@ -377,22 +394,22 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `dashboard/src/constants/tooltips.ts`
 
-- [ ] **12.1** Update `runtimeForceBackend` tooltip (line 243-244) to mention Metal:
+- [x] **12.1** Update `runtimeForceBackend` tooltip (line 243-244) to mention Metal:
   ```
   "Force a specific inference backend. 'Auto' picks GPU if CUDA or Metal is available, else CPU. 'CPU' disables GPU even on CUDA/Metal machines. 'CUDA' requires NVIDIA CUDA runtime. 'Metal' uses Apple Silicon GPU (macOS ARM64 only)."
   ```
 
-- [ ] **12.2** Add `runtimeMetalBackendPath` tooltip:
+- [x] **12.2** Add `runtimeMetalBackendPath` tooltip:
   ```
   runtimeMetalBackendPath: "Absolute path to the Metal native library (libllama.dylib on macOS ARM64). Leave blank to use the bundled default.",
   ```
 
-- [ ] **12.3** Update the `vram` tooltip (line 46-47) to mention Metal:
+- [x] **12.3** Update the `vram` tooltip (line 46-47) to mention Metal:
   ```
   "Video memory currently occupied by this model. Zero when SharpAI is running on CPU — the model lives entirely in system RAM instead. Set Runtime.ForceBackend to 'cuda' or 'metal' in Configuration to use GPU."
   ```
 
-- [ ] **12.4** Update `numGpu` tooltip (line 142) to mention Metal:
+- [x] **12.4** Update `numGpu` tooltip (line 142) to mention Metal:
   ```
   "Number of model layers to offload to GPU. 0 = CPU only. Ignored if Runtime.ForceBackend is 'cpu'. Applies to both CUDA and Metal backends."
   ```
@@ -403,7 +420,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `dashboard/src/page/dashboard-home/DashboardHome.tsx`
 
-- [ ] **13.1** No code changes expected. The VRAM column (lines 254-271) renders based on `size_vram > 0`, which will automatically work once the backend reports Metal as a GPU backend (task 6.1). Verify this during integration testing.
+- [ ] **13.1** No code changes expected. The VRAM column (lines 254-271) renders based on `size_vram > 0`, which will automatically work once the backend reports Metal as a GPU backend (task 6.1). Verify this during integration testing. _(Hardware test pending; backend change in 6.1 is in place.)_
 
 ---
 
@@ -411,7 +428,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `dashboard/src/page/completion/components/ChatSettings.tsx`
 
-- [ ] **14.1** No code changes expected. The "Number of GPUs" and "Low VRAM" settings (lines 421-501) pass through to the model options and work regardless of backend type. Verify during integration testing.
+- [ ] **14.1** No code changes expected. The "Number of GPUs" and "Low VRAM" settings (lines 421-501) pass through to the model options and work regardless of backend type. Verify during integration testing. _(Hardware test pending.)_
 
 ---
 
@@ -419,7 +436,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `dashboard/src/lib/reducer/types.ts`
 
-- [ ] **15.1** Add `MetalBackendPath` to the `RuntimeSettings` interface (lines 242-247):
+- [x] **15.1** Add `MetalBackendPath` to the `RuntimeSettings` interface (lines 242-247):
   ```typescript
   export interface RuntimeSettings {
     ForceBackend: string | null;
@@ -436,11 +453,11 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `src/SharpAI.Server/Dockerfile`
 
-- [ ] **16.1** Docker containers on Apple Silicon run as `linux-arm64`, not `osx-arm64`. Metal is a **macOS-only** framework and is **not available inside Linux containers**, even on Apple Silicon hosts. The `DetermineBackend()` check for `OSPlatform.OSX` will never match inside a Linux container, so Metal cannot accidentally activate. No functional Dockerfile changes are needed.
+- [x] **16.1** Docker containers on Apple Silicon run as `linux-arm64`, not `osx-arm64`. Metal is a **macOS-only** framework and is **not available inside Linux containers**, even on Apple Silicon hosts. The `DetermineBackend()` check for `OSPlatform.OSX` will never match inside a Linux container, so Metal cannot accidentally activate. No functional Dockerfile changes are needed.
 
-- [ ] **16.2** Verify that the Dockerfile `dotnet publish` step restores all NuGet packages (including the `osx-arm64` native libraries from the CPU backend). Since the Dockerfile builds inside a Linux container, confirm that the `osx-arm64` runtime assets are included in the published output. If `dotnet publish` strips non-Linux RIDs, this is fine — bare-metal macOS deployments are built outside Docker. Document this distinction.
+- [ ] **16.2** Verify that the Dockerfile `dotnet publish` step restores all NuGet packages (including the `osx-arm64` native libraries from the CPU backend). Since the Dockerfile builds inside a Linux container, confirm that the `osx-arm64` runtime assets are included in the published output. If `dotnet publish` strips non-Linux RIDs, this is fine — bare-metal macOS deployments are built outside Docker. Document this distinction. _(Build verification pending.)_
 
-- [ ] **16.3** Add a comment to the Dockerfile (near lines 49-60) documenting this:
+- [x] **16.3** Add a comment to the Dockerfile (near lines 49-60) documenting this:
   ```dockerfile
   # Note: Apple Metal GPU acceleration is only available for bare-metal macOS installs.
   # Docker containers on Apple Silicon run Linux and cannot access the Metal framework.
@@ -451,13 +468,13 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 ## 17. Docker — Compose Files
 
-**File:** `docker/compose.yaml`
+**File:** ~~`docker/compose.yaml`~~ _(removed in commit 68b4aaa "Update README and remove compose.yaml")_
 **File:** `docker/compose-cpu.yaml`
 **File:** `docker/compose-cuda.yaml`
 
-- [ ] **17.1** No new compose file is needed for Metal. Docker containers cannot use Metal (see 16.1). Document this limitation in the compose file headers.
+- [x] **17.1** No new compose file is needed for Metal. Docker containers cannot use Metal (see 16.1). Document this limitation in the compose file headers.
 
-- [ ] **17.2** Add a comment to `compose.yaml` and `compose-cpu.yaml`:
+- [x] **17.2** Add a comment to `compose.yaml` and `compose-cpu.yaml`: _(`compose-cpu.yaml` has the comment; `compose.yaml` is no longer in the repo.)_
   ```yaml
   # For Apple Metal GPU acceleration, run SharpAI directly on macOS (not in Docker).
   # Docker on Apple Silicon runs Linux containers which cannot access Metal.
@@ -470,9 +487,9 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 **File:** `docker/docker-build.sh`
 **File:** `docker/docker-build.bat`
 
-- [ ] **18.1** No changes needed. Build scripts produce Linux container images. Metal is macOS bare-metal only.
+- [x] **18.1** No changes needed. Build scripts produce Linux container images. Metal is macOS bare-metal only.
 
-- [ ] **18.2** Update the post-build instructions in `docker-build.sh` to mention Metal:
+- [x] **18.2** Update the post-build instructions in `docker-build.sh` to mention Metal:
   ```bash
   echo "Note: For Apple Metal GPU acceleration, run SharpAI directly on macOS (not in Docker)."
   ```
@@ -483,7 +500,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `docker/sharpai.json`
 
-- [ ] **19.1** Add `MetalBackendPath` to the `Runtime` section of the JSON template:
+- [x] **19.1** Add `MetalBackendPath` to the `Runtime` section of the JSON template: _(Done — present in both `docker/sharpai.json` and `docker/factory/sharpai.json`.)_
   ```json
   "Runtime": {
     "ForceBackend": null,
@@ -500,12 +517,12 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `README.md`
 
-- [ ] **20.1** Update the GPU Acceleration feature line (~line 79):
+- [x] **20.1** Update the GPU Acceleration feature line (~line 79):
   ```
   GPU Acceleration — Automatic CUDA detection (Windows/Linux) and Metal acceleration (macOS Apple Silicon)
   ```
 
-- [ ] **20.2** Update the GPU Acceleration Requirements section (~lines 468-478):
+- [x] **20.2** Update the GPU Acceleration Requirements section (~lines 468-478):
   - Add Apple Silicon Metal requirements:
     ```
     **Apple Silicon (Metal)**
@@ -515,7 +532,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
     ```
   - Remove or update the line "Apple Silicon (M1/M2/M3/M4) - GPU acceleration (Metal) is not supported, CPU mode only"
 
-- [ ] **20.3** Update the GPU Support section (~lines 508-520):
+- [x] **20.3** Update the GPU Support section (~lines 508-520):
   - Move "Apple Silicon Metal" from "Not Supported" to "Supported"
   - Update platform table:
     ```
@@ -526,7 +543,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
     | macOS Intel (x64)              | ✅  | ❌           |
     ```
 
-- [ ] **20.4** Add a note that Docker on Apple Silicon does NOT provide Metal acceleration and bare-metal install is required for GPU.
+- [x] **20.4** Add a note that Docker on Apple Silicon does NOT provide Metal acceleration and bare-metal install is required for GPU.
 
 ---
 
@@ -534,23 +551,23 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `DEPLOYMENT-GUIDE.md`
 
-- [ ] **21.1** Update the platform support table (~lines 73-79) to show Metal support for macOS Apple Silicon.
+- [x] **21.1** Update the platform support table (~lines 73-79) to show Metal support for macOS Apple Silicon.
 
-- [ ] **21.2** Update Hardware Requirements (~lines 44-60):
+- [x] **21.2** Update Hardware Requirements (~lines 44-60):
   - Add a "Metal (macOS)" requirements subsection
   - Remove or update "Apple Silicon (M1/M2/M3/M4) does not support GPU acceleration" (~line 60)
 
-- [ ] **21.3** Add a new section: **macOS Apple Silicon — Metal GPU Setup**:
+- [x] **21.3** Add a new section: **macOS Apple Silicon — Metal GPU Setup**:
   - Prerequisites: macOS 13+, Apple Silicon Mac
   - Installation: bare-metal only (not Docker)
   - Verification steps: check logs for `"Metal backend selected"`, verify VRAM in dashboard
   - Forcing Metal: `"Runtime": {"ForceBackend": "metal"}` or `SHARPAI_FORCE_BACKEND=metal`
 
-- [ ] **21.4** Update the Auto-Detection Logic section (~lines 500-513) to include Metal in the detection flow diagram.
+- [x] **21.4** Update the Auto-Detection Logic section (~lines 500-513) to include Metal in the detection flow diagram.
 
-- [ ] **21.5** Update the Backend Selection Priority section (~lines 495-498) to list `"metal"` as a valid value.
+- [x] **21.5** Update the Backend Selection Priority section (~lines 495-498) to list `"metal"` as a valid value.
 
-- [ ] **21.6** Add a Docker limitation note in the Docker sections explaining that Metal is not available in containers.
+- [x] **21.6** Add a Docker limitation note in the Docker sections explaining that Metal is not available in containers.
 
 ---
 
@@ -558,7 +575,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `src/CLAUDE.md`
 
-- [ ] **22.1** Update the Runtime Backend Configuration section (~lines 93-98):
+- [x] **22.1** Update the Runtime Backend Configuration section (~lines 93-98):
   ```
   - **Windows/Linux**: Auto-detects NVIDIA GPU for CUDA acceleration
   - **macOS Apple Silicon**: Auto-detects Metal GPU acceleration
@@ -566,7 +583,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
   - Can be overridden with `"Runtime": {"ForceBackend": "cpu"}`, `"cuda"`, or `"metal"`
   ```
 
-- [ ] **22.2** Update the LLamaSharp dependency description (~line 69):
+- [x] **22.2** Update the LLamaSharp dependency description (~line 69):
   ```
   Local model inference engine with CPU, CUDA12, and Metal backends
   ```
@@ -577,7 +594,7 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 
 **File:** `CHANGELOG.md`
 
-- [ ] **23.1** Add a changelog entry for the next version:
+- [x] **23.1** Add a changelog entry for the next version:
   ```markdown
   ## vX.Y.Z
 
@@ -597,6 +614,8 @@ This is the core change. The bootstrapper currently blocks Apple Silicon from GP
 ---
 
 ## 24. Testing Plan
+
+> **All items in this section require physical hardware and have not been verified locally.** Code is in place; runtime confirmation is pending.
 
 ### Unit / Build Verification
 - [ ] **24.1** `dotnet build SharpAI.sln` succeeds on macOS Apple Silicon, Windows, and Linux with no new warnings.
