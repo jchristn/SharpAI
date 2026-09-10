@@ -508,3 +508,37 @@ Please see the [CHANGELOG.md](CHANGELOG.md) file for detailed version history an
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+## Authentication & admin surface (v5)
+
+The server is open by default. When authentication is enabled, pass credentials to the constructor, or
+sign in to obtain a bearer session token (stored on the client automatically):
+
+```csharp
+using SharpAI.Sdk;
+
+// Up-front credentials (any one of):
+SharpAISdk sdk = new SharpAISdk("http://127.0.0.1:8000", token: "eyJ...");        // bearer token
+new SharpAISdk("http://127.0.0.1:8000", apiKey: "...");                            // admin API key
+new SharpAISdk("http://127.0.0.1:8000", accessKey: "access_...", secretKey: "secret_...");
+
+// Or interactive login -> stores the token on the client
+await sdk.Admin.LoginAsync("admin@sharpai.local", "password", "ten_...");
+```
+
+All requests then carry the appropriate auth headers automatically. The `Admin` group covers the v5
+control plane:
+
+- **Settings** — `GetSettingsAsync`, `UpdateSettingsAsync`
+- **Request history** — `RequestHistoryAsync`, `RequestHistorySummaryAsync`, `RequestHistoryEntryAsync`
+- **Auth** — `LoginAsync`, `SessionAsync`, `LogoutAsync`, `AuditAsync`
+- **Account / RBAC** — `ListTenantsAsync`, `CreateTenantAsync`, `ListUsersAsync`, `CreateUserAsync`,
+  `DeleteUserAsync`, `ListCredentialsAsync`, `CreateCredentialAsync`, `ListRolesAsync`,
+  `CreateAssignmentAsync`, `UserPermissionsAsync`, `CredentialPermissionsAsync`
+
+```csharp
+JsonElement? page = await sdk.Admin.RequestHistoryAsync(new Dictionary<string, string> { ["pageSize"] = "25" });
+CreatedCredential? cred = await sdk.Admin.CreateCredentialAsync("ten_...", "usr_...", "CI key"); // SecretKey shown once
+```
+
+Read methods return the parsed `JsonElement` (or null on a non-success status).

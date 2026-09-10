@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2020",
     "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "lib": ["ES2021", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
     "allowJs": true,
@@ -22,12 +22,12 @@
     "forceConsistentCasingInFileNames": true,
 
     /* Types and paths */
-    "types": ["vite/client", "node", "jest", "@testing-library/jest-dom"],
+    "types": ["vite/client", "node"],
     "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"]
     }
   },
   "include": ["src", "vite.config.ts"],
-  "exclude": ["node_modules", "dist", "tests"]
+  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/**/*.test.tsx"]
 }

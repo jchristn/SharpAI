@@ -49,6 +49,31 @@ namespace SharpAI.Sdk
         public IOpenAIMethods OpenAI { get; private set; }
 
         /// <summary>
+        /// Administrative methods: settings, request history, authentication, audit, and account/RBAC management.
+        /// </summary>
+        public IAdminMethods Admin { get; private set; }
+
+        /// <summary>
+        /// Bearer session token, if any. Set automatically after a successful login.
+        /// </summary>
+        public string? Token { get; set; }
+
+        /// <summary>
+        /// Administrator API key (x-api-key), if any.
+        /// </summary>
+        public string? ApiKey { get; set; }
+
+        /// <summary>
+        /// Credential access key (x-access-key), if any.
+        /// </summary>
+        public string? AccessKey { get; set; }
+
+        /// <summary>
+        /// Credential secret key (x-secret-key), if any.
+        /// </summary>
+        public string? SecretKey { get; set; }
+
+        /// <summary>
         /// JSON serializer options for API requests and responses.
         /// </summary>
         public readonly JsonSerializerOptions _JsonOptions;
@@ -67,12 +92,20 @@ namespace SharpAI.Sdk
         /// Initialize the SharpAI SDK.
         /// </summary>
         /// <param name="endpoint">SharpAI server endpoint URL.</param>
-        public SharpAISdk(string endpoint)
+        /// <param name="token">Optional bearer session token.</param>
+        /// <param name="apiKey">Optional administrator API key (x-api-key).</param>
+        /// <param name="accessKey">Optional credential access key (x-access-key).</param>
+        /// <param name="secretKey">Optional credential secret key (x-secret-key).</param>
+        public SharpAISdk(string endpoint, string? token = null, string? apiKey = null, string? accessKey = null, string? secretKey = null)
         {
             if (string.IsNullOrEmpty(endpoint))
                 throw new ArgumentNullException(nameof(endpoint));
 
             Endpoint = endpoint.TrimEnd('/');
+            Token = token;
+            ApiKey = apiKey;
+            AccessKey = accessKey;
+            SecretKey = secretKey;
 
             _JsonOptions = new JsonSerializerOptions
             {
@@ -83,6 +116,81 @@ namespace SharpAI.Sdk
 
             Ollama = new OllamaMethods(this);
             OpenAI = new OpenAIMethods(this);
+            Admin = new AdminMethods(this);
+        }
+
+        /// <summary>
+        /// Apply the configured authentication headers to a request.
+        /// </summary>
+        /// <param name="req">Request.</param>
+        public void ApplyAuthHeaders(RestRequest req)
+        {
+            System.Collections.Specialized.NameValueCollection headers = req.Headers ?? new System.Collections.Specialized.NameValueCollection();
+            if (!string.IsNullOrEmpty(Token)) headers["Authorization"] = "Bearer " + Token;
+            if (!string.IsNullOrEmpty(ApiKey)) headers["x-api-key"] = ApiKey;
+            if (!string.IsNullOrEmpty(AccessKey) && !string.IsNullOrEmpty(SecretKey))
+            {
+                headers["x-access-key"] = AccessKey;
+                headers["x-secret-key"] = SecretKey;
+            }
+            req.Headers = headers;
+        }
+
+        /// <summary>
+        /// Send a request with an arbitrary method, optional JSON body, and optional extra headers,
+        /// returning a typed response or default(T) on a non-success response. Authentication headers are
+        /// applied automatically.
+        /// </summary>
+        /// <typeparam name="T">Response type.</typeparam>
+        /// <param name="method">HTTP method.</param>
+        /// <param name="url">Full URL.</param>
+        /// <param name="body">Optional request body.</param>
+        /// <param name="extraHeaders">Optional additional headers.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>Deserialized response or default.</returns>
+        public async Task<T?> SendAsync<T>(
+            HttpMethod method,
+            string url,
+            object? body = null,
+            IDictionary<string, string>? extraHeaders = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrEmpty(url))
+                throw new ArgumentNullException(nameof(url));
+
+            using (RestRequest req = new RestRequest(url, method))
+            {
+                req.TimeoutMilliseconds = TimeoutMs;
+                ApplyAuthHeaders(req);
+                if (extraHeaders != null)
+                {
+                    foreach (KeyValuePair<string, string> header in extraHeaders)
+                        req.Headers[header.Key] = header.Value;
+                }
+
+                byte[]? jsonBytes = null;
+                if (body != null)
+                {
+                    req.ContentType = "application/json";
+                    jsonBytes = System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(body, _JsonOptions));
+                }
+
+                using (RestResponse resp = jsonBytes != null
+                    ? await req.SendAsync(jsonBytes, cancellationToken).ConfigureAwait(false)
+                    : await req.SendAsync(cancellationToken).ConfigureAwait(false))
+                {
+                    if (resp != null && resp.StatusCode >= 200 && resp.StatusCode <= 299)
+                    {
+                        string? responseData = await ReadResponse(resp, cancellationToken).ConfigureAwait(false);
+                        if (!string.IsNullOrEmpty(responseData))
+                            return JsonSerializer.Deserialize<T>(responseData, _JsonOptions);
+                        return default(T);
+                    }
+
+                    Log("WARN", $"Non-success from {url}: {resp?.StatusCode}");
+                    return default(T);
+                }
+            }
         }
 
         #endregion
@@ -164,6 +272,7 @@ namespace SharpAI.Sdk
             {
                 req.TimeoutMilliseconds = TimeoutMs;
                 req.ContentType = "application/json";
+                ApplyAuthHeaders(req);
 
                 if (LogRequests)
                     Log("DEBUG", $"POST request to {url} with {jsonBytes.Length} bytes");
@@ -222,6 +331,7 @@ namespace SharpAI.Sdk
             using (RestRequest req = new RestRequest(url, HttpMethod.Get))
             {
                 req.TimeoutMilliseconds = TimeoutMs;
+                ApplyAuthHeaders(req);
 
                 if (LogRequests)
                     Log("DEBUG", $"GET request to {url}");
@@ -288,6 +398,7 @@ namespace SharpAI.Sdk
             {
                 req.TimeoutMilliseconds = TimeoutMs;
                 req.ContentType = "application/json";
+                ApplyAuthHeaders(req);
 
                 if (LogRequests)
                     Log("DEBUG", $"DELETE request to {url} with {jsonBytes.Length} bytes");
@@ -352,6 +463,7 @@ namespace SharpAI.Sdk
             {
                 req.TimeoutMilliseconds = TimeoutMs;
                 req.ContentType = "application/json";
+                ApplyAuthHeaders(req);
 
                 if (LogRequests)
                     Log("DEBUG", $"POST request to {url} with {jsonBytes.Length} bytes");
@@ -399,6 +511,7 @@ namespace SharpAI.Sdk
             using (RestRequest req = new RestRequest(url, HttpMethod.Get))
             {
                 req.TimeoutMilliseconds = TimeoutMs;
+                ApplyAuthHeaders(req);
 
                 if (LogRequests)
                     Log("DEBUG", $"GET request to {url}");
@@ -497,6 +610,7 @@ namespace SharpAI.Sdk
             {
                 req.TimeoutMilliseconds = TimeoutMs;
                 req.ContentType = "application/json";
+                ApplyAuthHeaders(req);
 
                 if (LogRequests)
                     Log("DEBUG", $"POST request to {url} with {jsonBytes.Length} bytes");

@@ -229,6 +229,38 @@ namespace Test.Shared
                         write.OwnerUserGuid = owner.Guid;
                         TestAssert.True(_Engine.Authorize(write).IsPermitted, "a tenant-admin owner should not cap the credential");
                         return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Rbac", "Cross_Tenant_Isolation", "A grant in one tenant does not apply in another",
+                    ct =>
+                    {
+                        EnsureBase();
+                        string user = NewUser();
+                        AssignRoleByName(user, BuiltInRoles.Viewer, ResourceScopeEnum.Tenant, null, true);
+
+                        // Same principal, but evaluated against a different tenant: assignments are tenant-scoped,
+                        // so no grants resolve and access is implicitly denied.
+                        AuthorizationRequest otherTenant = new AuthorizationRequest
+                        {
+                            TenantGuid = "ten_" + Guid.NewGuid().ToString("N"),
+                            PrincipalType = PrincipalTypeEnum.User,
+                            PrincipalGuid = user,
+                            ResourceType = ResourceTypes.Model,
+                            Operation = OperationTypeEnum.Read
+                        };
+                        TestAssert.True(!_Engine.Authorize(otherTenant).IsPermitted, "a grant must not cross tenant boundaries");
+                        return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Rbac", "Unresolvable_Role", "An assignment to a non-existent role yields no grants",
+                    ct =>
+                    {
+                        EnsureBase();
+                        string user = NewUser();
+                        AssignRoleByName(user, "NoSuchRole-" + Guid.NewGuid().ToString("N"), ResourceScopeEnum.Tenant, null, true);
+                        AuthorizationDecision d = _Engine.Authorize(Req(PrincipalTypeEnum.User, user, ResourceTypes.Model, OperationTypeEnum.Read));
+                        TestAssert.True(d.Result == AuthorizationResultEnum.DeniedImplicit, "an unresolvable role should grant nothing");
+                        return Task.CompletedTask;
                     })
             };
 

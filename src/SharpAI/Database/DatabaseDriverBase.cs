@@ -33,6 +33,11 @@ namespace SharpAI.Database
         public IModelRegistryMethods Models { get; }
 
         /// <summary>
+        /// Model-preset (Modelfile-equivalent) data-access methods. Never null.
+        /// </summary>
+        public IModelPresetMethods Presets { get; }
+
+        /// <summary>
         /// Request-history data-access methods.
         /// </summary>
         public IRequestHistoryMethods RequestHistory { get; }
@@ -132,6 +137,7 @@ namespace SharpAI.Database
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             Logging = logging ?? throw new ArgumentNullException(nameof(logging));
             Models = new ModelRegistryMethods(this);
+            Presets = new ModelPresetMethods(this);
             RequestHistory = new RequestHistoryMethods(this);
             Tenants = new TenantMethods(this);
             Users = new UserMethods(this);

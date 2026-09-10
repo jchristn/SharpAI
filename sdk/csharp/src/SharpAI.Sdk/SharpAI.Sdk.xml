@@ -4,6 +4,78 @@
         <name>SharpAI.Sdk</name>
     </assembly>
     <members>
+        <member name="T:SharpAI.Sdk.Implementations.AdminMethods">
+            <summary>
+            Implementation of administrative methods: settings, request history, authentication, audit, and
+            account/RBAC management.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.#ctor(SharpAI.Sdk.SharpAISdk)">
+            <summary>
+            Initialize the administrative methods.
+            </summary>
+            <param name="sdk">Owning SDK instance.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.GetSettingsAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.UpdateSettingsAsync(System.Object,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.RequestHistoryAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.RequestHistorySummaryAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.RequestHistoryEntryAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.LoginAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.SessionAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.LogoutAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.AuditAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.ListTenantsAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.CreateTenantAsync(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.ListUsersAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.CreateUserAsync(System.String,SharpAI.Sdk.Models.Admin.CreateUserRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.DeleteUserAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.ListCredentialsAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.CreateCredentialAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.ListRolesAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.CreateAssignmentAsync(System.String,SharpAI.Sdk.Models.Admin.CreateAssignmentRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.UserPermissionsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.CredentialPermissionsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="T:SharpAI.Sdk.Implementations.OllamaMethods">
             <summary>
             Implementation of Ollama API methods.
@@ -19,6 +91,21 @@
             <inheritdoc />
         </member>
         <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.DeleteModel(SharpAI.Models.Ollama.OllamaDeleteModelRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.ImportModel(SharpAI.Sdk.Models.SharpAIImportModelRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.ListPresets(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.CreatePreset(SharpAI.Sdk.Models.SharpAICreatePresetRequest,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.GetPreset(System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.DeletePreset(System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:SharpAI.Sdk.Implementations.OllamaMethods.ListLocalModels(System.Threading.CancellationToken)">
@@ -70,6 +157,72 @@
         </member>
         <member name="M:SharpAI.Sdk.Implementations.OpenAIMethods.GenerateChatCompletionStreamAsync(SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest,System.Threading.CancellationToken)">
             <inheritdoc />
+        </member>
+        <member name="T:SharpAI.Sdk.Interfaces.IAdminMethods">
+            <summary>
+            Administrative methods: settings, request history, authentication, audit, and account/RBAC
+            management. Read methods return the parsed JSON element, or null on a non-success response.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.GetSettingsAsync(System.Threading.CancellationToken)">
+            <summary>Get the current server settings.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.UpdateSettingsAsync(System.Object,System.Threading.CancellationToken)">
+            <summary>Replace the server settings.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.RequestHistoryAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>List captured requests.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.RequestHistorySummaryAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>Summarize captured requests into time buckets.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.RequestHistoryEntryAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Read a captured request by identifier.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.LoginAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Log in and obtain a bearer session token (stored on the client).</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.SessionAsync(System.Threading.CancellationToken)">
+            <summary>Read the current session.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.LogoutAsync(System.Threading.CancellationToken)">
+            <summary>Revoke the current session (logout).</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.AuditAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>List security audit events.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.ListTenantsAsync(System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>List tenants.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.CreateTenantAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Create a tenant.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.ListUsersAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>List users within a tenant.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.CreateUserAsync(System.String,SharpAI.Sdk.Models.Admin.CreateUserRequest,System.Threading.CancellationToken)">
+            <summary>Create a user within a tenant.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.DeleteUserAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Delete a user (cascades to credentials and assignments).</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.ListCredentialsAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>List credentials within a tenant.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.CreateCredentialAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Create a credential; the plaintext secret key is returned once.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.ListRolesAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>List roles visible to a tenant (its own plus built-ins).</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.CreateAssignmentAsync(System.String,SharpAI.Sdk.Models.Admin.CreateAssignmentRequest,System.Threading.CancellationToken)">
+            <summary>Assign a role to a user.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.UserPermissionsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Inspect a user's effective permissions.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.CredentialPermissionsAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Inspect a credential's effective permissions.</summary>
         </member>
         <member name="T:SharpAI.Sdk.Interfaces.IOllamaMethods">
             <summary>
@@ -147,6 +300,45 @@
             <param name="cancellationToken">Cancellation token.</param>
             <returns>Async enumerable of streaming completion results.</returns>
         </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.ImportModel(SharpAI.Sdk.Models.SharpAIImportModelRequest,System.Threading.CancellationToken)">
+            <summary>
+            Import a GGUF model already present on the server's local filesystem (no download, no token).
+            </summary>
+            <param name="request">Import request (local path + optional name).</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The registered model details.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.ListPresets(System.Threading.CancellationToken)">
+            <summary>
+            List Modelfile-equivalent presets.
+            </summary>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The preset enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.CreatePreset(SharpAI.Sdk.Models.SharpAICreatePresetRequest,System.Threading.CancellationToken)">
+            <summary>
+            Create a Modelfile-equivalent preset.
+            </summary>
+            <param name="request">Preset definition.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The created preset.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.GetPreset(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Read a preset by name.
+            </summary>
+            <param name="name">Preset name.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The preset, or default when not found.</returns>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.DeletePreset(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Delete a preset by name.
+            </summary>
+            <param name="name">Preset name.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>The delete result.</returns>
+        </member>
         <member name="T:SharpAI.Sdk.Interfaces.IOpenAIMethods">
             <summary>
             Interface for OpenAI API methods.
@@ -199,6 +391,206 @@
             <param name="request">The chat completion request.</param>
             <param name="cancellationToken">Cancellation token.</param>
             <returns>Streaming chat completion results.</returns>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest">
+            <summary>
+            Request body to assign a role to a user at a given scope. Reference a role by GUID or by name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest.UserGuid">
+            <summary>
+            User identifier the role is assigned to.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest.RoleGuid">
+            <summary>
+            Role identifier, or null when referencing a role by name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest.RoleName">
+            <summary>
+            Role name, used when the GUID is null (for a built-in role).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest.ResourceScope">
+            <summary>
+            Resource scope ("Tenant" or "Resource").
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest.ResourceGuid">
+            <summary>
+            Target resource identifier when resource-scoped.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateAssignmentRequest.InheritsToChildren">
+            <summary>
+            Whether a tenant-scoped grant flows to child resources.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.Admin.CreatedCredential">
+            <summary>
+            The one-time credential creation response, including the plaintext secret key (shown only once).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.Guid">
+            <summary>
+            Credential identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.UserId">
+            <summary>
+            Owning user identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.TenantId">
+            <summary>
+            Tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.Name">
+            <summary>
+            Human-readable name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.AccessKey">
+            <summary>
+            Access key (safe to store).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.SecretKey">
+            <summary>
+            Plaintext secret key, returned only once at creation.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.ExpiresUtc">
+            <summary>
+            Expiry time in UTC, if any.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.Admin.CreateUserRequest">
+            <summary>
+            Request body to create a user. The plaintext password is hashed server-side.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateUserRequest.Email">
+            <summary>
+            Email address (unique within the tenant).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateUserRequest.Password">
+            <summary>
+            Plaintext password.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateUserRequest.FirstName">
+            <summary>
+            First name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateUserRequest.LastName">
+            <summary>
+            Last name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateUserRequest.IsAdmin">
+            <summary>
+            Whether the user is a global administrator.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.CreateUserRequest.IsTenantAdmin">
+            <summary>
+            Whether the user is a tenant administrator.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.Admin.LoginResponse">
+            <summary>
+            Response from a successful login.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.LoginResponse.Token">
+            <summary>
+            Opaque bearer session token.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.LoginResponse.SessionId">
+            <summary>
+            Session identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.LoginResponse.TenantId">
+            <summary>
+            Tenant identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.LoginResponse.UserId">
+            <summary>
+            User identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.Admin.LoginResponse.ExpiresUtc">
+            <summary>
+            Expiry time in UTC.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.SharpAICreatePresetRequest">
+            <summary>
+            Request to create a Modelfile-equivalent preset layered over a base model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.Name">
+            <summary>
+            Preset name (used as the model value in inference requests). Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.Model">
+            <summary>
+            Base model name in the registry. Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.System">
+            <summary>
+            Default system prompt, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.Temperature">
+            <summary>
+            Default sampling temperature, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.MaxTokens">
+            <summary>
+            Default maximum tokens to generate, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.TopP">
+            <summary>
+            Default top-p value, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.Template">
+            <summary>
+            Optional raw chat-template override, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAICreatePresetRequest.Stop">
+            <summary>
+            Default stop sequences, or null.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Sdk.Models.SharpAIImportModelRequest">
+            <summary>
+            Request to import a GGUF model already present on the server's local filesystem (no download).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAIImportModelRequest.Path">
+            <summary>
+            Local filesystem path to the .gguf file, readable by the server process. Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.Models.SharpAIImportModelRequest.Name">
+            <summary>
+            Registry name to assign. When null, the file name (without extension) is used.
+            </summary>
         </member>
         <member name="T:SharpAI.Sdk.Models.SharpAIPullModelResponse">
             <summary>
@@ -297,16 +689,65 @@
             OpenAI API methods.
             </summary>
         </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.Admin">
+            <summary>
+            Administrative methods: settings, request history, authentication, audit, and account/RBAC management.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.Token">
+            <summary>
+            Bearer session token, if any. Set automatically after a successful login.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.ApiKey">
+            <summary>
+            Administrator API key (x-api-key), if any.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.AccessKey">
+            <summary>
+            Credential access key (x-access-key), if any.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Sdk.SharpAISdk.SecretKey">
+            <summary>
+            Credential secret key (x-secret-key), if any.
+            </summary>
+        </member>
         <member name="F:SharpAI.Sdk.SharpAISdk._JsonOptions">
             <summary>
             JSON serializer options for API requests and responses.
             </summary>
         </member>
-        <member name="M:SharpAI.Sdk.SharpAISdk.#ctor(System.String)">
+        <member name="M:SharpAI.Sdk.SharpAISdk.#ctor(System.String,System.String,System.String,System.String,System.String)">
             <summary>
             Initialize the SharpAI SDK.
             </summary>
             <param name="endpoint">SharpAI server endpoint URL.</param>
+            <param name="token">Optional bearer session token.</param>
+            <param name="apiKey">Optional administrator API key (x-api-key).</param>
+            <param name="accessKey">Optional credential access key (x-access-key).</param>
+            <param name="secretKey">Optional credential secret key (x-secret-key).</param>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.ApplyAuthHeaders(RestWrapper.RestRequest)">
+            <summary>
+            Apply the configured authentication headers to a request.
+            </summary>
+            <param name="req">Request.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.SendAsync``1(System.Net.Http.HttpMethod,System.String,System.Object,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
+            <summary>
+            Send a request with an arbitrary method, optional JSON body, and optional extra headers,
+            returning a typed response or default(T) on a non-success response. Authentication headers are
+            applied automatically.
+            </summary>
+            <typeparam name="T">Response type.</typeparam>
+            <param name="method">HTTP method.</param>
+            <param name="url">Full URL.</param>
+            <param name="body">Optional request body.</param>
+            <param name="extraHeaders">Optional additional headers.</param>
+            <param name="cancellationToken">Cancellation token.</param>
+            <returns>Deserialized response or default.</returns>
         </member>
         <member name="M:SharpAI.Sdk.SharpAISdk.Dispose">
             <summary>

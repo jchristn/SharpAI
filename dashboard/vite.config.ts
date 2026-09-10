@@ -16,13 +16,6 @@ export default defineConfig({
     outDir: "dist",
     sourcemap: true,
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        silenceDeprecations: ["import", "global-builtin"],
-      },
-    },
-  },
   resolve: {
     alias: {
       "#": "/src",

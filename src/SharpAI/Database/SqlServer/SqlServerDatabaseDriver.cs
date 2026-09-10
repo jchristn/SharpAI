@@ -132,6 +132,12 @@ namespace SharpAI.Database.SqlServer
                         "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_ura_tenant_user') CREATE INDEX idx_ura_tenant_user ON userroleassignments (tenantguid, userguid)",
                         "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'credentialscopeassignments') CREATE TABLE credentialscopeassignments (guid NVARCHAR(64) PRIMARY KEY, tenantguid NVARCHAR(64), credentialguid NVARCHAR(64), roleguid NVARCHAR(64) NULL, rolename NVARCHAR(256) NULL, resourcescope NVARCHAR(16), resourceguid NVARCHAR(64) NULL, inheritstochildren INT NOT NULL DEFAULT 1, permissions NVARCHAR(MAX), resourcetypes NVARCHAR(MAX), active INT NOT NULL DEFAULT 1, isprotected INT NOT NULL DEFAULT 0, createdutc NVARCHAR(64) NOT NULL, lastupdateutc NVARCHAR(64) NOT NULL)",
                         "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_csa_tenant_cred') CREATE INDEX idx_csa_tenant_cred ON credentialscopeassignments (tenantguid, credentialguid)"
+                    }),
+
+                    new SchemaMigration(5, "Model presets schema", new List<string>
+                    {
+                        "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'model_presets') CREATE TABLE model_presets (guid NVARCHAR(64) PRIMARY KEY, name NVARCHAR(256), modelname NVARCHAR(256), systemprompt NVARCHAR(MAX), temperature NVARCHAR(32), maxtokens INT, topp NVARCHAR(32), templateoverride NVARCHAR(MAX), stopjson NVARCHAR(MAX), createdutc NVARCHAR(64) NOT NULL, lastupdateutc NVARCHAR(64) NOT NULL)",
+                        "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_model_presets_name') CREATE INDEX idx_model_presets_name ON model_presets (name)"
                     })
                 };
             }

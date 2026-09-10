@@ -1,0 +1,139 @@
+name: Server contract
+
+# Builds the server and runs the Test.Server HTTP contract harness against it at runtime (no model needed).
+# Three legs: (1) an auth-off server (SQLite, telemetry off) verifying API shapes, readiness, and error
+# envelopes; (2) an auth-enabled server verifying the 401 challenge, admin-key bypass, login, and RBAC 403
+# denial; (3) a telemetry-enabled server verifying the Prometheus /metrics endpoint and live counters.
+# Each server is always stopped afterward.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/server-contract.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - '.github/workflows/server-contract.yml'
+  workflow_dispatch:
+
+jobs:
+  contract:
+    name: Live HTTP contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Build server + harness
+        run: |
+          dotnet build src/SharpAI.Server/SharpAI.Server.csproj -c Release
+          dotnet build src/Test.Server/Test.Server.csproj -c Release
+
+      - name: Run contract suite
+        run: |
+          set -e
+          mkdir -p run/models run/logs
+          cat > run/sharpai.json <<'JSON'
+          {
+            "SchemaVersion": "5.0.0",
+            "SoftwareVersion": "5.0.0",
+            "Storage": { "ModelsDirectory": "./models/" },
+            "Rest": { "Port": 18080, "Host": "localhost" },
+            "Logging": { "ConsoleLogging": true, "LogDirectory": "./logs/" },
+            "Database": { "Type": "Sqlite", "Filename": "./sharpai.db" },
+            "Auth": { "Enabled": false },
+            "Telemetry": { "Enable": false },
+            "RequestHistory": { "Enabled": true, "RetentionDays": 7 }
+          }
+          JSON
+
+          DLL="$GITHUB_WORKSPACE/src/SharpAI.Server/bin/Release/net8.0/SharpAI.Server.dll"
+          ( cd run && dotnet "$DLL" ) &
+          SRV_PID=$!
+          trap 'kill $SRV_PID 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 40); do
+            if curl -sf -m 2 http://localhost:18080/health >/dev/null; then echo "server up"; break; fi
+            sleep 2
+          done
+
+          dotnet run --project src/Test.Server/Test.Server.csproj -c Release --no-build -- http://localhost:18080 --results server-contract-results.json
+
+      - name: Run auth/RBAC contract suite
+        run: |
+          set -e
+          mkdir -p runauth/models runauth/logs
+          cat > runauth/sharpai.json <<'JSON'
+          {
+            "SchemaVersion": "5.0.0",
+            "SoftwareVersion": "5.0.0",
+            "Storage": { "ModelsDirectory": "./models/" },
+            "Rest": { "Port": 18081, "Host": "localhost" },
+            "Logging": { "ConsoleLogging": true, "LogDirectory": "./logs/" },
+            "Database": { "Type": "Sqlite", "Filename": "./sharpai.db" },
+            "Auth": { "Enabled": true, "AdminApiKeys": ["test-admin-key"], "TokenSigningKey": "contract-test-key" },
+            "Telemetry": { "Enable": false },
+            "RequestHistory": { "Enabled": true, "RetentionDays": 7 }
+          }
+          JSON
+
+          DLL="$GITHUB_WORKSPACE/src/SharpAI.Server/bin/Release/net8.0/SharpAI.Server.dll"
+          ( cd runauth && dotnet "$DLL" ) &
+          SRV_PID=$!
+          trap 'kill $SRV_PID 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 40); do
+            if curl -sf -m 2 http://localhost:18081/health >/dev/null; then echo "auth server up"; break; fi
+            sleep 2
+          done
+
+          dotnet run --project src/Test.Server/Test.Server.csproj -c Release --no-build -- http://localhost:18081 --auth --results server-auth-contract-results.json
+
+      - name: Run telemetry contract suite
+        run: |
+          set -e
+          mkdir -p runtel/models runtel/logs
+          cat > runtel/sharpai.json <<'JSON'
+          {
+            "SchemaVersion": "5.0.0",
+            "SoftwareVersion": "5.0.0",
+            "Storage": { "ModelsDirectory": "./models/" },
+            "Rest": { "Port": 18082, "Host": "localhost" },
+            "Logging": { "ConsoleLogging": true, "LogDirectory": "./logs/" },
+            "Database": { "Type": "Sqlite", "Filename": "./sharpai.db" },
+            "Auth": { "Enabled": false },
+            "Telemetry": { "Enable": true },
+            "RequestHistory": { "Enabled": true, "RetentionDays": 7 }
+          }
+          JSON
+
+          DLL="$GITHUB_WORKSPACE/src/SharpAI.Server/bin/Release/net8.0/SharpAI.Server.dll"
+          ( cd runtel && dotnet "$DLL" ) &
+          SRV_PID=$!
+          trap 'kill $SRV_PID 2>/dev/null || true' EXIT
+
+          for i in $(seq 1 40); do
+            if curl -sf -m 2 http://localhost:18082/health >/dev/null; then echo "telemetry server up"; break; fi
+            sleep 2
+          done
+
+          dotnet run --project src/Test.Server/Test.Server.csproj -c Release --no-build -- http://localhost:18082 --telemetry --results server-telemetry-contract-results.json
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-contract-results
+          path: |
+            server-contract-results.json
+            server-auth-contract-results.json
+            server-telemetry-contract-results.json
+          if-no-files-found: ignore

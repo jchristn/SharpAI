@@ -1,9 +1,17 @@
 // Main SDK class
-export { SharpAISdk, type LoggerCallback } from './SharpAISdk';
+export { SharpAISdk, type LoggerCallback, type SharpAIAuthOptions } from './SharpAISdk';
 
 // Interfaces
 export type { IOllamaMethods } from './interfaces/IOllamaMethods';
 export type { IOpenAIMethods } from './interfaces/IOpenAIMethods';
+export type {
+  IAdminMethods,
+  QueryParams,
+  LoginResponse,
+  CreateUserRequest,
+  CreateAssignmentRequest,
+  CreatedCredential,
+} from './interfaces/IAdminMethods';
 
 // Ollama models and helpers
 export type {

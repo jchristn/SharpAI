@@ -127,6 +127,12 @@ namespace SharpAI.Database.Mysql
                         "CREATE INDEX idx_ura_tenant_user ON userroleassignments (tenantguid, userguid)",
                         "CREATE TABLE IF NOT EXISTS credentialscopeassignments (guid VARCHAR(64) PRIMARY KEY, tenantguid VARCHAR(64), credentialguid VARCHAR(64), roleguid VARCHAR(64), rolename VARCHAR(256), resourcescope VARCHAR(16), resourceguid VARCHAR(64), inheritstochildren INT NOT NULL DEFAULT 1, permissions TEXT, resourcetypes TEXT, active INT NOT NULL DEFAULT 1, isprotected INT NOT NULL DEFAULT 0, createdutc VARCHAR(64) NOT NULL, lastupdateutc VARCHAR(64) NOT NULL)",
                         "CREATE INDEX idx_csa_tenant_cred ON credentialscopeassignments (tenantguid, credentialguid)"
+                    }),
+
+                    new SchemaMigration(5, "Model presets schema", new List<string>
+                    {
+                        "CREATE TABLE IF NOT EXISTS model_presets (guid VARCHAR(64) PRIMARY KEY, name VARCHAR(256), modelname VARCHAR(256), systemprompt TEXT, temperature VARCHAR(32), maxtokens INT, topp VARCHAR(32), templateoverride TEXT, stopjson TEXT, createdutc VARCHAR(64) NOT NULL, lastupdateutc VARCHAR(64) NOT NULL)",
+                        "CREATE INDEX idx_model_presets_name ON model_presets (name)"
                     })
                 };
             }

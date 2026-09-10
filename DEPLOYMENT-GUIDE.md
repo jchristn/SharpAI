@@ -493,9 +493,11 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 }
 ```
 
-**Complete configuration:**
+**Complete configuration (5.0):**
 ```json
 {
+  "SchemaVersion": "5.0.0",
+  "SoftwareVersion": "5.0.0",
   "HuggingFace": {
     "ApiKey": "hf_YOUR_API_KEY_HERE"
   },
@@ -515,9 +517,59 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
   "Logging": {
     "ConsoleLogging": true,
     "LogDirectory": "./logs/"
+  },
+  "Database": {
+    "Type": "Sqlite",
+    "Filename": "./sharpai.db"
+  },
+  "Auth": {
+    "Enabled": false,
+    "AdminApiKeys": [],
+    "TokenSigningKey": "",
+    "SessionTtlMinutes": 60
+  },
+  "Telemetry": {
+    "Enable": true,
+    "ServiceName": "sharpai",
+    "OtlpEndpoint": "http://otel-collector:4317",
+    "OtlpProtocol": "grpc",
+    "PrometheusEnable": false,
+    "EnableMetrics": true,
+    "EnableTraces": true,
+    "EnableLogs": false
+  },
+  "RequestHistory": {
+    "Enabled": true,
+    "RetentionDays": 7
   }
 }
 ```
+
+### Version 5.0 configuration blocks
+
+- **`Database`** — the metadata store. `Type` is one of `Sqlite` (default), `Mysql`, `Postgresql`, or
+  `SqlServer`. SQLite uses `Filename`; the server databases use `Hostname`/`Port`/`DatabaseName`/`Username`/
+  `Password`. Schema migrations run automatically on startup.
+- **`Auth`** — authentication, authorization, and accounting. **Disabled by default** (the server behaves
+  like an open local Ollama). When `Enabled` is true, supply `AdminApiKeys` and/or sign in for a bearer
+  token; `TokenSigningKey` should be set to a stable secret so session tokens survive restarts. See
+  `AUTHENTICATION` in the requirements for the full model.
+- **`Telemetry`** — OpenTelemetry metrics/traces/logs over OTLP plus a Prometheus `/metrics` exposition.
+  See [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) for the metrics catalog and the bundled Grafana
+  stack.
+- **`RequestHistory`** — captures every request for the history API and dashboard; `RetentionDays` controls
+  the automatic prune.
+
+Concurrency and model-lifecycle limits (max concurrent generations, keep-alive/eviction, memory budget)
+are additional tunables; the defaults are safe for a single-GPU or CPU host.
+
+### Dashboard & observability
+
+The server ships a management **dashboard** (served by the `sharpai-ui` container in `docker/compose.yaml`)
+covering model management, an inference playground, request history, an API explorer, live metrics, and
+settings. For a full observability stack (Prometheus, Loki, Tempo, Grafana with provisioned dashboards),
+bring up `docker/compose.yaml`; Grafana is at `http://localhost:9400`. Details in
+[`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md).
 
 ### Runtime Backend Options
 

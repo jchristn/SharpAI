@@ -10,7 +10,7 @@ SharpAI is a .NET library for local AI inference with an optional Ollama-compati
 
 The solution consists of:
 
-- **SharpAI** - Core library (.NET 8) containing the main AI functionality
+- **SharpAI** - Core library (multi-targets .NET 8 and .NET 10) containing the main AI functionality
 - **SharpAI.Server** - Console application that provides an Ollama-compatible REST API server
 - **Test.*** projects - Various test applications demonstrating different components
 
@@ -67,8 +67,12 @@ build-docker.bat <tag>
 ## Key Dependencies
 
 - **LLamaSharp** - Local model inference engine with CPU, CUDA12, and Metal backends
-- **Watson.ORM.Sqlite** - Database layer for model metadata
-- **SwiftStack** - REST API framework for the server
+- **Watson** (7.1) - Webserver for the server's REST routing, OpenAPI/Swagger, and native telemetry meters
+- **Hand-written ADO.NET data layer** - A provider-neutral database layer (interface/implementation pattern)
+  over Microsoft.Data.Sqlite, Npgsql, MySqlConnector, and Microsoft.Data.SqlClient. SQLite is the default;
+  MySQL, PostgreSQL, and SQL Server are all supported. Portable SQL with versioned migrations. (This replaces
+  the former WatsonORM/DatabaseWrapper approach.)
+- **Radiant** - In-process OpenTelemetry host (OTLP export) for metrics, traces, and logs
 - **RestWrapper** - HTTP client utilities
 - **SyslogLogging** - Logging infrastructure
 

@@ -2,6 +2,7 @@ namespace Test.Shared
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -51,7 +52,16 @@ namespace Test.Shared
                     ExecuteConcurrent, Array.Empty<string>(), skip, reason),
 
                 new TestCaseDescriptor("ModelInference", "Embeddings", "Embeddings produce a non-empty vector when supported",
-                    ExecuteEmbeddings, Array.Empty<string>(), skip, reason)
+                    ExecuteEmbeddings, Array.Empty<string>(), skip, reason),
+
+                new TestCaseDescriptor("ModelInference", "TemplateGolden", "Embedded chat template renders byte-for-byte to the committed golden",
+                    ExecuteTemplateGolden, Array.Empty<string>(), skip, reason),
+
+                new TestCaseDescriptor("ModelInference", "ToolCalling", "A tool-augmented prompt yields a parseable tool call",
+                    ExecuteToolCalling, Array.Empty<string>(), skip, reason),
+
+                new TestCaseDescriptor("ModelInference", "JsonMode", "GBNF grammar constrains output to valid JSON",
+                    ExecuteJsonMode, Array.Empty<string>(), skip, reason)
             };
 
             return new TestSuiteDescriptor(
@@ -125,6 +135,147 @@ namespace Test.Shared
 
             float[] vector = await engine.GenerateEmbeddingsAsync("hello world", token).ConfigureAwait(false);
             TestAssert.True(vector != null && vector.Length > 0, "embedding vector should be non-empty");
+        }
+
+        // W1.T6 — Golden-output regression for embedded chat-template rendering. A fixed conversation is
+        // rendered through the model's own embedded template and byte-matched against a committed golden
+        // keyed by the model architecture. This locks templating so a LlamaSharp bump can't silently
+        // regress the prompt bytes. Goldens live under a 'goldens' directory in the test tree; when a
+        // model whose architecture has no committed golden is supplied the case skips (rather than fails),
+        // and running with SHARPAI_WRITE_GOLDENS=1 captures a missing golden instead of asserting.
+        private static Task ExecuteTemplateGolden(CancellationToken token)
+        {
+            LlamaSharpEngine engine = _Engine!;
+
+            if (!engine.SupportsEmbeddedChatTemplate)
+            {
+                // No embedded template on this model; the embedded-template golden path does not apply.
+                return Task.CompletedTask;
+            }
+
+            List<ChatMessage> messages = new List<ChatMessage>
+            {
+                new ChatMessage { Role = "system", Content = "You are a helpful assistant." },
+                new ChatMessage { Role = "user", Content = "What is the capital of France?" }
+            };
+
+            string rendered = Normalize(engine.RenderEmbeddedChatPrompt(messages, true));
+            TestAssert.True(!string.IsNullOrEmpty(rendered), "embedded template render should not be empty");
+
+            string architecture = string.IsNullOrEmpty(engine.Architecture) ? "unknown" : engine.Architecture;
+            string? goldenDir = ResolveGoldenDirectory();
+
+            if (goldenDir == null)
+            {
+                // Running outside the source tree (e.g. a packaged CI leg with no goldens folder); nothing to
+                // compare against, so this is a no-op rather than a failure.
+                return Task.CompletedTask;
+            }
+
+            string goldenPath = System.IO.Path.Combine(goldenDir, "chat-" + architecture + ".txt");
+
+            if (!File.Exists(goldenPath))
+            {
+                string? writeFlag = Environment.GetEnvironmentVariable("SHARPAI_WRITE_GOLDENS");
+                if (!string.IsNullOrEmpty(writeFlag) && (writeFlag == "1" || writeFlag.Equals("true", StringComparison.OrdinalIgnoreCase)))
+                {
+                    File.WriteAllText(goldenPath, rendered);
+                    return Task.CompletedTask;
+                }
+
+                // No committed golden for this architecture and not in capture mode; skip cleanly.
+                return Task.CompletedTask;
+            }
+
+            string expected = Normalize(File.ReadAllText(goldenPath));
+            TestAssert.Equal(expected, rendered);
+            return Task.CompletedTask;
+        }
+
+        // W4.T1 — end-to-end tool calling through the engine: inject the tool instruction, generate at
+        // temperature 0 (deterministic), and confirm the output parses into the expected tool call. Gated on
+        // a tool-capable model; a model that does not emit a tool call fails this case (it asserts the
+        // end-to-end path, not merely the parser, which is covered deterministically elsewhere).
+        private static async Task ExecuteToolCalling(CancellationToken token)
+        {
+            LlamaSharpEngine engine = _Engine!;
+
+            List<SharpAI.Tools.ToolDefinition> tools = new List<SharpAI.Tools.ToolDefinition>
+            {
+                new SharpAI.Tools.ToolDefinition(
+                    "get_weather",
+                    "Get the current weather for a city",
+                    "{\"type\":\"object\",\"properties\":{\"city\":{\"type\":\"string\"}},\"required\":[\"city\"]}")
+            };
+
+            string instruction = SharpAI.Tools.ToolPromptBuilder.BuildSystemInstruction(tools);
+
+            List<ChatMessage> messages = new List<ChatMessage>
+            {
+                new ChatMessage { Role = "system", Content = instruction },
+                new ChatMessage { Role = "user", Content = "What is the weather in Paris right now? Use the tool." }
+            };
+
+            ChatTemplateResult templateResult = ChatTemplateResolver.Resolve(engine, engine.Architecture, messages);
+            string output = await engine.GenerateChatCompletionAsync(templateResult.Prompt, 128, 0.0f, templateResult.StopSequences, token).ConfigureAwait(false);
+
+            List<SharpAI.Tools.ParsedToolCall> calls = SharpAI.Tools.ToolCallParser.Parse(output);
+            TestAssert.True(calls.Count > 0, "expected at least one tool call, got output: " + output);
+            TestAssert.Equal("get_weather", calls[0].Name);
+            TestAssert.Contains(calls[0].ArgumentsJson.ToLowerInvariant(), "paris");
+        }
+
+        // W4.T4 — JSON mode: constrain decoding with the JSON GBNF grammar and assert the output parses as
+        // valid JSON, even when the prompt does not ask for JSON (the grammar, not the prompt, guarantees it).
+        private static async Task ExecuteJsonMode(CancellationToken token)
+        {
+            LlamaSharpEngine engine = _Engine!;
+
+            List<ChatMessage> messages = new List<ChatMessage>
+            {
+                new ChatMessage { Role = "user", Content = "Output a compact JSON object with exactly two keys: name (the string \"Alice\") and age (the number 30). No other keys." }
+            };
+
+            ChatTemplateResult templateResult = ChatTemplateResolver.Resolve(engine, engine.Architecture, messages);
+            // Generous token budget so a small object completes; the grammar guarantees validity, not brevity.
+            string output = await engine.GenerateChatCompletionAsync(
+                templateResult.Prompt, 256, 0.1f, templateResult.StopSequences,
+                SharpAI.Grammars.JsonGrammar.GenericJson, token).ConfigureAwait(false);
+
+            TestAssert.True(!string.IsNullOrWhiteSpace(output), "grammar-constrained output should not be empty");
+
+            bool valid = true;
+            try
+            {
+                using (System.Text.Json.JsonDocument.Parse(output)) { }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                valid = false;
+            }
+
+            TestAssert.True(valid, "grammar-constrained output should be valid JSON, got: " + output);
+        }
+
+        private static string Normalize(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            return value.Replace("\r\n", "\n").Replace("\r", "\n");
+        }
+
+        private static string? ResolveGoldenDirectory()
+        {
+            string? dir = AppContext.BaseDirectory;
+            for (int i = 0; i < 8 && !string.IsNullOrEmpty(dir); i++)
+            {
+                string candidate = System.IO.Path.Combine(dir, "goldens");
+                if (Directory.Exists(candidate)) return candidate;
+
+                DirectoryInfo? parent = Directory.GetParent(dir!);
+                dir = parent?.FullName;
+            }
+
+            return null;
         }
 
         #endregion

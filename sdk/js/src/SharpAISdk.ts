@@ -1,5 +1,7 @@
+import { AdminMethods } from './implementations/AdminMethods';
 import { OllamaMethods } from './implementations/OllamaMethods';
 import { OpenAIMethods } from './implementations/OpenAIMethods';
+import type { IAdminMethods } from './interfaces/IAdminMethods';
 import type { IOllamaMethods } from './interfaces/IOllamaMethods';
 import type { IOpenAIMethods } from './interfaces/IOpenAIMethods';
 
@@ -9,6 +11,17 @@ import type { IOpenAIMethods } from './interfaces/IOpenAIMethods';
  * @param message - Log message.
  */
 export type LoggerCallback = (level: string, message: string) => void;
+
+/**
+ * Optional authentication options. The server is open by default; supply a bearer token, an admin API
+ * key, or an access-key/secret-key pair. A token is also set automatically by {@link IAdminMethods.login}.
+ */
+export interface SharpAIAuthOptions {
+  apiKey?: string;
+  token?: string;
+  accessKey?: string;
+  secretKey?: string;
+}
 
 /**
  * SharpAI SDK for interacting with SharpAI server.
@@ -51,17 +64,109 @@ export class SharpAISdk {
   public readonly openAI: IOpenAIMethods;
 
   /**
+   * Administrative methods: settings, request history, authentication, audit, and account/RBAC management.
+   */
+  public readonly admin: IAdminMethods;
+
+  /**
+   * Bearer session token, if any. Set automatically after {@link IAdminMethods.login}.
+   */
+  public token: string | null = null;
+
+  /**
+   * Administrator API key (x-api-key), if any.
+   */
+  public apiKey: string | null = null;
+
+  /**
+   * Credential access key (x-access-key), if any.
+   */
+  public accessKey: string | null = null;
+
+  /**
+   * Credential secret key (x-secret-key), if any.
+   */
+  public secretKey: string | null = null;
+
+  /**
    * Initialize the SharpAI SDK.
    * @param endpoint - SharpAI server endpoint URL.
+   * @param auth - Optional authentication options.
    */
-  constructor(endpoint: string) {
+  constructor(endpoint: string, auth?: SharpAIAuthOptions) {
     if (!endpoint) {
       throw new Error('Endpoint cannot be null or empty');
     }
 
     this.endpoint = endpoint.replace(/\/+$/, '');
+    this.token = auth?.token ?? null;
+    this.apiKey = auth?.apiKey ?? null;
+    this.accessKey = auth?.accessKey ?? null;
+    this.secretKey = auth?.secretKey ?? null;
     this.ollama = new OllamaMethods(this);
     this.openAI = new OpenAIMethods(this);
+    this.admin = new AdminMethods(this);
+  }
+
+  /**
+   * Build authentication headers from the configured credentials.
+   * @returns Header map (possibly empty).
+   */
+  public authHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+    if (this.apiKey) headers['x-api-key'] = this.apiKey;
+    if (this.accessKey && this.secretKey) {
+      headers['x-access-key'] = this.accessKey;
+      headers['x-secret-key'] = this.secretKey;
+    }
+    return headers;
+  }
+
+  /**
+   * Send a request with an arbitrary method, optional JSON body, and optional extra headers, returning a
+   * typed response or null on failure. Authentication headers are added automatically.
+   * @param method - HTTP method.
+   * @param url - Full URL.
+   * @param options - Optional body and extra headers.
+   * @param signal - Optional AbortSignal.
+   * @returns Deserialized response or null.
+   */
+  public async sendAsync<T>(
+    method: string,
+    url: string,
+    options?: { body?: unknown; headers?: Record<string, string> },
+    signal?: AbortSignal
+  ): Promise<T | null> {
+    if (!url) {
+      throw new Error('URL cannot be null or empty');
+    }
+
+    const headers: Record<string, string> = { ...this.authHeaders(), ...(options?.headers ?? {}) };
+    let body: string | undefined;
+    if (options?.body !== undefined && options?.body !== null) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(options.body);
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
+      const combinedSignal = signal ? this.combineAbortSignals(signal, controller.signal) : controller.signal;
+
+      const response = await fetch(url, { method, headers, body, signal: combinedSignal });
+      clearTimeout(timeoutId);
+
+      const responseData = await response.text();
+      if (response.ok) {
+        return responseData ? (JSON.parse(responseData) as T) : null;
+      }
+      this.log('WARN', `Non-success from ${url}: ${response.status}`);
+      return null;
+    } catch (error) {
+      this.log('WARN', `Request to ${url} failed: ${error instanceof Error ? error.message : 'unknown error'}`);
+      return null;
+    }
   }
 
   /**
@@ -112,6 +217,7 @@ export class SharpAISdk {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...this.authHeaders(),
         },
         body: json,
         signal: combinedSignal,
@@ -174,6 +280,7 @@ export class SharpAISdk {
 
       const response = await fetch(url, {
         method: 'GET',
+        headers: this.authHeaders(),
         signal: combinedSignal,
       });
 
@@ -246,6 +353,7 @@ export class SharpAISdk {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          ...this.authHeaders(),
         },
         body: json,
         signal: combinedSignal,
@@ -308,6 +416,7 @@ export class SharpAISdk {
 
       const response = await fetch(url, {
         method: 'GET',
+        headers: this.authHeaders(),
         signal: combinedSignal,
       });
 
@@ -375,6 +484,7 @@ export class SharpAISdk {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...this.authHeaders(),
         },
         body: json,
         signal: combinedSignal,

@@ -101,4 +101,34 @@ export interface IOllamaMethods {
     request: OllamaGenerateCompletionRequest,
     signal?: AbortSignal
   ): AsyncGenerator<OllamaStreamingCompletionResult, void, unknown>;
+
+  /** Import a GGUF model already present on the server's local filesystem (no download, no token). */
+  importModel(
+    request: { path: string; name?: string },
+    signal?: AbortSignal
+  ): Promise<object | null>;
+
+  /** List Modelfile-equivalent presets. */
+  listPresets(signal?: AbortSignal): Promise<object | null>;
+
+  /** Create a Modelfile-equivalent preset. */
+  createPreset(
+    request: {
+      name: string;
+      model: string;
+      system?: string;
+      temperature?: number;
+      max_tokens?: number;
+      top_p?: number;
+      template?: string;
+      stop?: string[];
+    },
+    signal?: AbortSignal
+  ): Promise<object | null>;
+
+  /** Read a preset by name. */
+  getPreset(name: string, signal?: AbortSignal): Promise<object | null>;
+
+  /** Delete a preset by name. */
+  deletePreset(name: string, signal?: AbortSignal): Promise<object | null>;
 }

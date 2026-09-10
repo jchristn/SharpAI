@@ -53,6 +53,30 @@ namespace Test.Shared
                         return Task.CompletedTask;
                     }),
 
+                new TestCaseDescriptor("Telemetry", "Span_Produced_WithListener", "A span is produced and tagged when a listener samples",
+                    ct =>
+                    {
+                        Activity started = null;
+                        using (ActivityListener listener = new ActivityListener())
+                        {
+                            listener.ShouldListenTo = source => source.Name == SharpAITelemetry.ActivitySourceName;
+                            listener.Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData;
+                            listener.ActivityStarted = a => started = a;
+                            ActivitySource.AddActivityListener(listener);
+
+                            using (Activity activity = SharpAITelemetry.StartInference("chat", "unit-model"))
+                            {
+                                TestAssert.True(activity != null, "an activity should be created when a listener samples");
+                            }
+                        }
+
+                        TestAssert.True(started != null, "the listener should have observed the started activity");
+                        TestAssert.Equal("inference.chat", started!.OperationName);
+                        TestAssert.Equal("chat", started.GetTagItem("sharpai.operation") as string);
+                        TestAssert.Equal("unit-model", started.GetTagItem("sharpai.model") as string);
+                        return Task.CompletedTask;
+                    }),
+
                 new TestCaseDescriptor("Telemetry", "Provider_AcceptsAndIgnoresNull", "Resident-model provider accepts a value and ignores null",
                     ct =>
                     {

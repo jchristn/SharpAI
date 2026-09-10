@@ -138,6 +138,7 @@ namespace SharpAI.Database.Implementations
                 Method = query.Method,
                 StatusCode = query.StatusCode,
                 PathContains = query.PathContains,
+                Category = query.Category,
                 FromUtc = fromUtc,
                 ToUtc = toUtc
             };
@@ -232,6 +233,25 @@ namespace SharpAI.Database.Implementations
             if (!String.IsNullOrEmpty(query.Method)) { clauses.Add("method = @f_method"); parameters["@f_method"] = query.Method; }
             if (query.StatusCode.HasValue) { clauses.Add("statuscode = @f_status"); parameters["@f_status"] = query.StatusCode.Value; }
             if (!String.IsNullOrEmpty(query.PathContains)) { clauses.Add("path LIKE @f_path"); parameters["@f_path"] = "%" + query.PathContains + "%"; }
+
+            if (!String.IsNullOrEmpty(query.Category) && query.Category.Equals("inference", StringComparison.OrdinalIgnoreCase))
+            {
+                // Inference/embeddings endpoints across the Ollama and OpenAI surfaces.
+                string[] patterns = new string[]
+                {
+                    "/api/chat%", "/api/generate%", "/api/embed%",
+                    "/v1/chat/completions%", "/v1/completions%", "/v1/embeddings%"
+                };
+                List<string> ors = new List<string>();
+                for (int i = 0; i < patterns.Length; i++)
+                {
+                    string key = "@f_cat" + i;
+                    ors.Add("path LIKE " + key);
+                    parameters[key] = patterns[i];
+                }
+                clauses.Add("(" + String.Join(" OR ", ors) + ")");
+            }
+
             if (query.FromUtc.HasValue) { clauses.Add("createdutc >= @f_from"); parameters["@f_from"] = query.FromUtc.Value.ToUniversalTime().ToString(_TimeFormat); }
             if (query.ToUtc.HasValue) { clauses.Add("createdutc < @f_to"); parameters["@f_to"] = query.ToUtc.Value.ToUniversalTime().ToString(_TimeFormat); }
 

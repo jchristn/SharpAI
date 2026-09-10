@@ -88,3 +88,9 @@ jenkins
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Test artifacts (not needed in the image build)
+coverage
+test-results
+playwright-report
+e2e

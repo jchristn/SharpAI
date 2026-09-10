@@ -240,6 +240,7 @@
 
         private LLamaWeights _Model = null;
         private LLamaContext _Context = null;
+        private ModelParams _GenerationParams = null;
         private LLamaWeights _EmbeddingModel = null;
         private LLamaEmbedder _Embedder = null;
         private InteractiveExecutor _Executor = null;
@@ -337,6 +338,7 @@
 
                     _Model = LLamaWeights.LoadFromFile(parameters);
                     _Context = _Model.CreateContext(parameters);
+                    _GenerationParams = parameters;
 
                     _Executor = new InteractiveExecutor(_Context); // text generation
                     _StatelessExecutor = new StatelessExecutor(_Model, parameters); // text generation
@@ -527,12 +529,34 @@
         #region Text Generation
 
         /// <inheritdoc />
-        public override async Task<string> GenerateTextAsync(
+        public override Task<string> GenerateTextAsync(
             string prompt,
             int maxTokens = 512,
             float temperature = 0.7f,
             string[] stopSequences = null,
             CancellationToken token = default)
+        {
+            return GenerateTextAsync(prompt, maxTokens, temperature, stopSequences, null, token);
+        }
+
+        /// <summary>
+        /// Generate text, optionally constrained by a GBNF grammar (JSON mode / structured outputs). When
+        /// <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the grammar permits.
+        /// </summary>
+        /// <param name="prompt">Prompt.</param>
+        /// <param name="maxTokens">Maximum tokens to generate.</param>
+        /// <param name="temperature">Sampling temperature.</param>
+        /// <param name="stopSequences">Anti-prompt stop sequences.</param>
+        /// <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The generated text.</returns>
+        public async Task<string> GenerateTextAsync(
+            string prompt,
+            int maxTokens,
+            float temperature,
+            string[] stopSequences,
+            string gbnfGrammar,
+            CancellationToken token)
         {
             ThrowIfNotInitialized();
 
@@ -547,15 +571,13 @@
                 {
                     MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
-                    SamplingPipeline = new DefaultSamplingPipeline
-                    {
-                        Temperature = temperature
-                    }
+                    SamplingPipeline = CreateSamplingPipeline(temperature, gbnfGrammar)
                 };
 
                 StringBuilder result = new StringBuilder();
 
-                await foreach (string curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                StatelessExecutor executor = CreateExecutorForCall();
+                await foreach (string curr in executor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     result.Append(curr);
                 }
@@ -579,12 +601,34 @@
         }
 
         /// <inheritdoc />
-        public override async IAsyncEnumerable<string> GenerateTextStreamAsync(
+        public override IAsyncEnumerable<string> GenerateTextStreamAsync(
             string prompt,
             int maxTokens = 512,
             float temperature = 0.7f,
             string[] stopSequences = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+            CancellationToken token = default)
+        {
+            return GenerateTextStreamAsync(prompt, maxTokens, temperature, stopSequences, null, token);
+        }
+
+        /// <summary>
+        /// Stream text, optionally constrained by a GBNF grammar (JSON mode / structured outputs). When
+        /// <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the grammar permits.
+        /// </summary>
+        /// <param name="prompt">Prompt.</param>
+        /// <param name="maxTokens">Maximum tokens to generate.</param>
+        /// <param name="temperature">Sampling temperature.</param>
+        /// <param name="stopSequences">Anti-prompt stop sequences.</param>
+        /// <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>An async stream of generated token strings.</returns>
+        public async IAsyncEnumerable<string> GenerateTextStreamAsync(
+            string prompt,
+            int maxTokens,
+            float temperature,
+            string[] stopSequences,
+            string gbnfGrammar,
+            [EnumeratorCancellation] CancellationToken token)
         {
             ThrowIfNotInitialized();
 
@@ -599,13 +643,11 @@
                 {
                     MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string>(),
-                    SamplingPipeline = new DefaultSamplingPipeline
-                    {
-                        Temperature = temperature
-                    }
+                    SamplingPipeline = CreateSamplingPipeline(temperature, gbnfGrammar)
                 };
 
-                await foreach (string curr in _StatelessExecutor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                StatelessExecutor executor = CreateExecutorForCall();
+                await foreach (string curr in executor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     tokenCount++;
                     yield return curr;
@@ -626,12 +668,35 @@
         #region Chat
 
         /// <inheritdoc />
-        public override async Task<string> GenerateChatCompletionAsync(
+        public override Task<string> GenerateChatCompletionAsync(
             string prompt,
             int maxTokens = 512,
             float temperature = 0.7f,
             string[] stopSequences = null,
             CancellationToken token = default)
+        {
+            return GenerateChatCompletionAsync(prompt, maxTokens, temperature, stopSequences, null, token);
+        }
+
+        /// <summary>
+        /// Generate a chat completion, optionally constrained by a GBNF grammar (JSON mode / structured
+        /// outputs). When <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the
+        /// grammar permits, guaranteeing syntactically valid output.
+        /// </summary>
+        /// <param name="prompt">Rendered prompt.</param>
+        /// <param name="maxTokens">Maximum tokens to generate.</param>
+        /// <param name="temperature">Sampling temperature.</param>
+        /// <param name="stopSequences">Anti-prompt stop sequences.</param>
+        /// <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>The generated text.</returns>
+        public async Task<string> GenerateChatCompletionAsync(
+            string prompt,
+            int maxTokens,
+            float temperature,
+            string[] stopSequences,
+            string gbnfGrammar,
+            CancellationToken token)
         {
             ThrowIfNotInitialized();
 
@@ -646,15 +711,13 @@
                 {
                     MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
-                    SamplingPipeline = new DefaultSamplingPipeline
-                    {
-                        Temperature = temperature
-                    }
+                    SamplingPipeline = CreateSamplingPipeline(temperature, gbnfGrammar)
                 };
 
                 StringBuilder result = new StringBuilder();
 
-                await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                StatelessExecutor executor = CreateExecutorForCall();
+                await foreach (string curr in executor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     result.Append(curr);
                 }
@@ -678,12 +741,35 @@
         }
 
         /// <inheritdoc />
-        public override async IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
+        public override IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
             string prompt,
             int maxTokens = 512,
             float temperature = 0.7f,
             string[] stopSequences = null,
-            [EnumeratorCancellation] CancellationToken token = default)
+            CancellationToken token = default)
+        {
+            return GenerateChatCompletionStreamAsync(prompt, maxTokens, temperature, stopSequences, null, token);
+        }
+
+        /// <summary>
+        /// Stream a chat completion, optionally constrained by a GBNF grammar (JSON mode / structured
+        /// outputs). When <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the
+        /// grammar permits.
+        /// </summary>
+        /// <param name="prompt">Rendered prompt.</param>
+        /// <param name="maxTokens">Maximum tokens to generate.</param>
+        /// <param name="temperature">Sampling temperature.</param>
+        /// <param name="stopSequences">Anti-prompt stop sequences.</param>
+        /// <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+        /// <param name="token">Cancellation token.</param>
+        /// <returns>An async stream of generated token strings.</returns>
+        public async IAsyncEnumerable<string> GenerateChatCompletionStreamAsync(
+            string prompt,
+            int maxTokens,
+            float temperature,
+            string[] stopSequences,
+            string gbnfGrammar,
+            [EnumeratorCancellation] CancellationToken token)
         {
             ThrowIfNotInitialized();
 
@@ -698,13 +784,11 @@
                 {
                     MaxTokens = EffectiveMaxTokens(maxTokens),
                     AntiPrompts = stopSequences?.ToList() ?? new List<string> { "user:", "User:", "human:", "Human:" }, // Default anti-prompt for chat
-                    SamplingPipeline = new DefaultSamplingPipeline
-                    {
-                        Temperature = temperature
-                    }
+                    SamplingPipeline = CreateSamplingPipeline(temperature, gbnfGrammar)
                 };
 
-                await foreach (string curr in _StatelessExecutor!.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
+                StatelessExecutor executor = CreateExecutorForCall();
+                await foreach (string curr in executor.InferAsync(prompt, inferenceParams, token).ConfigureAwait(false))
                 {
                     tokenCount++;
                     yield return curr;
@@ -945,11 +1029,42 @@
             return _DefaultMaxTokens;
         }
 
+        // Return the StatelessExecutor to use for a single generation. The shared executor caches an internal
+        // context across calls, so it is only safe when generations are serialized (one slot). When more than
+        // one concurrent generation slot is configured, hand each call its own executor (hence its own
+        // context/KV-cache) to avoid the concurrent calls racing on — and disposing — a shared context.
+        private StatelessExecutor CreateExecutorForCall()
+        {
+            if (_MaxConcurrentGenerations <= 1) return _StatelessExecutor;
+            return new StatelessExecutor(_Model, _GenerationParams);
+        }
+
+        // Build the sampling pipeline, optionally constrained by a GBNF grammar (JSON mode / structured
+        // outputs). When gbnfGrammar is non-null the grammar limits which tokens may be sampled.
+        private DefaultSamplingPipeline CreateSamplingPipeline(float temperature, string gbnfGrammar)
+        {
+            if (!String.IsNullOrEmpty(gbnfGrammar))
+            {
+                return new DefaultSamplingPipeline
+                {
+                    Temperature = temperature,
+                    Grammar = new LLama.Sampling.Grammar(gbnfGrammar, SharpAI.Grammars.JsonGrammar.RootRule)
+                };
+            }
+
+            return new DefaultSamplingPipeline
+            {
+                Temperature = temperature
+            };
+        }
+
         private async Task AcquireGenerationSlotAsync(CancellationToken token)
         {
             if (_GenerationQueueTimeoutMs <= 0)
             {
-                await AcquireGenerationSlotAsync(token).ConfigureAwait(false);
+                // Zero/negative timeout means "wait forever" (bounded only by cancellation). Wait on the
+                // semaphore directly; a recursive self-call here would overflow the stack.
+                await _GenerationSemaphore.WaitAsync(token).ConfigureAwait(false);
                 return;
             }
 

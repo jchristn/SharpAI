@@ -161,6 +161,41 @@ namespace SharpAI.Sdk.Implementations
         }
 
         /// <inheritdoc />
+        public async Task<object?> ImportModel(SharpAIImportModelRequest request, CancellationToken cancellationToken = default)
+        {
+            string url = _Sdk.Endpoint + "/api/import";
+            return await _Sdk.PostAsync<object>(url, request, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<object?> ListPresets(CancellationToken cancellationToken = default)
+        {
+            string url = _Sdk.Endpoint + "/v1.0/models/presets";
+            return await _Sdk.GetAsync<object>(url, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<object?> CreatePreset(SharpAICreatePresetRequest request, CancellationToken cancellationToken = default)
+        {
+            string url = _Sdk.Endpoint + "/v1.0/models/presets";
+            return await _Sdk.PostAsync<object>(url, request, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<object?> GetPreset(string name, CancellationToken cancellationToken = default)
+        {
+            string url = _Sdk.Endpoint + "/v1.0/models/presets/" + System.Uri.EscapeDataString(name ?? string.Empty);
+            return await _Sdk.SendAsync<object>(System.Net.Http.HttpMethod.Get, url, null, null, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
+        public async Task<object?> DeletePreset(string name, CancellationToken cancellationToken = default)
+        {
+            string url = _Sdk.Endpoint + "/v1.0/models/presets/" + System.Uri.EscapeDataString(name ?? string.Empty);
+            return await _Sdk.SendAsync<object>(System.Net.Http.HttpMethod.Delete, url, null, null, cancellationToken).ConfigureAwait(false);
+        }
+
+        /// <inheritdoc />
         public async Task<List<OllamaLocalModel>?> ListLocalModels(CancellationToken cancellationToken = default)
         {
             string url = _Sdk.Endpoint + "/api/tags";

@@ -1,0 +1,75 @@
+{
+  "app": {
+    "brand": "شارب إيه آي"
+  },
+  "groups": {
+    "overview": "نظرة عامة",
+    "models": "النماذج",
+    "operations": "العمليات",
+    "system": "النظام"
+  },
+  "nav": {
+    "overview": "نظرة عامة",
+    "models": "النماذج",
+    "playground": "ساحة التجربة",
+    "requestHistory": "سجل الطلبات",
+    "apiExplorer": "مستكشف الواجهة",
+    "observability": "المراقبة",
+    "settings": "الإعدادات"
+  },
+  "topbar": {
+    "signIn": "تسجيل الدخول",
+    "signOut": "تسجيل الخروج",
+    "repo": "المستودع",
+    "discord": "ديسكورد",
+    "themeLight": "فاتح",
+    "themeDark": "داكن",
+    "healthy": "سليم",
+    "unreachable": "غير متاح",
+    "checking": "جارٍ الفحص",
+    "language": "اللغة",
+    "toggleTheme": "تبديل السمة"
+  },
+  "observability": {
+    "liveMetrics": "المقاييس الحية",
+    "requestRate": "الطلبات/ث",
+    "tokensPerSec": "الرموز/ث",
+    "residentModels": "النماذج المقيمة",
+    "avgLatency": "متوسط زمن الاستجابة",
+    "metricsUnavailable": "المقاييس غير متاحة"
+  },
+  "playground": {
+    "chat": "محادثة",
+    "embeddings": "تضمينات",
+    "input": "مدخل",
+    "embed": "تضمين",
+    "dimensions": "الأبعاد",
+    "preview": "معاينة"
+  },
+  "apiExplorer": {
+    "send": "إرسال",
+    "sending": "جارٍ الإرسال…",
+    "path": "المسار",
+    "requestBody": "جسم الطلب (JSON)",
+    "response": "الاستجابة",
+    "confirmTitle": "إرسال الطلب",
+    "confirmMessage": "هذا طلب مدمّر. هل تريد إرساله؟"
+  },
+  "settings": {
+    "serverInfo": "معلومات الخادم",
+    "version": "الإصدار",
+    "backend": "الخلفية",
+    "nativeInit": "تهيئة أصلية",
+    "database": "قاعدة البيانات",
+    "auth": "المصادقة",
+    "telemetry": "القياس",
+    "enabled": "مُفعّل",
+    "disabled": "مُعطّل",
+    "rawConfig": "الإعداد الخام"
+  },
+  "home": {
+    "recentFailures": "حالات الفشل الأخيرة",
+    "noFailures": "لا حالات فشل حديثة.",
+    "refresh": "تحديث"
+  }
+}

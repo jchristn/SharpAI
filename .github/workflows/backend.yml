@@ -1,0 +1,64 @@
+name: Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    name: Build & test (net8.0 + net10.0)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restore
+        run: dotnet restore src/SharpAI.sln
+
+      - name: Build (Release, both target frameworks)
+        run: dotnet build src/SharpAI.sln -c Release --no-restore
+
+      - name: Touchstone console runner (JSON artifact)
+        run: >
+          dotnet run --project src/Test.Automated/Test.Automated.csproj
+          -c Release --framework net8.0 --no-build -- --results touchstone-results.json
+
+      - name: Upload Touchstone results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: touchstone-results
+          path: touchstone-results.json
+
+      - name: xUnit (with coverage)
+        run: >
+          dotnet test src/Test.Xunit/Test.Xunit.csproj
+          -c Release --framework net8.0 --no-build
+          --collect:"XPlat Code Coverage" --results-directory coverage/xunit
+
+      - name: NUnit (with coverage)
+        run: >
+          dotnet test src/Test.Nunit/Test.Nunit.csproj
+          -c Release --framework net8.0 --no-build
+          --collect:"XPlat Code Coverage" --results-directory coverage/nunit
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/**/*.xml

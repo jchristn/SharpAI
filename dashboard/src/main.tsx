@@ -1,16 +1,13 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import ErrorBoundary from "./hoc/ErrorBoundary";
-import AppProviders from "./hoc/AppProviders";
-import "./assets/css/globals.scss";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './i18n/config';
+import { NewApp } from './app/NewApp';
+import { initTheme } from './theme/themeController';
 
-ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
+initTheme();
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <ErrorBoundary allowRefresh={true}>
-      <AppProviders>
-        <App />
-      </AppProviders>
-    </ErrorBoundary>
-  </React.StrictMode>
+    <NewApp />
+  </React.StrictMode>,
 );

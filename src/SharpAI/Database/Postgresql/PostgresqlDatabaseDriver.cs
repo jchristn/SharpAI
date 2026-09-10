@@ -127,6 +127,12 @@ namespace SharpAI.Database.Postgresql
                         "CREATE INDEX IF NOT EXISTS idx_ura_tenant_user ON userroleassignments (tenantguid, userguid)",
                         "CREATE TABLE IF NOT EXISTS credentialscopeassignments (guid TEXT PRIMARY KEY, tenantguid TEXT, credentialguid TEXT, roleguid TEXT, rolename TEXT, resourcescope TEXT, resourceguid TEXT, inheritstochildren INTEGER NOT NULL DEFAULT 1, permissions TEXT, resourcetypes TEXT, active INTEGER NOT NULL DEFAULT 1, isprotected INTEGER NOT NULL DEFAULT 0, createdutc TEXT NOT NULL, lastupdateutc TEXT NOT NULL)",
                         "CREATE INDEX IF NOT EXISTS idx_csa_tenant_cred ON credentialscopeassignments (tenantguid, credentialguid)"
+                    }),
+
+                    new SchemaMigration(5, "Model presets schema", new List<string>
+                    {
+                        "CREATE TABLE IF NOT EXISTS model_presets (guid TEXT PRIMARY KEY, name TEXT, modelname TEXT, systemprompt TEXT, temperature TEXT, maxtokens INTEGER, topp TEXT, templateoverride TEXT, stopjson TEXT, createdutc TEXT NOT NULL, lastupdateutc TEXT NOT NULL)",
+                        "CREATE INDEX IF NOT EXISTS idx_model_presets_name ON model_presets (name)"
                     })
                 };
             }

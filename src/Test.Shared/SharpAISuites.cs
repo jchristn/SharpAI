@@ -29,12 +29,18 @@ namespace Test.Shared
                     IdGeneratorSuite.Build(),
                     ChatTemplateResolverSuite.Build(),
                     ToolCallParserSuite.Build(),
+                    ToolCallingSuite.Build(),
+                    JsonGrammarSuite.Build(),
                     TelemetrySuite.Build(),
                     AuthEvaluatorSuite.Build(),
+                    RequestHistoryQuerySuite.Build(),
                     DatabaseSuite.Build(),
+                    ModelPresetSuite.Build(),
                     AuthenticationEngineSuite.Build(),
                     RbacEngineSuite.Build(),
-                    ModelInferenceSuite.Build()
+                    ReliabilitySuite.Build(),
+                    ModelInferenceSuite.Build(),
+                    ModelLifecycleSuite.Build()
                 };
             }
         }

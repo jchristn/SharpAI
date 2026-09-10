@@ -3,10 +3,174 @@
 ## Unreleased — v5.0.0 (in progress)
 
 The 5.0.0 line is a unified, breaking, enterprise-focused release. The full scope and task-by-task
-status live in [IMPROVEMENTS.md](IMPROVEMENTS.md); entries here are added as slices land.
+status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md); entries here are added as slices land.
 
 ### Added
 
+- **Dashboard: Inference & Embeddings request history + time-range presets.** The request-history view was
+  refactored into a reusable panel (charts + KPI strip + click-to-drill activity chart + backend filters +
+  paginated table + detail modal) and is now rendered twice: **API Request History** (all requests) and a new
+  **Inference History** page restricted to the inference/embeddings endpoints (Ollama + OpenAI chat/generate/
+  embeddings) with a chat/embeddings/generate endpoint sub-filter. Both offer **Last hour / Last day / Last
+  week / Last month** presets whose chart bucket sizes match the rest of the product family (60s / 900s /
+  7200s / 86400s). Backed by a new server-side `category=inference` filter on the request-history list and
+  summary endpoints.
+- **Tool / function calling, end to end.** Both chat APIs now accept `tools` (and OpenAI `tool_choice`),
+  inject a `<tool_call>` system instruction, parse the model output, and return OpenAI `tool_calls` +
+  `finish_reason:"tool_calls"` / Ollama `message.tool_calls` + `done_reason:"tool_calls"` (non-streaming and
+  streaming). The output parser was hardened to accept an unclosed `<tool_call>` tag (via balanced-brace
+  extraction) after a small model was observed omitting it. Validated against Qwen2.5-1.5B. (W4.T1)
+- **JSON mode / structured outputs.** OpenAI `response_format` (`json_object`/`json_schema`) and Ollama
+  `format` now drive GBNF grammar-constrained decoding, so the output is guaranteed valid JSON. New
+  `SharpAI.Grammars.JsonGrammar` + grammar-accepting engine overloads. (`json_schema` falls back to the
+  general JSON grammar for now.) (W4.T4)
+- **SDK parity (C#, JS, Python): import + preset methods.** All three SDKs gained `importModel` and preset
+  CRUD (`listPresets`/`createPreset`/`getPreset`/`deletePreset`) covering the new server endpoints. JS adds a
+  mocked-fetch test suite for them; Python and C# build/tests green. (W13)
+- **Modelfile-equivalent presets.** Create named presets (`POST /v1.0/models/presets`) that layer a system
+  prompt, sampling defaults, and stop sequences over a base model; a request whose `model` names the preset
+  runs the base model with those defaults applied (request values win). Backed by a new `model_presets` table
+  (migration v5, all four providers). (W5.T4)
+- **HuggingFace token is now optional.** Public repositories pull anonymously; a token is only required for
+  gated/private repos (sent as a bearer token when present). The server no longer requires an HF key to
+  start. (W5.T2)
+- **Concurrency benchmark.** `Test.Automated --benchmark` measures sequential vs N-concurrent generation
+  (latency, tokens/sec, wall speedup); documented in `docs/BENCHMARKS.md`. (W2.T5)
+- **Import a local GGUF by path (`POST /api/import`).** Register a model that already exists on the
+  server's filesystem — no download, no HuggingFace token. Supply a local `path` and optional `name`
+  (defaults to the file name); the server validates the GGUF magic header, copies the file into the models
+  directory, detects capabilities from GGUF metadata, computes MD5/SHA1/SHA256, and registers the model.
+  Typed `ImportModelRequest` DTO + OpenAPI (200/400/404/409), RBAC-gated `Model:Write`. (W5.T1)
+- **Golden chat-template regression tests.** The fixture-gated `ModelInferenceSuite` now byte-matches the
+  model's embedded chat-template render against a committed, architecture-keyed golden (`src/goldens/
+  chat-<arch>.txt`), so a LlamaSharp bump that changes prompt bytes fails the suite. Ships the Qwen2 golden.
+  (W1.T6)
+- **Route-registrar seam (backend refactor).** New `SharpAI.Server.API.REST.Routes` namespace with a shared
+  `RouteContext` (webserver + live-settings accessor/replacer + serializer + runtime services + auth gate), a
+  `RouteHelpers` static (`Describe`, writable-dir probe, and the relocated route-param/query/header helpers),
+  a reusable `AuthorizationGate` (RBAC enforcement + audited denials), an `InferenceErrors` wrapper (the
+  OpenAI/Ollama error-envelope helper), and five extracted registrars — `GeneralRoutes`, `SettingsRoutes`,
+  `RequestHistoryRoutes`, `OllamaInferenceRoutes`, and `OpenAIInferenceRoutes`. The composition root delegates
+  these routes to the registrars and its remaining routes share the same gate/helpers. Verified
+  behavior-preserving by the server contract harness (10/10 default, 4/4 auth) plus live generation through the
+  extracted inference routes. (W7.T2/T3, in progress)
+- **Database provider matrix (all four providers) verified against real servers.** A provider-agnostic
+  contract runner (`Test.Automated --dbmatrix`, `SHARPAI_DBTEST_*` env) exercises models + presets +
+  request-history CRUD against PostgreSQL, MySQL, and SQL Server (SQLite is covered in-process). Verified
+  13/13 on Postgres 16, MySQL 8.4, and SQL Server 2022 via ephemeral Docker; reproducible with
+  `scripts/db-matrix.sh`. (W10.T5)
+- **Live server contract harness.** New `Test.Server` console harness runs HTTP contract assertions against
+  a running server, in three modes: (1) default — health/readiness, `/api/version`, OpenAI `/v1/models` +
+  Ollama `/api/tags` shapes, `/openapi.json`, the request-history envelope, the OpenAI/Ollama error
+  envelopes, and `/metrics` returning 404 when telemetry is disabled (10/10); (2) `--auth` — 401 challenge
+  on protected routes, anonymous routes staying open, admin-key
+  bypass, the email/password login → bearer flow, and RBAC 403 denial (4/4); (3) `--telemetry` — the
+  Prometheus `/metrics` endpoint serves valid exposition with the expected Watson HTTP series and its
+  per-route request counter increments under traffic (3/3). A `server-contract.yml` CI workflow runs all
+  three legs against throwaway servers and tears each down.
+- **Test coverage.** Added deterministic suites for request-history query parsing + clamping, a SQLite
+  request-history filter (method/status/path) contract case, and a model-registry filter case
+  (family/quantization/exact-name), alongside the tool-calling suite — the cross-runner deterministic count
+  is now ~179 (was ~130).
+- **Tool-calling core.** Beyond the existing tool-call parser, added `ToolPromptBuilder` (renders tool
+  definitions into a `<tool_call>`-format system instruction) and `ToolResponseMapper` (maps parsed calls to
+  the OpenAI `tool_calls` and Ollama response shapes), with 5 new tests. Handler wiring + a live-model
+  round-trip remain (model-gated).
+- **Operations hardening.** The server shuts down gracefully on **SIGTERM** (`docker stop`) as well as
+  Ctrl+C — draining in-flight requests briefly, then disposing engines/database and flushing telemetry last;
+  logs a structured, secret-free startup summary (backend, DB provider, models dir, telemetry endpoint, auth
+  mode); and `/ready` now also reflects telemetry-host readiness (`/health` stays a cheap liveness probe).
+- **SDK release pipeline.** A tag-triggered `release.yml` publishes all three SDKs — NuGet (C#), npm (JS),
+  and PyPI (Python) — each gated on its own checks and skipped automatically when its publish secret is
+  absent. C# pack, Python build, and JS test/build were validated locally.
+- **C# SDK parity.** `SharpAI.Sdk` now carries authentication (bearer token / admin API key /
+  access-key+secret, injected into every request) and an `Admin` group covering settings, request history,
+  login/session/logout/audit (login stores the token), and the account/RBAC management surface with typed
+  request DTOs. Builds on net8.0 + net10.0; README updated.
+- **JS/TS SDK parity.** `@sharpai/sdk` now carries authentication (bearer token / admin API key /
+  access-key+secret, injected into every request) and a new `admin` group covering settings, request
+  history, login/session/logout/audit (login stores the token), and the account/RBAC management surface.
+  Backed by a mocked-fetch Vitest harness; CJS/ESM/DTS build clean.
+- **Python SDK.** New zero-dependency `sharpai` package (`sdk/python/`) covering the Ollama- and
+  OpenAI-compatible APIs (including streaming model pull), request history, authentication (login/session/
+  logout with token storage), and the account/RBAC management surface; raises `SharpAIError` on non-2xx.
+  Ships a mocked-HTTP unittest harness and a README with quickstart + endpoint coverage.
+- **CI/CD (GitHub Actions).** Added `backend.yml` (restore + Release build on net8.0 + net10.0; runs the
+  Touchstone console runner, xUnit, and NUnit with coverage artifacts), `dashboard.yml` (npm ci → lint →
+  build → Vitest, including the i18n orphaned-key gate), `docker.yml` (builds the dashboard image and
+  validates all three compose files), and `observability-smoke.yml` (boots the telemetry stack and asserts
+  Prometheus loads its config/targets and Grafana provisions its datasources — validated locally end to
+  end). Repaired the dashboard eslint flat config for the React 19 + TS stack.
+- **Reliability & fault-injection tests.** New deterministic Touchstone suite covering numeric clamping,
+  session-token crypto against malformed/foreign-key input, constant-time password verification, key-
+  generation entropy, and anonymous-path classification — plus cross-tenant isolation and unresolvable-role
+  cases for the RBAC engine. Runners: console 167, xUnit 168, NUnit 167.
+- **Dashboard rebuild foundation.** Introduced the framework-agnostic base for the standards-compliant
+  dashboard: a hand-rolled fetch `ApiClient` (no axios) with typed enumeration/auth envelopes and error
+  normalization, and CSS-variable theming (light + dark) with a persistent theme controller. Added the
+  Ant-Design-free shared component library (`src/components/ui/`): DataTable with states/sorting/above-table
+  pagination (page sizes 10–1000, default 25), portaled Modal/ConfirmModal (no native dialogs), JsonViewer,
+  CopyButton/CopyableId, and StatusBadge. Stood up the rebuilt app shell (grouped sidebar, topbar with a
+  live health indicator + theme toggle, `ApiProvider` context, `useTheme` hook) and the first end-to-end
+  view — a Request History table on the ApiClient + DataTable with a JSON details modal. Verified via the
+  dashboard production build. The rebuilt app is runnable end to end at a second Vite entry (`/next.html`)
+  with three views — Overview, Request History (paginated table + backend FilterBar + JSON details modal),
+  and Settings (edit/save raw settings JSON) — all on the new stack; its bundle is ~17 kB JS vs the legacy
+  ~2 MB. The legacy app stays the default entry; the entry-point cutover is the final migration step.
+  Added three more rebuilt views: Models (on-disk + running tables, delete/unload with confirmation, and a
+  streaming NDJSON pull), a chat Playground (`/api/chat`), and an API Explorer that browses the live
+  `/openapi.json` grouped by tag with a details panel and copyable curl. Completed the shared component
+  library with a portaled ActionMenu (outside-click/Escape/scroll/resize dismissal) and added an
+  Observability panel (live health/readiness + links to `/metrics` and Grafana) — seven views total.
+- **Dashboard cutover — legacy removed.** The rebuilt dashboard is now the sole app: `main.tsx` boots it and
+  the entire legacy tree (Ant-Design pages/components, Redux, axios, SCSS, HOCs) was deleted. Removed axios,
+  antd, Redux, React-Router, and sass from the build (695 npm packages pruned, 0 vulnerabilities). The
+  production bundle drops from ~2.17 MB / 3,940 modules to **170 kB (54 kB gzip) / 40 modules**. Replaced the
+  broken Jest harness with a working Vitest runner (ApiClient, StatusBadge, theme, and auth unit tests).
+- **Internationalization (i18n).** The dashboard is now localizable: i18next + react-i18next with a locale
+  registry (English, Arabic/RTL, and a generated pseudo-locale), catalogs, a language selector (native
+  autonyms) in the shell, deterministic locale detection persisted across reloads/deep-links, central
+  `lang`/`dir` switching (RTL-aware), and shared explicit-locale `Intl` formatters
+  (number/percent/date-time/duration/bytes/list). Every operator-facing string across the shell and all
+  seven views (plus the login dialog) is externalized through `t()` — titles, buttons, table headers,
+  filters, state messages, confirm dialogs, and `aria-label`s — with English and Arabic (RTL) catalogs.
+  Outbound API requests send `Accept-Language` from the active locale. Test coverage includes an
+  orphaned-translation-key gate and an RTL direction smoke test; a maintenance guide lives at
+  `dashboard/src/i18n/README.md`.
+- **Dashboard visual + a11y QA.** A Playwright suite (`e2e/`) exercises the dashboard across four
+  viewport/theme combinations (1280/768/390 px, light + dark), asserting semantic landmarks, routing, the
+  theme toggle, no horizontal overflow, and axe accessibility (no critical violations), wired into CI
+  (`e2e.yml`). With this, the dashboard rebuild (W11) is complete.
+- **Settings & Home depth.** The Settings page now shows a structured server-info panel (version, backend,
+  native-init, DB provider, auth mode, telemetry) above the raw JSON editor; the Overview adds a manual
+  refresh and a recent-failures panel.
+- **API Explorer execution.** The dashboard's API Explorer can now send the selected endpoint in-app — an
+  editable path, a JSON body editor for writes, inherited auth, a status-coded response viewer, and a
+  confirm dialog on destructive requests — turning it from a browser into a working client.
+- **Streaming playground.** The dashboard Playground now streams chat tokens live (NDJSON from `/api/chat`)
+  and adds an embeddings tab that shows the vector dimensions and a preview.
+- **Dashboard live metrics.** The Observability page now polls `/metrics`, parses the Prometheus
+  exposition, and shows in-app summaries — request rate, tokens/sec, resident models, and average latency
+  (locale-formatted) — updating every 5 seconds, with graceful handling when metrics are unavailable.
+- **Dashboard data views.** Added a hand-rolled SVG activity chart (no charting library) with exact
+  success/failure bucket counts and click-to-filter, plus KPI strips. Request History now shows a
+  requests/success-rate/avg-duration KPI strip and an activity chart whose bars filter the table by time
+  range; the Overview shows request volume + activity alongside model counts.
+- **Dashboard stack modernized.** Upgraded to React 19 and adopted React Router 7 — all seven views are now
+  deep-linkable routes with real browser history (the nginx SPA fallback serves `index.html` for client
+  routes). The stack now fully matches the standard: React 19, Vite, React Router 7, a hand-rolled no-axios
+  ApiClient, and CSS-variable theming.
+- **Dashboard authentication.** The rebuilt dashboard now supports sign-in: an `AuthProvider` exchanges
+  email/password for a bearer session token, persists it across refreshes, binds it to every API request,
+  and shows the signed-in identity with a Sign-out action that revokes the session. Works anonymously when
+  the server runs open (auth off).
+- **Account & RBAC management API.** Tenant-scoped, RBAC-gated CRUD for the AAA data plane:
+  `/v1.0/tenants` (platform-admin), `/v1.0/tenants/{tenantGuid}/users`, `/credentials`, `/roles`,
+  `/permissions`, role→permission mapping, and user role `/assignments`. Every route enforces tenant
+  isolation and the matching permission gate; password hashes and secret hashes are redacted in responses;
+  credential secrets are returned exactly once at creation; deleting a user cascades to its credentials and
+  assignments; built-in and protected records are immutable. Typed request DTOs (`CreateUserRequest`,
+  `CreateCredentialRequest`, `CreateAssignmentRequest`) and full OpenAPI metadata.
 - **RBAC enforcement + inspection.** Control-plane and inference routes are now gated by a central
   authorization check that maps each route to its `(ResourceType, Operation)` cost, evaluates it against the
   caller's effective permissions, audits denials, and returns 403. Two effective-permissions inspection
@@ -80,6 +244,11 @@ status live in [IMPROVEMENTS.md](IMPROVEMENTS.md); entries here are added as sli
 
 ### Changed
 
+- **Inference error parity.** All six inference routes (Ollama + OpenAI chat/generate/embeddings) now return
+  an OpenAI/Ollama-shaped error envelope (`{"error":{"message":...,"type":...}}`) on pre-stream failures —
+  429 `server_busy`, 400 `invalid_request_error`, 404 `not_found_error`, 500 `internal_error` — so client
+  SDKs never throw when parsing an error response.
+
 - **No unbounded "get all" list APIs.** Model listing now flows exclusively through an
   `EnumerationQuery` (page number/size, order, created-before/after, and name/family/quantization/format
   filters) returning an `EnumerationResult<ModelFile>` (totals, records-remaining, continuation token).
@@ -112,6 +281,37 @@ status live in [IMPROVEMENTS.md](IMPROVEMENTS.md); entries here are added as sli
   images, and default configuration (previously split across 1.x/4.0.1/1.0.x tracks).
 - `.gitignore` now excludes Docker runtime artifacts (`docker/logs/`, `docker/models/`,
   `docker/sharpai.db`), which are seeded from `docker/factory/`.
+- **Docs.** Added `DOCKERHUB_README.md`, a `docs/OBSERVABILITY.md` runbook (metrics catalog, PromQL,
+  dashboard reading, external-collector setup), a "What's new in 5.0" README section, and corrected stale
+  dependency notes in `src/CLAUDE.md` (Watson 7.1, hand-written ADO.NET 4-DB layer).
+
+### Fixed
+
+- **Critical: `MaxConcurrentGenerations > 1` crashed under load.** Concurrent generations shared one
+  `StatelessExecutor` and raced on its internal context, throwing `ObjectDisposedException`. Each concurrent
+  generation now runs on its own executor/context (the shared executor is used only in the default serialized
+  one-slot path). Caught by the new concurrency benchmark; locked by a `ParallelSlots` regression test.
+- **Critical: text generation crashed the process with a StackOverflow under default settings.**
+  `LlamaSharpEngine.AcquireGenerationSlotAsync` recursed into itself on the `GenerationQueueTimeoutMs <= 0`
+  path (the default, meaning "wait forever") instead of awaiting the generation semaphore — an unbounded
+  self-recursion that overflowed the stack and terminated the process on the **first** generation request
+  with out-of-the-box configuration. It now awaits `_GenerationSemaphore.WaitAsync(token)` directly. Caught
+  by running the model-gated `ModelInferenceSuite` against a real GGUF (Qwen2.5-1.5B) and confirmed fixed
+  end-to-end (`/api/chat` returns a completion).
+- **Authentication was a complete no-op over HTTP** when `Auth.Enabled = true`: every protected route
+  returned `403 "Authorization context is unavailable"` regardless of credentials (even a valid admin key).
+  Root cause — auth was wired to Watson's `AuthenticateRequest`/`AuthenticateApiRequest` hooks, which only
+  fire for routes registered with `requiresAuthentication: true`; none of the server's ~55 routes set that
+  flag, so the hooks never ran and the request context was never attached. Auth now resolves in the
+  `PreRouting` hook (which fires for every request) and the per-route `Authorize()` helper enforces the 401
+  challenge and RBAC (403). Caught by the new auth-enabled live-server contract suite. Auth being off by
+  default (Ollama parity) is why this latent bug survived until the harness exercised it at runtime.
+- `DEPLOYMENT-GUIDE.md` showed `SchemaVersion` as a number in the sample config; it must be a string
+  (a numeric value fails settings deserialization on startup). Caught by a live-server smoke run.
+- Dashboard topbar overflowed horizontally on narrow (≤820px) screens; it now wraps. Caught by the new
+  Playwright viewport suite at 390px.
+- Dashboard Observability page linked to the wrong Grafana port (`:3300`); corrected to `:9400` to match
+  the shipped Compose stack.
 
 ### Removed
 

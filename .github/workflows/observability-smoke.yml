@@ -1,0 +1,72 @@
+name: Observability smoke
+
+# Brings up the telemetry half of docker/compose.yaml (collector, Prometheus, Loki, Tempo, Grafana) and
+# asserts that Prometheus loads its scrape config and Grafana provisions its datasources. The SharpAI
+# server image is intentionally not started (it is not required to validate the observability wiring, and
+# avoids depending on a published image), so this uses --no-deps to bring up only the telemetry services.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/observability-smoke.yml'
+  pull_request:
+    paths:
+      - 'docker/**'
+      - '.github/workflows/observability-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: Telemetry stack smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bring up telemetry services
+        run: docker compose -f docker/compose.yaml up -d --no-deps grafana prometheus otel-collector loki tempo
+
+      - name: Wait for Prometheus to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9090/-/ready >/dev/null; then echo "prometheus ready"; exit 0; fi
+            sleep 2
+          done
+          echo "prometheus did not become ready"; exit 1
+
+      - name: Assert Prometheus loaded its config
+        run: |
+          curl -sf http://localhost:9090/api/v1/status/config | grep -q '"status":"success"'
+          echo "prometheus config loaded"
+
+      - name: Assert Prometheus has scrape targets configured
+        run: |
+          # The scrape config references the SharpAI /metrics job even though the target is down here.
+          curl -sf http://localhost:9090/api/v1/targets | grep -q '"status":"success"'
+          echo "prometheus targets endpoint healthy"
+
+      - name: Wait for Grafana health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:9400/api/health | grep -q '"database": *"ok"'; then echo "grafana healthy"; exit 0; fi
+            sleep 2
+          done
+          echo "grafana did not become healthy"; exit 1
+
+      - name: Assert Grafana provisioned its datasources
+        run: |
+          DS=$(curl -sf http://localhost:9400/api/datasources)
+          echo "$DS"
+          echo "$DS" | grep -q '"type":"prometheus"'
+          echo "$DS" | grep -q '"type":"loki"'
+          echo "$DS" | grep -q '"type":"tempo"'
+          echo "grafana datasources provisioned (prometheus, loki, tempo)"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f docker/compose.yaml logs --no-color --tail 100
+
+      - name: Tear down
+        if: always()
+        run: docker compose -f docker/compose.yaml down -v

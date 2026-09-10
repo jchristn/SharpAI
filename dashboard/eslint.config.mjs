@@ -5,11 +5,11 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 
 export default [
-  { ignores: ["dist", "coverage", "node_modules"] },
+  { ignores: ["dist", "coverage", "node_modules", "**/*.d.ts"] },
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
-      ecmaVersion: 2020,
+      ecmaVersion: 2021,
       sourceType: "module",
       parser: tsparser,
       parserOptions: {
@@ -24,10 +24,14 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      "react-refresh/only-export-components": [
-        "warn",
-        { allowConstantExport: true },
-      ],
+      // TypeScript's own type-checker handles undefined identifiers and unused symbols; the base rules
+      // produce false positives on browser globals and type-only imports, so defer to the TS-aware rule.
+      "no-undef": "off",
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
+      // On-mount data loads legitimately set state from an effect; keep visible but non-blocking.
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
 ];

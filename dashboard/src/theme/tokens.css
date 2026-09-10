@@ -1,0 +1,113 @@
+/*
+ * SharpAI dashboard design tokens (W11.T2).
+ *
+ * CSS-variable theming, light + dark from the first commit, per DASHBOARD_STYLE_AND_USABILITY. The
+ * rebuilt shell/components consume these variables only — no hard-coded colors. Dark mode is driven by
+ * the OS preference and overridden explicitly by a [data-theme] attribute the theme toggle stamps on
+ * the document root, so the toggle wins in both directions.
+ */
+
+:root {
+  /* spacing scale */
+  --sa-space-1: 4px;
+  --sa-space-2: 8px;
+  --sa-space-3: 12px;
+  --sa-space-4: 16px;
+  --sa-space-5: 24px;
+  --sa-space-6: 32px;
+
+  /* radius */
+  --sa-radius-sm: 4px;
+  --sa-radius-md: 8px;
+  --sa-radius-lg: 12px;
+
+  /* typography */
+  --sa-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --sa-font-mono: 'SFMono-Regular', 'JetBrains Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  --sa-text-xs: 12px;
+  --sa-text-sm: 13px;
+  --sa-text-md: 14px;
+  --sa-text-lg: 16px;
+  --sa-text-xl: 20px;
+
+  /* elevation */
+  --sa-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.1);
+  --sa-shadow-2: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* light palette (default) */
+  --sa-bg: #f7f8fa;
+  --sa-surface: #ffffff;
+  --sa-surface-2: #f0f2f5;
+  --sa-border: #e2e5e9;
+  --sa-border-strong: #cbd0d6;
+  --sa-text: #1c2430;
+  --sa-text-muted: #5b6675;
+  --sa-text-faint: #8a93a0;
+  --sa-primary: #2f6feb;
+  --sa-primary-hover: #235bd0;
+  --sa-primary-contrast: #ffffff;
+  --sa-success: #1f9d57;
+  --sa-warning: #c6810a;
+  --sa-danger: #d23b3b;
+  --sa-focus-ring: rgba(47, 111, 235, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --sa-bg: #0f141b;
+    --sa-surface: #161c25;
+    --sa-surface-2: #1e2732;
+    --sa-border: #2a3542;
+    --sa-border-strong: #3a4756;
+    --sa-text: #e6ebf1;
+    --sa-text-muted: #a3adba;
+    --sa-text-faint: #6f7b8a;
+    --sa-primary: #4f8bff;
+    --sa-primary-hover: #6a9dff;
+    --sa-primary-contrast: #0f141b;
+    --sa-success: #3fbf75;
+    --sa-warning: #e0a53a;
+    --sa-danger: #ef5f5f;
+    --sa-focus-ring: rgba(79, 139, 255, 0.5);
+    --sa-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --sa-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:root[data-theme='dark'] {
+  --sa-bg: #0f141b;
+  --sa-surface: #161c25;
+  --sa-surface-2: #1e2732;
+  --sa-border: #2a3542;
+  --sa-border-strong: #3a4756;
+  --sa-text: #e6ebf1;
+  --sa-text-muted: #a3adba;
+  --sa-text-faint: #6f7b8a;
+  --sa-primary: #4f8bff;
+  --sa-primary-hover: #6a9dff;
+  --sa-primary-contrast: #0f141b;
+  --sa-success: #3fbf75;
+  --sa-warning: #e0a53a;
+  --sa-danger: #ef5f5f;
+  --sa-focus-ring: rgba(79, 139, 255, 0.5);
+  --sa-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --sa-shadow-2: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='light'] {
+  --sa-bg: #f7f8fa;
+  --sa-surface: #ffffff;
+  --sa-surface-2: #f0f2f5;
+  --sa-border: #e2e5e9;
+  --sa-border-strong: #cbd0d6;
+  --sa-text: #1c2430;
+  --sa-text-muted: #5b6675;
+  --sa-text-faint: #8a93a0;
+  --sa-primary: #2f6feb;
+  --sa-primary-hover: #235bd0;
+  --sa-primary-contrast: #ffffff;
+  --sa-success: #1f9d57;
+  --sa-warning: #c6810a;
+  --sa-danger: #d23b3b;
+  --sa-focus-ring: rgba(47, 111, 235, 0.4);
+}

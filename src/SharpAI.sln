@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Xunit", "Test.Xunit\Te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Nunit", "Test.Nunit\Test.Nunit.csproj", "{0F04E40F-64C3-4F88-9DCC-E727D51571F2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Server", "Test.Server\Test.Server.csproj", "{26D15FAA-76DE-45D6-BA97-36F994A59696}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -153,6 +155,18 @@ Global
 		{0F04E40F-64C3-4F88-9DCC-E727D51571F2}.Release|x64.Build.0 = Release|Any CPU
 		{0F04E40F-64C3-4F88-9DCC-E727D51571F2}.Release|x86.ActiveCfg = Release|Any CPU
 		{0F04E40F-64C3-4F88-9DCC-E727D51571F2}.Release|x86.Build.0 = Release|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Debug|x64.Build.0 = Debug|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Debug|x86.Build.0 = Debug|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Release|Any CPU.Build.0 = Release|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Release|x64.ActiveCfg = Release|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Release|x64.Build.0 = Release|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Release|x86.ActiveCfg = Release|Any CPU
+		{26D15FAA-76DE-45D6-BA97-36F994A59696}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

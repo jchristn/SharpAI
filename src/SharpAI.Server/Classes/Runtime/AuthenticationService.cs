@@ -1,7 +1,6 @@
 namespace SharpAI.Server.Classes.Runtime
 {
     using System;
-    using System.Threading.Tasks;
 
     using SharpAI.Database;
     using SharpAI.Security;
@@ -13,11 +12,13 @@ namespace SharpAI.Server.Classes.Runtime
 
     /// <summary>
     /// Establishes the authenticated <see cref="RequestContext"/> for each request and attaches it to the
-    /// HTTP context metadata. Registered on the Watson <c>AuthenticateRequest</c> hook. When authentication
-    /// is disabled this is a no-op that installs the system principal; when enabled it resolves the request
-    /// against the account store (admin API key, bearer session token, or access-key / secret-key) and
-    /// challenges (401) unauthenticated requests to non-anonymous endpoints, recording each denial to the
-    /// security audit log.
+    /// HTTP context metadata. Invoked from the Watson <c>PreRouting</c> hook (which fires for every request,
+    /// unlike the <c>AuthenticateRequest</c>/<c>AuthenticateApiRequest</c> hooks, which Watson only invokes
+    /// for routes registered with <c>requiresAuthentication: true</c>). When authentication is disabled this
+    /// installs the system principal; when enabled it resolves the request against the account store (admin
+    /// API key, bearer session token, or access-key / secret-key). The 401 challenge and RBAC authorization
+    /// are enforced per-route by the <c>Authorize</c> helper reading the attached context; unauthenticated
+    /// requests to non-anonymous endpoints are recorded to the security audit log here.
     /// </summary>
     public class AuthenticationService
     {
@@ -57,36 +58,41 @@ namespace SharpAI.Server.Classes.Runtime
         #region Public-Methods
 
         /// <summary>
-        /// Authenticate the request, attach a <see cref="RequestContext"/> to <c>ctx.Metadata</c>, and
-        /// challenge (401) when required. Sending a 401 here stops routing.
+        /// Resolve the request's <see cref="RequestContext"/> and attach it to <c>ctx.Metadata</c> so the
+        /// per-route <c>Authorize</c> helper can enforce authentication (401) and authorization (403).
+        /// Invoked from the <c>PreRouting</c> hook, which — unlike the authentication hooks — fires for every
+        /// request regardless of per-route configuration. When the resolved context indicates the request is
+        /// unauthenticated against a non-anonymous path, the denial is recorded to the audit log here (the
+        /// actual 401 is thrown by the guarded route).
         /// </summary>
         /// <param name="ctx">HTTP context.</param>
-        /// <returns>Task.</returns>
-        public async Task AuthenticateRequestAsync(HttpContextBase ctx)
+        /// <returns>The attached request context.</returns>
+        public RequestContext AttachContext(HttpContextBase ctx)
         {
-            string path = ExtractPath(ctx);
-            string apiKey = GetHeader(ctx, "x-api-key");
-            string bearer = ExtractBearer(ctx);
-            string accessKey = GetHeader(ctx, "x-access-key");
-            string secretKey = GetHeader(ctx, "x-secret-key");
-
-            RequestContext context = _Engine.Authenticate(
-                _Settings.Enabled, path, apiKey, _Settings.AdminApiKeys, bearer, accessKey, secretKey);
+            string path;
+            RequestContext context = ResolveContext(ctx, out path);
             ctx.Metadata = context;
 
-            if (context.ShouldChallenge)
-            {
-                RecordDenial(ctx, path, "Authentication required.");
+            if (context.ShouldChallenge) RecordDenial(ctx, path, "Authentication required.");
 
-                ctx.Response.StatusCode = 401;
-                ctx.Response.ContentType = "application/json";
-                await ctx.Response.Send("{\"error\":{\"type\":\"unauthorized\",\"message\":\"Authentication required.\"}}").ConfigureAwait(false);
-            }
+            return context;
         }
 
         #endregion
 
         #region Private-Methods
+
+        private RequestContext ResolveContext(HttpContextBase ctx, out string path)
+        {
+            path = ExtractPath(ctx);
+            string apiKey = GetHeader(ctx, "x-api-key");
+            string bearer = ExtractBearer(ctx);
+            string accessKey = GetHeader(ctx, "x-access-key");
+            string secretKey = GetHeader(ctx, "x-secret-key");
+
+            return _Engine.Authenticate(
+                _Settings.Enabled, path, apiKey, _Settings.AdminApiKeys, bearer, accessKey, secretKey);
+        }
 
         private void RecordDenial(HttpContextBase ctx, string path, string reason)
         {

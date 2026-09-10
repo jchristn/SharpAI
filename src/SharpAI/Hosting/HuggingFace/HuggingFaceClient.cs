@@ -41,15 +41,17 @@
         /// Initializes a new instance of the HuggingFace client.
         /// </summary>
         /// <param name="logging">LoggingModule instance for logging operations.</param>
-        /// <param name="apiKey">HuggingFace API key for authentication.</param>
+        /// <param name="apiKey">HuggingFace API token, or null/empty for anonymous access. A token is only
+        /// required to download gated or private repositories; public repositories download without one
+        /// (W5.T2). When supplied it is sent as a bearer token; when absent no Authorization header is set.</param>
         public HuggingFaceClient(LoggingModule logging, string apiKey)
         {
-            if (String.IsNullOrEmpty(apiKey)) throw new ArgumentNullException(nameof(apiKey));
-
             _ApiKey = apiKey;
             _Logging = logging ?? new LoggingModule();
 
-            _Logging.Debug(_Header + "initialized");
+            _Logging.Debug(_Header + (String.IsNullOrEmpty(_ApiKey)
+                ? "initialized (anonymous — public repositories only; set a HuggingFace token for gated/private repos)"
+                : "initialized (authenticated)"));
         }
 
         #endregion
@@ -137,7 +139,7 @@
 
                 using (RestRequest request = new RestRequest(url, HttpMethod.Get))
                 {
-                    request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
+                    if (!String.IsNullOrEmpty(_ApiKey)) request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
                     request.Headers.Add("User-Agent", "SharpAI");
 
                     using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
@@ -799,7 +801,7 @@
             {
                 using (RestRequest request = new RestRequest(sourceUrl, HttpMethod.Head))
                 {
-                    request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
+                    if (!String.IsNullOrEmpty(_ApiKey)) request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
                     request.AllowAutoRedirect = false; // Don't follow redirects, we want to capture them
 
                     using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))

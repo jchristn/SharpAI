@@ -10,6 +10,7 @@
     using System.Threading.Tasks;
 
     using SharpAI.Engines;
+    using SharpAI.Grammars;
     using SharpAI.Helpers;
     using SharpAI.Hosting;
     using SharpAI.Hosting.HuggingFace;
@@ -19,6 +20,7 @@
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
+    using SharpAI.Tools;
     using SyslogLogging;
     using WatsonWebserver.Core;
 
@@ -41,6 +43,7 @@
         private ModelFileService _ModelFileService = null;
         private ModelEngineService _ModelEngineService = null;
         private HuggingFaceClient _HuggingFaceClient = null;
+        private SharpAI.Database.Interfaces.IModelPresetMethods _Presets = null;
 
         private static string _TimestampFormat = "yyyy-MM-ddTHH:mm:ss.ffffffZ";
 
@@ -56,7 +59,8 @@
             Serializer serializer,
             ModelFileService modelFileService,
             ModelEngineService modelEngineService,
-            HuggingFaceClient huggingFaceClient)
+            HuggingFaceClient huggingFaceClient,
+            SharpAI.Database.Interfaces.IModelPresetMethods presets)
         {
             _Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _Logging = logging ?? throw new ArgumentNullException(nameof(logging));
@@ -64,6 +68,7 @@
             _ModelFileService = modelFileService ?? throw new ArgumentNullException(nameof(modelFileService));
             _ModelEngineService = modelEngineService ?? throw new ArgumentNullException(nameof(modelEngineService));
             _HuggingFaceClient = huggingFaceClient ?? throw new ArgumentNullException(nameof(huggingFaceClient));
+            _Presets = presets;
 
             _Logging.Debug(_Header + "initialized");
         }
@@ -421,6 +426,173 @@
             }
         }
 
+        internal async Task<object> ImportModel(
+            ApiRequest req,
+            SharpAI.Server.Classes.Requests.ImportModelRequest imr,
+            CancellationToken token = default)
+        {
+            if (imr == null) throw new ArgumentNullException(nameof(imr));
+
+            #region Validate-Path
+
+            if (String.IsNullOrEmpty(imr.Path))
+            {
+                req.Http.Response.StatusCode = 400;
+                return new { error = "A local file path is required." };
+            }
+
+            string sourcePath = imr.Path;
+            if (!File.Exists(sourcePath))
+            {
+                _Logging.Warn(_Header + "import requested for nonexistent file " + sourcePath);
+                req.Http.Response.StatusCode = 404;
+                return new { error = "The specified file does not exist or is not readable by the server: " + sourcePath };
+            }
+
+            if (!IsGgufFile(sourcePath))
+            {
+                _Logging.Warn(_Header + "import requested for non-GGUF file " + sourcePath);
+                req.Http.Response.StatusCode = 400;
+                return new { error = "The specified file is not a valid GGUF model (missing GGUF magic header)." };
+            }
+
+            #endregion
+
+            #region Resolve-Name
+
+            string modelName = !String.IsNullOrEmpty(imr.Name)
+                ? imr.Name
+                : Path.GetFileNameWithoutExtension(sourcePath);
+
+            if (String.IsNullOrEmpty(modelName))
+            {
+                req.Http.Response.StatusCode = 400;
+                return new { error = "Unable to determine a model name; supply 'name' explicitly." };
+            }
+
+            ModelFile existing = _ModelFileService.GetByName(modelName);
+            if (existing != null)
+            {
+                _Logging.Debug(_Header + "import: model " + modelName + " already exists");
+                req.Http.Response.StatusCode = 409;
+                return new { error = "A model with the name '" + modelName + "' already exists." };
+            }
+
+            #endregion
+
+            #region Copy-Into-Store
+
+            ModelFile modelFile = new ModelFile { Name = modelName };
+
+            if (!Directory.Exists(_Settings.Storage.ModelsDirectory))
+                Directory.CreateDirectory(_Settings.Storage.ModelsDirectory);
+
+            string destination = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+
+            try
+            {
+                _Logging.Info(_Header + "importing local GGUF '" + sourcePath + "' as model '" + modelName + "' (" + modelFile.GUID + ")");
+
+                await Task.Run(() => File.Copy(sourcePath, destination, false), token).ConfigureAwait(false);
+
+                #endregion
+
+                #region Detect-And-Persist
+
+                bool supportsEmbeddings = false;
+                bool supportsCompletions = true;
+                string detectedArchitecture = null;
+                bool capabilitiesDetected = false;
+
+                try
+                {
+                    SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(
+                        destination,
+                        out detectedArchitecture,
+                        out supportsEmbeddings,
+                        out supportsCompletions);
+                    capabilitiesDetected = true;
+                }
+                catch (Exception metaEx)
+                {
+                    _Logging.Warn(_Header + "import: lightweight GGUF metadata read failed for " + modelName +
+                        ", falling back to full model load:" + Environment.NewLine + metaEx.ToString());
+                }
+
+                if (!capabilitiesDetected)
+                {
+                    using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(destination))
+                    {
+                        supportsEmbeddings = engine.SupportsEmbeddings;
+                        supportsCompletions = engine.SupportsGeneration;
+                        detectedArchitecture = engine.Architecture;
+                    }
+                }
+
+                long fileLength = new FileInfo(destination).Length;
+
+                using (FileStream fs = new FileStream(destination, FileMode.Open, FileAccess.Read))
+                {
+                    (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
+                    modelFile.MD5Hash = Convert.ToHexString(md5);
+                    modelFile.SHA1Hash = Convert.ToHexString(sha1);
+                    modelFile.SHA256Hash = Convert.ToHexString(sha256);
+                }
+
+                modelFile.ContentLength = fileLength;
+                modelFile.Embeddings = supportsEmbeddings;
+                modelFile.Completions = supportsCompletions;
+                modelFile.SourceUrl = "file://" + sourcePath.Replace("\\", "/");
+                modelFile.ModelCreationUtc = File.GetLastWriteTimeUtc(sourcePath);
+                if (!String.IsNullOrEmpty(detectedArchitecture)) modelFile.Family = detectedArchitecture;
+
+                _ModelFileService.Add(modelFile);
+
+                _Logging.Info(_Header + "successfully imported model " + modelName +
+                    " (architecture=" + (detectedArchitecture ?? "unknown") +
+                    ", embeddings=" + supportsEmbeddings + ", completions=" + supportsCompletions + ")");
+
+                req.Http.Response.ContentType = Constants.JsonContentType;
+                return modelFile.ToOllamaModelDetails();
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                _Logging.Warn(_Header + "import failed for " + modelName + ":" + Environment.NewLine + ex.ToString());
+
+                try
+                {
+                    if (File.Exists(destination)) File.Delete(destination);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _Logging.Warn(_Header + "failed to delete orphaned imported file " + destination + ": " + cleanupEx.Message);
+                }
+
+                req.Http.Response.StatusCode = 500;
+                return new { error = "import failed: " + ex.Message };
+            }
+        }
+
+        private static bool IsGgufFile(string path)
+        {
+            try
+            {
+                using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+                {
+                    byte[] magic = new byte[4];
+                    int read = fs.Read(magic, 0, 4);
+                    if (read < 4) return false;
+                    return magic[0] == (byte)'G' && magic[1] == (byte)'G' && magic[2] == (byte)'U' && magic[3] == (byte)'F';
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         internal async Task<object> DeleteModel(
             ApiRequest req,
             OllamaDeleteModelRequest dmr,
@@ -627,6 +799,8 @@
             OllamaGenerateEmbeddingsRequest ger,
             CancellationToken token = default)
         {
+            using System.Diagnostics.Activity requestSpan = SharpAI.Telemetry.SharpAITelemetry.StartInference("embedding", ger?.Model);
+
             if (String.IsNullOrEmpty(ger.Model)) throw new ArgumentNullException(nameof(ger.Model));
 
             req.Http.Response.ContentType = Constants.JsonContentType;
@@ -713,6 +887,8 @@
             OllamaGenerateCompletionRequest gcr,
             CancellationToken token = default)
         {
+            using System.Diagnostics.Activity requestSpan = SharpAI.Telemetry.SharpAITelemetry.StartInference("completion", gcr?.Model);
+
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
 
             req.Http.Response.ContentType = Constants.JsonContentType;
@@ -845,15 +1021,22 @@
             OllamaGenerateChatCompletionRequest gcr,
             CancellationToken token = default)
         {
+            using System.Diagnostics.Activity requestSpan = SharpAI.Telemetry.SharpAITelemetry.StartInference("chat", gcr?.Model);
+
             if (String.IsNullOrEmpty(gcr.Model)) throw new ArgumentNullException(nameof(gcr.Model));
             if (gcr.Messages == null) gcr.Messages = new List<OllamaChatMessage>();
 
             req.Http.Response.ContentType = Constants.JsonContentType;
 
-            ModelFile modelFile = _ModelFileService.GetByName(gcr.Model);
+            // Modelfile-equivalent presets (W5.T4): resolve a preset by the requested model name and run its
+            // base model with the preset's defaults applied below.
+            ModelPreset preset = _Presets != null ? _Presets.GetByName(gcr.Model) : null;
+            string effectiveModel = preset != null ? preset.ModelName : gcr.Model;
+
+            ModelFile modelFile = _ModelFileService.GetByName(effectiveModel);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + gcr.Model + " not found");
+                _Logging.Warn(_Header + "model " + effectiveModel + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -867,7 +1050,7 @@
 
             if (!engine.SupportsGeneration)
             {
-                _Logging.Warn(_Header + "'" + gcr.Model + "' does not support generate");
+                _Logging.Warn(_Header + "'" + effectiveModel + "' does not support generate");
 
                 req.Http.Response.StatusCode = 400;
 
@@ -888,6 +1071,40 @@
                 });
             }
 
+            // Apply a preset system prompt when the request carries no system message.
+            if (preset != null && !String.IsNullOrEmpty(preset.SystemPrompt))
+            {
+                bool hasSystem = false;
+                for (int i = 0; i < messages.Count; i++)
+                {
+                    if (String.Equals(messages[i].Role, "system", StringComparison.OrdinalIgnoreCase)) { hasSystem = true; break; }
+                }
+                if (!hasSystem) messages.Insert(0, new ChatMessage { Role = "system", Content = preset.SystemPrompt, Timestamp = DateTime.UtcNow });
+            }
+
+            // Tool/function calling (W4.T1): inject a tool-description system instruction when tools are
+            // supplied, then parse the model output back into tool_calls below.
+            List<ToolDefinition> toolDefinitions = ToolRequestMapper.FromOllama(gcr.Tools);
+            bool toolsRequested = toolDefinitions.Count > 0;
+            if (toolsRequested)
+            {
+                string toolInstruction = ToolPromptBuilder.BuildSystemInstruction(toolDefinitions);
+                if (!String.IsNullOrEmpty(toolInstruction))
+                {
+                    bool merged = false;
+                    for (int i = 0; i < messages.Count; i++)
+                    {
+                        if (String.Equals(messages[i].Role, "system", StringComparison.OrdinalIgnoreCase))
+                        {
+                            messages[i].Content = (messages[i].Content ?? String.Empty).TrimEnd() + "\n\n" + toolInstruction;
+                            merged = true;
+                            break;
+                        }
+                    }
+                    if (!merged) messages.Insert(0, new ChatMessage { Role = "system", Content = toolInstruction, Timestamp = DateTime.UtcNow });
+                }
+            }
+
             // Prefer the model's embedded GGUF chat template; fall back to the family template.
             ChatTemplateResult templateResult = ChatTemplateResolver.Resolve(engine, modelFile.Family, messages);
             string prompt = templateResult.Prompt;
@@ -898,7 +1115,25 @@
             if (stopSequences == null || stopSequences.Length == 0)
                 stopSequences = templateResult.StopSequences;
 
+            // Preset param fallbacks (W5.T4): request options win; otherwise the preset supplies defaults.
+            if (preset != null)
+            {
+                if (gcr.Options.NumPredict == null && preset.MaxTokens.HasValue) gcr.Options.NumPredict = preset.MaxTokens.Value;
+                if (gcr.Options.Temperature == null && preset.Temperature.HasValue) gcr.Options.Temperature = preset.Temperature.Value;
+                if (preset.Stop != null && preset.Stop.Count > 0)
+                {
+                    List<string> mergedStop = new List<string>(stopSequences ?? Array.Empty<string>());
+                    foreach (string s in preset.Stop)
+                        if (!String.IsNullOrEmpty(s) && !mergedStop.Contains(s)) mergedStop.Add(s);
+                    stopSequences = mergedStop.ToArray();
+                }
+            }
+
             bool displayThinking = gcr.Options.DisplayThinking ?? false;
+
+            // JSON mode (W4.T4): honor the Ollama `format` field via a JSON GBNF grammar, unless tools are in
+            // play (tool output is not plain JSON).
+            string jsonGrammar = toolsRequested ? null : JsonGrammar.ForOllamaFormat(gcr.Format);
 
             if (gcr.Stream == null || !gcr.Stream.Value)
             {
@@ -911,10 +1146,32 @@
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         stopSequences,
+                        jsonGrammar,
                         token).ConfigureAwait(false);
 
                     if (!displayThinking)
                         response = ThinkingFilter.RemoveThinkingBlocks(response);
+                }
+
+                if (toolsRequested)
+                {
+                    List<ParsedToolCall> parsedCalls = ToolCallParser.Parse(response);
+                    if (parsedCalls.Count > 0)
+                    {
+                        return new
+                        {
+                            model = gcr.Model,
+                            created_at = DateTime.UtcNow.ToString(_TimestampFormat),
+                            message = new
+                            {
+                                role = "assistant",
+                                content = "",
+                                tool_calls = ToolResponseMapper.ToOllama(parsedCalls)
+                            },
+                            done = true,
+                            done_reason = "tool_calls"
+                        };
+                    }
                 }
 
                 return new
@@ -935,6 +1192,47 @@
                 req.Http.Response.ContentType = Constants.NdJsonContentType;
                 req.Http.Response.ChunkedTransfer = true;
 
+                if (toolsRequested && !String.IsNullOrEmpty(prompt))
+                {
+                    // With tools, buffer the full completion, parse it, and emit a single terminal NDJSON
+                    // line carrying either message.tool_calls (done_reason: tool_calls) or the plain response.
+                    StringBuilder buffered = new StringBuilder();
+                    await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
+                        prompt,
+                        gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
+                        gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
+                        stopSequences,
+                        token).ConfigureAwait(false))
+                    {
+                        buffered.Append(curr);
+                    }
+
+                    string bufferedText = displayThinking ? buffered.ToString() : ThinkingFilter.RemoveThinkingBlocks(buffered.ToString());
+                    List<ParsedToolCall> streamedCalls = ToolCallParser.Parse(bufferedText);
+
+                    object terminal = streamedCalls.Count > 0
+                        ? (object)new
+                        {
+                            model = gcr.Model,
+                            created_at = DateTime.UtcNow.ToString(_TimestampFormat),
+                            message = new { role = "assistant", content = "", tool_calls = ToolResponseMapper.ToOllama(streamedCalls) },
+                            done = true,
+                            done_reason = "tool_calls"
+                        }
+                        : new
+                        {
+                            model = gcr.Model,
+                            created_at = DateTime.UtcNow.ToString(_TimestampFormat),
+                            response = bufferedText.Trim(),
+                            done = true,
+                            done_reason = "stop"
+                        };
+
+                    string terminalJson = _Serializer.SerializeJson(terminal, false) + Environment.NewLine;
+                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(terminalJson), true, token).ConfigureAwait(false);
+                    return null;
+                }
+
                 if (!String.IsNullOrEmpty(prompt))
                 {
                     await foreach (string curr in engine.GenerateChatCompletionStreamAsync(
@@ -942,6 +1240,7 @@
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         stopSequences,
+                        jsonGrammar,
                         token).ConfigureAwait(false))
                     {
                         string filtered = thinkFilter != null ? thinkFilter.ProcessToken(curr) : curr;

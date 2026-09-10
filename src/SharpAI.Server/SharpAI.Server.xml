@@ -4,14 +4,465 @@
         <name>SharpAI.Server</name>
     </assembly>
     <members>
+        <member name="T:SharpAI.Server.API.REST.Routes.AuthorizationGate">
+            <summary>
+            Centralized RBAC enforcement for route handlers, extracted from the composition root so per-feature
+            registrars share one implementation. When authentication is disabled every request runs as the
+            implicit system principal and authorization is a no-op (Ollama-parity open access); when enabled,
+            administrators bypass, every other principal is evaluated against its effective permissions, and a
+            denial is audited and surfaced as HTTP 403.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.#ctor(System.Func{SharpAI.Server.Classes.Settings.Settings},SharpAI.Security.RbacEngine,SharpAI.Database.DatabaseDriverBase,SyslogLogging.LoggingModule)">
+            <summary>
+            Create the authorization gate.
+            </summary>
+            <param name="settings">Accessor returning the current settings. Required.</param>
+            <param name="rbac">RBAC engine. Required.</param>
+            <param name="database">Database driver (for audit). Required.</param>
+            <param name="logging">Logging module. Required.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.Authorize(WatsonWebserver.Core.ApiRequest,System.String,SharpAI.Security.OperationTypeEnum,System.String)">
+            <summary>
+            Enforce RBAC for a route, throwing 401 to challenge an unauthenticated caller or 403 on denial.
+            </summary>
+            <param name="req">API request.</param>
+            <param name="resourceType">Resource type being accessed.</param>
+            <param name="operation">Operation being performed.</param>
+            <param name="resourceGuid">Specific resource GUID, or null.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.AuthorizeInspection(WatsonWebserver.Core.ApiRequest,System.String,SharpAI.Security.PrincipalTypeEnum,System.String)">
+            <summary>
+            Authorize an effective-permissions inspection: a principal may read its own permissions; otherwise
+            administrator privileges are required.
+            </summary>
+            <param name="req">API request.</param>
+            <param name="tenantGuid">Tenant scope.</param>
+            <param name="principalType">Principal type being inspected.</param>
+            <param name="principalGuid">Principal GUID being inspected.</param>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.GeneralRoutes">
+            <summary>
+            Registrar for the general, unauthenticated server endpoints: homepage, liveness (<c>/health</c>),
+            readiness (<c>/ready</c>), and the favicon. First registrar extracted from the composition root as
+            part of the W7 backend-architecture refactor (per-feature registrars over a shared
+            <see cref="T:SharpAI.Server.API.REST.Routes.RouteContext"/>); additional groups follow the same pattern.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.GeneralRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext)">
+            <summary>
+            Register the general routes on the context's webserver.
+            </summary>
+            <param name="ctx">Route context carrying the server and runtime services. Required.</param>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.InferenceErrors">
+            <summary>
+            Shared error handling for inference routes: runs a handler and, on a pre-stream failure, writes the
+            OpenAI/Ollama-shaped error envelope with the correct status and type so client SDKs never throw when
+            parsing an error. Mid-stream failures (after the response has begun) are swallowed. Extracted from the
+            composition root so the Ollama and OpenAI inference registrars share one implementation.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.InferenceErrors.RunInference(WatsonWebserver.Core.ApiRequest,System.Func{System.Threading.Tasks.Task{System.Object}})">
+            <summary>
+            Run an inference handler, translating exceptions into the error envelope.
+            </summary>
+            <param name="req">API request.</param>
+            <param name="handler">Handler to run.</param>
+            <returns>The handler's result, or null after an error was written.</returns>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.OllamaInferenceRoutes">
+            <summary>
+            Registrar for the Ollama-compatible inference endpoints (<c>/api/embed</c>, <c>/api/generate</c>,
+            <c>/api/chat</c>). Each handler runs through <see cref="M:SharpAI.Server.API.REST.Routes.InferenceErrors.RunInference(WatsonWebserver.Core.ApiRequest,System.Func{System.Threading.Tasks.Task{System.Object}})"/> so pre-stream
+            failures return the Ollama/OpenAI error envelope.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.OllamaInferenceRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext,SharpAI.Server.API.REST.Ollama.OllamaApiHandler,System.Threading.CancellationToken)">
+            <summary>
+            Register the Ollama inference routes.
+            </summary>
+            <param name="ctx">Route context (control-plane configured).</param>
+            <param name="handler">Ollama API handler.</param>
+            <param name="token">Server cancellation token.</param>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.OpenAIInferenceRoutes">
+            <summary>
+            Registrar for the OpenAI-compatible endpoints: model list (<c>/v1/models</c>) and inference
+            (<c>/v1/embeddings</c>, <c>/v1/completions</c>, <c>/v1/chat/completions</c>). Inference runs through
+            <see cref="M:SharpAI.Server.API.REST.Routes.InferenceErrors.RunInference(WatsonWebserver.Core.ApiRequest,System.Func{System.Threading.Tasks.Task{System.Object}})"/> for error-envelope parity.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.OpenAIInferenceRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext,SharpAI.Server.API.REST.OpenAI.OpenAIApiHandler,System.Threading.CancellationToken)">
+            <summary>
+            Register the OpenAI routes.
+            </summary>
+            <param name="ctx">Route context (control-plane configured).</param>
+            <param name="handler">OpenAI API handler.</param>
+            <param name="token">Server cancellation token.</param>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.RequestHistoryRoutes">
+            <summary>
+            Registrar for the request-history endpoints under <c>/v1.0/api/request-history</c> (list, summary,
+            read, delete, bulk delete). Extracted from the composition root as part of the W7 registrar refactor.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RequestHistoryRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext)">
+            <summary>
+            Register the request-history routes on the context's webserver.
+            </summary>
+            <param name="ctx">Route context. Must have control-plane dependencies configured.</param>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.RouteContext">
+            <summary>
+            Dependency carrier passed to each per-feature route registrar (W7.T2/T3). This is the seam that lets
+            route registration move out of the monolithic composition root: a registrar receives everything it
+            needs through this context rather than reaching into server-global static state.
+            <para>
+            Settings are supplied through an accessor delegate rather than a captured instance because the live
+            settings object is replaced wholesale when settings are updated at runtime; a captured reference
+            would go stale. Services that are created once at startup are passed as instances.
+            </para>
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.Server">
+            <summary>
+            The webserver on which routes are registered. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.Version">
+            <summary>
+            Server software version string.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteContext.Settings">
+            <summary>
+            Returns the current, live settings instance. Always call through this rather than caching, since
+            the settings object is replaced when configuration is updated at runtime.
+            </summary>
+            <returns>The current settings.</returns>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.Database">
+            <summary>
+            Provider-neutral database driver, or null before initialization.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.ModelFiles">
+            <summary>
+            Model file (registry) service.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.ModelEngines">
+            <summary>
+            Model engine service.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.Telemetry">
+            <summary>
+            Telemetry host, or null when telemetry is disabled.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.Auth">
+            <summary>
+            RBAC authorization gate. May be null in minimal (general-routes-only) contexts.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.Serializer">
+            <summary>
+            JSON serializer. May be null in minimal contexts.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.ReplaceSettings">
+            <summary>
+            Replace the live settings instance (used by the settings PUT route). May be null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.RouteContext.SettingsFilePath">
+            <summary>
+            Path to the settings file on disk. May be null in minimal contexts.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteContext.#ctor(WatsonWebserver.Webserver,System.String,System.Func{SharpAI.Server.Classes.Settings.Settings},SharpAI.Database.DatabaseDriverBase,SharpAI.Services.ModelFileService,SharpAI.Services.ModelEngineService,SharpAI.Server.Classes.Runtime.TelemetryHost)">
+            <summary>
+            Create a route context.
+            </summary>
+            <param name="server">Webserver on which routes are registered. Required.</param>
+            <param name="version">Server version string. Required.</param>
+            <param name="settingsAccessor">Accessor returning the current live settings. Required.</param>
+            <param name="database">Database driver. May be null before initialization.</param>
+            <param name="modelFiles">Model file service. May be null.</param>
+            <param name="modelEngines">Model engine service. May be null.</param>
+            <param name="telemetry">Telemetry host. May be null when telemetry is disabled.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteContext.ConfigureControlPlane(SharpAI.Server.API.REST.Routes.AuthorizationGate,SharpAI.Serialization.Serializer,System.Action{SharpAI.Server.Classes.Settings.Settings},System.String)">
+            <summary>
+            Attach control-plane dependencies (authorization, serialization, settings mutation) needed by the
+            settings/request-history/management registrars. Returns this instance for chaining.
+            </summary>
+            <param name="auth">Authorization gate.</param>
+            <param name="serializer">JSON serializer.</param>
+            <param name="replaceSettings">Delegate that replaces the live settings instance.</param>
+            <param name="settingsFilePath">Path to the settings file on disk.</param>
+            <returns>This instance.</returns>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.RouteHelpers">
+            <summary>
+            Shared helpers used by the per-feature route registrar classes (see <see cref="T:SharpAI.Server.API.REST.Routes.RouteContext"/>).
+            Extracted from the server composition root so registrars and the host share one implementation of
+            the OpenAPI describe convention and runtime directory checks.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.Describe(WatsonWebserver.Core.OpenApi.OpenApiRouteMetadata,System.String,System.String)">
+            <summary>
+            Apply the standard OpenAPI summary + tag to a route's metadata and return it for further chaining.
+            </summary>
+            <param name="api">Route metadata to annotate.</param>
+            <param name="tag">OpenAPI tag grouping the route.</param>
+            <param name="summary">Human-readable summary.</param>
+            <returns>The same metadata instance, annotated.</returns>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.DirectoryExistsAndWritable(System.String)">
+            <summary>
+            Determine whether a directory exists and is writable by the current process, by creating and
+            deleting a probe file. Returns false (never throws) on any failure.
+            </summary>
+            <param name="directory">Directory to test. Null/empty returns false.</param>
+            <returns>True when the directory exists and a probe file could be written and deleted.</returns>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.RouteParam(WatsonWebserver.Core.ApiRequest,System.String)">
+            <summary>
+            Return a URL route parameter value by name, or null.
+            </summary>
+            <param name="req">API request.</param>
+            <param name="name">Parameter name.</param>
+            <returns>Value, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.ParseEnumQuery(WatsonWebserver.Core.ApiRequest)">
+            <summary>
+            Build an <see cref="T:SharpAI.Models.EnumerationQuery"/> from the request's query string.
+            </summary>
+            <param name="req">API request.</param>
+            <returns>Enumeration query with query-string overrides applied.</returns>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.HeaderValue(WatsonWebserver.Core.HttpContextBase,System.String)">
+            <summary>
+            Case-insensitive lookup of a request header value, or null when absent.
+            </summary>
+            <param name="ctx">HTTP context.</param>
+            <param name="name">Header name.</param>
+            <returns>Header value, or null.</returns>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.ExtractBearerToken(WatsonWebserver.Core.HttpContextBase)">
+            <summary>
+            Extract a bearer token from the Authorization header (Bearer scheme) or the x-token header.
+            </summary>
+            <param name="ctx">HTTP context.</param>
+            <returns>Token, or null.</returns>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.SettingsRoutes">
+            <summary>
+            Registrar for the server settings endpoints (<c>GET/PUT /api/settings</c>). Extracted from the
+            composition root as part of the W7 registrar refactor.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.SettingsRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext)">
+            <summary>
+            Register the settings routes on the context's webserver.
+            </summary>
+            <param name="ctx">Route context. Must have control-plane dependencies configured.</param>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Requests.CreateAssignmentRequest">
+            <summary>
+            Request body to assign a role to a user at a given scope. The role may be referenced by GUID or by
+            name (for built-in roles).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.UserGuid">
+            <summary>
+            User identifier the role is assigned to.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.RoleGuid">
+            <summary>
+            Role identifier, or null when referencing a role by name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.RoleName">
+            <summary>
+            Role name, used when <see cref="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.RoleGuid"/> is null (for example a built-in role name).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.ResourceScope">
+            <summary>
+            Resource scope of the grant.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.ResourceGuid">
+            <summary>
+            Target resource identifier when resource-scoped.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.InheritsToChildren">
+            <summary>
+            Whether a tenant-scoped grant flows to child resources.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Requests.CreateAssignmentRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Requests.CreateCredentialRequest">
+            <summary>
+            Request body to create a credential. The access key and secret key are generated server-side; the
+            plaintext secret is returned exactly once in the create response and never again.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateCredentialRequest.UserGuid">
+            <summary>
+            Owning user identifier.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateCredentialRequest.Name">
+            <summary>
+            Human-readable name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateCredentialRequest.ExpiresUtc">
+            <summary>
+            Optional expiry time in UTC.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Requests.CreateCredentialRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Requests.CreatePresetRequest">
+            <summary>
+            Request to create or update a Modelfile-equivalent preset (system prompt, sampling defaults, stop
+            sequences, and optional template override) layered over a base model.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.Name">
+            <summary>
+            Preset name (used as the model value in inference requests). Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.Model">
+            <summary>
+            Base model name in the registry that the preset runs against. Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.System">
+            <summary>
+            Default system prompt, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.Temperature">
+            <summary>
+            Default sampling temperature, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.MaxTokens">
+            <summary>
+            Default maximum tokens to generate, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.TopP">
+            <summary>
+            Default top-p value, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.Template">
+            <summary>
+            Optional raw chat-template override, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreatePresetRequest.Stop">
+            <summary>
+            Default stop sequences, or null.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Requests.CreatePresetRequest.#ctor">
+            <summary>
+            Request to create or update a model preset.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Requests.CreateUserRequest">
+            <summary>
+            Request body to create a user. The plaintext password is accepted here, hashed server-side (SHA-256),
+            and never persisted or returned.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateUserRequest.Email">
+            <summary>
+            Email address (unique within the tenant).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateUserRequest.FirstName">
+            <summary>
+            First name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateUserRequest.LastName">
+            <summary>
+            Last name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateUserRequest.Password">
+            <summary>
+            Plaintext password. Hashed server-side; never stored or echoed.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateUserRequest.IsAdmin">
+            <summary>
+            Whether the user is a global administrator.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.CreateUserRequest.IsTenantAdmin">
+            <summary>
+            Whether the user is a tenant administrator.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Requests.CreateUserRequest.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Requests.ImportModelRequest">
+            <summary>
+            Request to import a GGUF model that already exists on the server's local filesystem into the model
+            registry, without downloading it from a remote source and without any HuggingFace token. The file is
+            copied into the configured models directory and its capabilities are detected from GGUF metadata.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.ImportModelRequest.Path">
+            <summary>
+            Absolute or relative path to a local .gguf file readable by the server process. Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Requests.ImportModelRequest.Name">
+            <summary>
+            Registry name to assign to the imported model. When null or empty, the file name (without its
+            extension) is used.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Requests.ImportModelRequest.#ctor">
+            <summary>
+            Request to import a local GGUF model into the registry.
+            </summary>
+        </member>
         <member name="T:SharpAI.Server.Classes.Runtime.AuthenticationService">
             <summary>
             Establishes the authenticated <see cref="T:SharpAI.Security.RequestContext"/> for each request and attaches it to the
-            HTTP context metadata. Registered on the Watson <c>AuthenticateRequest</c> hook. When authentication
-            is disabled this is a no-op that installs the system principal; when enabled it resolves the request
-            against the account store (admin API key, bearer session token, or access-key / secret-key) and
-            challenges (401) unauthenticated requests to non-anonymous endpoints, recording each denial to the
-            security audit log.
+            HTTP context metadata. Invoked from the Watson <c>PreRouting</c> hook (which fires for every request,
+            unlike the <c>AuthenticateRequest</c>/<c>AuthenticateApiRequest</c> hooks, which Watson only invokes
+            for routes registered with <c>requiresAuthentication: true</c>). When authentication is disabled this
+            installs the system principal; when enabled it resolves the request against the account store (admin
+            API key, bearer session token, or access-key / secret-key). The 401 challenge and RBAC authorization
+            are enforced per-route by the <c>Authorize</c> helper reading the attached context; unauthenticated
+            requests to non-anonymous endpoints are recorded to the security audit log here.
             </summary>
         </member>
         <member name="M:SharpAI.Server.Classes.Runtime.AuthenticationService.#ctor(SharpAI.Server.Classes.Settings.AuthSettings,SharpAI.Security.AuthenticationEngine,SharpAI.Database.DatabaseDriverBase,SyslogLogging.LoggingModule)">
@@ -23,13 +474,17 @@
             <param name="database">Database driver (for the audit log).</param>
             <param name="logging">Logging module.</param>
         </member>
-        <member name="M:SharpAI.Server.Classes.Runtime.AuthenticationService.AuthenticateRequestAsync(WatsonWebserver.Core.HttpContextBase)">
+        <member name="M:SharpAI.Server.Classes.Runtime.AuthenticationService.AttachContext(WatsonWebserver.Core.HttpContextBase)">
             <summary>
-            Authenticate the request, attach a <see cref="T:SharpAI.Security.RequestContext"/> to <c>ctx.Metadata</c>, and
-            challenge (401) when required. Sending a 401 here stops routing.
+            Resolve the request's <see cref="T:SharpAI.Security.RequestContext"/> and attach it to <c>ctx.Metadata</c> so the
+            per-route <c>Authorize</c> helper can enforce authentication (401) and authorization (403).
+            Invoked from the <c>PreRouting</c> hook, which — unlike the authentication hooks — fires for every
+            request regardless of per-route configuration. When the resolved context indicates the request is
+            unauthenticated against a non-anonymous path, the denial is recorded to the audit log here (the
+            actual 401 is thrown by the guarded route).
             </summary>
             <param name="ctx">HTTP context.</param>
-            <returns>Task.</returns>
+            <returns>The attached request context.</returns>
         </member>
         <member name="T:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper">
             <summary>
@@ -540,6 +995,13 @@
             system principal (<c>IsAdmin</c>) and this is a no-op — preserving Ollama-parity open access.
             When enabled, administrators bypass; every other principal is evaluated against its effective
             permissions, and a denial is audited and surfaced as HTTP 403.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Program.ResolveManagementTenant(WatsonWebserver.Core.ApiRequest,System.String)">
+            <summary>
+            Enforce tenant isolation for a management route and return the effective tenant. The implicit
+            system principal (auth disabled) and global administrators may target any tenant; every other
+            principal is constrained to its own tenant.
             </summary>
         </member>
     </members>

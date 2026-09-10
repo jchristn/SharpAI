@@ -3,7 +3,6 @@ namespace SharpAI.Tools
     using System;
     using System.Collections.Generic;
     using System.Text.Json;
-    using System.Text.RegularExpressions;
 
     /// <summary>
     /// Extracts tool/function calls from a model's raw text output. Handles the common formats emitted by
@@ -14,14 +13,6 @@ namespace SharpAI.Tools
     /// </summary>
     public static class ToolCallParser
     {
-        #region Private-Members
-
-        private static readonly Regex _ToolCallBlock = new Regex(
-            @"<tool_call>\s*([\s\S]*?)\s*</tool_call>",
-            RegexOptions.Compiled);
-
-        #endregion
-
         #region Public-Methods
 
         /// <summary>
@@ -34,15 +25,37 @@ namespace SharpAI.Tools
             List<ParsedToolCall> results = new List<ParsedToolCall>();
             if (String.IsNullOrWhiteSpace(modelOutput)) return results;
 
-            MatchCollection matches = _ToolCallBlock.Matches(modelOutput);
-            if (matches.Count > 0)
+            // Preferred: one or more <tool_call> tags. Small models frequently omit the closing </tool_call>,
+            // so rather than requiring a matched pair we scan from each opening tag and extract the first
+            // balanced JSON object (or array of objects) that follows.
+            if (modelOutput.IndexOf("<tool_call>", StringComparison.Ordinal) >= 0)
             {
-                foreach (Match match in matches)
+                int searchFrom = 0;
+                while (true)
                 {
-                    ParsedToolCall call = TryParseObject(match.Groups[1].Value);
-                    if (call != null) results.Add(call);
+                    int tagIndex = modelOutput.IndexOf("<tool_call>", searchFrom, StringComparison.Ordinal);
+                    if (tagIndex < 0) break;
+
+                    int jsonStart = tagIndex + "<tool_call>".Length;
+                    string extracted = ExtractBalancedJson(modelOutput, jsonStart, out int consumedTo);
+                    if (extracted != null)
+                    {
+                        string inner = extracted.TrimStart();
+                        if (inner.StartsWith("[", StringComparison.Ordinal)) TryParseArray(inner, results);
+                        else
+                        {
+                            ParsedToolCall call = TryParseObject(inner);
+                            if (call != null) results.Add(call);
+                        }
+                        searchFrom = consumedTo > tagIndex ? consumedTo : jsonStart;
+                    }
+                    else
+                    {
+                        searchFrom = jsonStart;
+                    }
                 }
-                return results;
+
+                if (results.Count > 0) return results;
             }
 
             string trimmed = modelOutput.Trim();
@@ -59,6 +72,51 @@ namespace SharpAI.Tools
             }
 
             return results;
+        }
+
+        // Extract the first balanced JSON object or array beginning at or after startIndex, respecting
+        // braces/brackets inside strings and escape sequences. Returns null when none is found.
+        private static string ExtractBalancedJson(string text, int startIndex, out int endIndex)
+        {
+            endIndex = startIndex;
+
+            int i = startIndex;
+            while (i < text.Length && text[i] != '{' && text[i] != '[') i++;
+            if (i >= text.Length) return null;
+
+            char open = text[i];
+            char close = open == '{' ? '}' : ']';
+            int depth = 0;
+            bool inString = false;
+            bool escape = false;
+            int begin = i;
+
+            for (; i < text.Length; i++)
+            {
+                char c = text[i];
+
+                if (inString)
+                {
+                    if (escape) escape = false;
+                    else if (c == '\\') escape = true;
+                    else if (c == '"') inString = false;
+                    continue;
+                }
+
+                if (c == '"') { inString = true; continue; }
+                if (c == open) depth++;
+                else if (c == close)
+                {
+                    depth--;
+                    if (depth == 0)
+                    {
+                        endIndex = i + 1;
+                        return text.Substring(begin, endIndex - begin);
+                    }
+                }
+            }
+
+            return null;
         }
 
         #endregion

@@ -1,0 +1,45 @@
+name: Dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/dashboard.yml'
+  pull_request:
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/dashboard.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: dashboard
+
+jobs:
+  build-test:
+    name: Lint, build & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check & build
+        run: npm run build
+
+      # `npm test` runs the Vitest suite, which includes the i18n orphaned-translation-key gate
+      # (src/i18n/i18n.test.ts) and the pseudo-locale/RTL checks.
+      - name: Test (unit + i18n key gate)
+        run: npm test

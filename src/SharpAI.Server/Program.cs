@@ -51,6 +51,8 @@ namespace SharpAI.Server
         private static SharpAI.Security.SessionTokenService _SessionTokens = null;
         private static SharpAI.Security.AuthenticationEngine _AuthEngine = null;
         private static SharpAI.Security.RbacEngine _RbacEngine = null;
+        private static SharpAI.Server.API.REST.Routes.AuthorizationGate _AuthGate = null;
+        private static SharpAI.Server.API.REST.Routes.RouteContext _RouteContext = null;
         private static Timer _PruneTimer = null;
 
         private static ModelFileService _ModelFileService = null;
@@ -62,6 +64,8 @@ namespace SharpAI.Server
         private static OpenAIApiHandler _OpenAIApiHandler = null;
         private static CancellationTokenSource _TokenSource = new CancellationTokenSource();
         private static bool _ShutdownRequested = false;
+        private static System.Runtime.InteropServices.PosixSignalRegistration? _SigTerm = null;
+        private static int _GracefulShutdownMs = 3000;
 
         #endregion
 
@@ -86,17 +90,30 @@ namespace SharpAI.Server
             Console.CancelKeyPress += (sender, e) =>
             {
                 e.Cancel = true;
-
-                if (!_ShutdownRequested)
-                {
-                    _ShutdownRequested = true;
-                    _TokenSource.Cancel();
-                    _Logging.Debug(_Header + "shutdown requested");
-                }
+                RequestShutdown("SIGINT (Ctrl+C)");
             };
+
+            // Handle SIGTERM (e.g., `docker stop`) so the container shuts down gracefully rather than being
+            // killed. POSIX signals are unavailable on some platforms; Ctrl+C handling still applies there.
+            try
+            {
+                _SigTerm = System.Runtime.InteropServices.PosixSignalRegistration.Create(
+                    System.Runtime.InteropServices.PosixSignal.SIGTERM,
+                    context =>
+                    {
+                        context.Cancel = true;
+                        RequestShutdown("SIGTERM");
+                    });
+            }
+            catch (Exception)
+            {
+                // signal registration unsupported on this platform
+            }
 
             _Logging.Debug(_Header + "starting SharpAI server");
             _Server.Start();
+
+            LogStartupSummary();
 
             // Hourly request-history retention prune (first run after 5 minutes).
             _PruneTimer = new Timer(_ => PruneRequestHistory(), null, (int)TimeSpan.FromMinutes(5).TotalMilliseconds, (int)TimeSpan.FromHours(1).TotalMilliseconds);
@@ -115,12 +132,58 @@ namespace SharpAI.Server
                 // graceful shutdown
             }
 
-            _Server.Stop();
-            _Server.Dispose();
+            await GracefulShutdownAsync().ConfigureAwait(false);
+        }
+
+        private static void RequestShutdown(string reason)
+        {
+            if (_ShutdownRequested) return;
+            _ShutdownRequested = true;
+            _Logging.Info(_Header + "shutdown requested (" + reason + ")");
+            _TokenSource.Cancel();
+        }
+
+        private static async Task GracefulShutdownAsync()
+        {
+            // Give in-flight requests a brief window to complete, then stop accepting connections and
+            // release resources in order — telemetry last so its exporters flush.
+            _Logging.Info(_Header + "draining in-flight requests (up to " + (_GracefulShutdownMs / 1000) + "s)");
+            try { await Task.Delay(_GracefulShutdownMs).ConfigureAwait(false); } catch (Exception) { }
+
+            try { _Server?.Stop(); } catch (Exception ex) { _Logging.Warn(_Header + "server stop failed: " + ex.Message); }
+            _Server?.Dispose();
             _PruneTimer?.Dispose();
             _ModelEngineService?.Dispose();
             _Database?.Dispose();
             _TelemetryHost?.Dispose();
+            try { _SigTerm?.Dispose(); } catch (Exception) { }
+
+            _Logging.Info(_Header + "shutdown complete");
+        }
+
+        private static void LogStartupSummary()
+        {
+            try
+            {
+                string database = _Database != null ? _Database.DatabaseType.ToString() : "none";
+                string telemetry = _Settings?.Telemetry != null && _Settings.Telemetry.Enable
+                    ? "enabled -> " + _Settings.Telemetry.OtlpEndpoint
+                    : "disabled";
+                string auth = _Settings?.Auth != null && _Settings.Auth.Enabled ? "enabled" : "disabled (open)";
+
+                _Logging.Info(_Header + "startup summary:"
+                    + " version=" + _Version
+                    + " backend=" + NativeLibraryBootstrapper.SelectedBackend
+                    + " nativeInitialized=" + NativeLibraryBootstrapper.IsInitialized
+                    + " database=" + database
+                    + " modelsDir=" + (_Settings?.Storage?.ModelsDirectory ?? "?")
+                    + " telemetry=" + telemetry
+                    + " auth=" + auth);
+            }
+            catch (Exception ex)
+            {
+                _Logging.Warn(_Header + "unable to log startup summary: " + ex.Message);
+            }
         }
 
         private static void PruneRequestHistory()
@@ -448,7 +511,8 @@ namespace SharpAI.Server
                 _Serializer,
                 _ModelFileService,
                 _ModelEngineService,
-                _HuggingFaceClient);
+                _HuggingFaceClient,
+                _Database.Presets);
 
             _OpenAIApiHandler = new OpenAIApiHandler(
                 _Settings,
@@ -456,7 +520,8 @@ namespace SharpAI.Server
                 _Serializer,
                 _ModelFileService,
                 _ModelEngineService,
-                _HuggingFaceClient);
+                _HuggingFaceClient,
+                _Database.Presets);
 
             #endregion
         }
@@ -476,9 +541,11 @@ namespace SharpAI.Server
             _Server = new Webserver(_Settings.Rest, DefaultRoute);
             _Server.Events.Logger = (msg) => _Logging.Debug(_Header + msg);
 
-            // Authentication runs before routing. When disabled (default), it installs the system principal
-            // and never challenges; when enabled, it 401s unauthenticated requests to non-anonymous paths.
-            _Server.Routes.AuthenticateRequest = _AuthService.AuthenticateRequestAsync;
+            // Authentication is resolved in PreRouting (see below), not via Watson's AuthenticateRequest /
+            // AuthenticateApiRequest hooks — those only fire for routes registered with
+            // requiresAuthentication: true, whereas PreRouting fires for every request. PreRouting attaches
+            // the RequestContext to ctx.Metadata; the per-route Authorize() helper enforces the 401 challenge
+            // (when disabled it installs the system principal and never challenges) and RBAC (403).
 
             #region OpenAPI
 
@@ -536,6 +603,10 @@ namespace SharpAI.Server
             {
                 ctx.Response.Headers.Add(Constants.RequestIdHeader, Guid.NewGuid().ToString());
 
+                // Resolve and attach the authenticated principal for every request. Enforcement (401/403)
+                // happens per-route in Authorize(); this only establishes ctx.Metadata.
+                _AuthService.AttachContext(ctx);
+
                 if (_Settings.Debug.RequestBody)
                 {
                     if (ctx.Request.ChunkedTransfer) _Logging.Debug(_Header + "chunked request body detected, skipping logging");
@@ -569,173 +640,29 @@ namespace SharpAI.Server
 
             #region General-Routes
 
-            _Server.Get("/", async (req) =>
-            {
-                req.Http.Response.ContentType = Constants.HtmlContentType;
-                return Constants.HtmlHomepage;
-            }, api => Describe(api, "General", "Server homepage")
-                .WithDescription("Returns the default HTML homepage indicating the node is operational.")
-                .WithResponse(200, OpenApiResponseMetadata.Text("Operational HTML page")));
+            // Extracted to a per-feature registrar over a shared RouteContext (W7.T2/T3). Additional route
+            // groups migrate to the same pattern incrementally; the context supplies settings through an
+            // accessor so a runtime settings replacement is always observed.
+            _AuthGate = new SharpAI.Server.API.REST.Routes.AuthorizationGate(() => _Settings, _RbacEngine, _Database, _Logging);
 
-            _Server.Head("/", async (req) => null, api => Describe(api, "General", "Server liveness check")
-                .WithDescription("HEAD probe that returns 200 OK when the server is reachable."));
+            _RouteContext = new SharpAI.Server.API.REST.Routes.RouteContext(
+                    _Server,
+                    _Version,
+                    () => _Settings,
+                    _Database,
+                    _ModelFileService,
+                    _ModelEngineService,
+                    _TelemetryHost)
+                .ConfigureControlPlane(_AuthGate, _Serializer, s => _Settings = s, Constants.SettingsFile);
 
-            _Server.Get("/health", async (req) =>
-            {
-                req.Http.Response.ContentType = Constants.JsonContentType;
-                return new
-                {
-                    status = "healthy",
-                    version = _Version,
-                    backend = NativeLibraryBootstrapper.SelectedBackend,
-                    native_initialized = NativeLibraryBootstrapper.IsInitialized,
-                    utc = DateTime.UtcNow
-                };
-            }, api => Describe(api, "General", "Health check")
-                .WithDescription("Lightweight liveness check for container and process monitoring.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Health status", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Head("/health", async (req) => null, api => Describe(api, "General", "Health HEAD probe"));
-
-            _Server.Get("/ready", async (req) =>
-            {
-                bool modelsDirectoryReady = DirectoryExistsAndWritable(_Settings?.Storage?.ModelsDirectory);
-
-                bool logsDirectoryReady = DirectoryExistsAndWritable(_Settings?.Logging?.LogDirectory);
-
-                bool ready = NativeLibraryBootstrapper.IsInitialized
-                    && _Database != null && _Database.IsInitialized
-                    && _ModelFileService != null
-                    && _ModelEngineService != null
-                    && modelsDirectoryReady
-                    && logsDirectoryReady;
-
-                req.Http.Response.ContentType = Constants.JsonContentType;
-                if (!ready) req.Http.Response.StatusCode = 503;
-
-                return new
-                {
-                    status = ready ? "ready" : "not_ready",
-                    version = _Version,
-                    backend = NativeLibraryBootstrapper.SelectedBackend,
-                    native_initialized = NativeLibraryBootstrapper.IsInitialized,
-                    database_initialized = _Database != null && _Database.IsInitialized,
-                    models_directory = _Settings?.Storage?.ModelsDirectory,
-                    models_directory_ready = modelsDirectoryReady,
-                    logs_directory = _Settings?.Logging?.LogDirectory,
-                    logs_directory_ready = logsDirectoryReady,
-                    utc = DateTime.UtcNow
-                };
-            }, api => Describe(api, "General", "Readiness check")
-                .WithDescription("Readiness check that verifies startup initialization and writable runtime directories.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Ready status", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(503, OpenApiResponseMetadata.Json("Not ready status", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Head("/favicon.ico", async (req) => null, api => Describe(api, "General", "Favicon HEAD probe"));
-
-            _Server.Get("/favicon.ico", async (req) =>
-            {
-                req.Http.Response.ContentType = Constants.FaviconContentType;
-                return File.ReadAllBytes(Constants.FaviconFilename);
-            }, api => Describe(api, "General", "Serve favicon")
-                .WithDescription("Returns the SharpAI favicon image.")
-                .WithResponse(200, OpenApiResponseMetadata.Binary("PNG favicon", "image/png")));
+            SharpAI.Server.API.REST.Routes.GeneralRoutes.Register(_RouteContext);
+            SharpAI.Server.API.REST.Routes.SettingsRoutes.Register(_RouteContext);
+            SharpAI.Server.API.REST.Routes.RequestHistoryRoutes.Register(_RouteContext);
+            SharpAI.Server.API.REST.Routes.OllamaInferenceRoutes.Register(_RouteContext, _OllamaApiHandler, _TokenSource.Token);
+            SharpAI.Server.API.REST.Routes.OpenAIInferenceRoutes.Register(_RouteContext, _OpenAIApiHandler, _TokenSource.Token);
 
             #endregion
 
-            #region Settings-Endpoints
-
-            _Server.Get("/api/settings", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Settings, SharpAI.Security.OperationTypeEnum.Read, null);
-                return _Settings;
-            }, api => Describe(api, "Settings", "Get current server settings")
-                .WithDescription("Returns the current in-memory server settings loaded from sharpai.json.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Current settings", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Put<Settings>("/api/settings", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Admin, SharpAI.Security.OperationTypeEnum.Admin, null);
-                Settings updated = req.GetData<Settings>();
-                if (updated == null) throw new WebserverException(ApiResultEnum.BadRequest, "Request body is required.");
-
-                updated.CreatedUtc = _Settings.CreatedUtc;
-                updated.SoftwareVersion = _Settings.SoftwareVersion;
-
-                _Settings = updated;
-
-                _Serializer.SerializeJsonToFile(Constants.SettingsFile, _Settings, true);
-
-                _Logging.Info(_Header + "settings updated and saved to " + Constants.SettingsFile);
-
-                return _Settings;
-            }, api => Describe(api, "Settings", "Update server settings")
-                .WithDescription(
-                    "Replaces the in-memory server settings and rewrites sharpai.json on disk. " +
-                    "CreatedUtc and SoftwareVersion are preserved from the current settings. " +
-                    "Some settings (REST hostname, port, SSL, Database) require a server restart to take effect.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Updated settings", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Updated settings", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(400, OpenApiResponseMetadata.BadRequest()));
-
-            #endregion
-
-            #region RequestHistory-Endpoints
-
-            _Server.Get("/v1.0/api/request-history", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.RequestHistory, SharpAI.Security.OperationTypeEnum.Read, null);
-                Models.RequestHistoryQuery query = new Models.RequestHistoryQuery();
-                query.ApplyQuerystringOverrides(key => req.Http.Request.Query.Elements?[key]);
-                return _Database.RequestHistory.Enumerate(query);
-            }, api => Describe(api, "Request History", "List captured requests")
-                .WithDescription("Paginated list of captured requests (bodies omitted). Filters: method, statusCode, pathContains, fromUtc, toUtc, tenantId, userId, pageNumber, pageSize.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Request history page", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Get("/v1.0/api/request-history/summary", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.RequestHistory, SharpAI.Security.OperationTypeEnum.Read, null);
-                Models.RequestHistoryQuery query = new Models.RequestHistoryQuery();
-                query.ApplyQuerystringOverrides(key => req.Http.Request.Query.Elements?[key]);
-                return _Database.RequestHistory.Summarize(query);
-            }, api => Describe(api, "Request History", "Summarize captured requests")
-                .WithDescription("Time-bucketed counts and average durations for chart rendering. Emits a bucket for every interval including empty ones. Query: fromUtc, toUtc, bucketMinutes, plus the list filters.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Request history summary", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Get("/v1.0/api/request-history/{id}", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.RequestHistory, SharpAI.Security.OperationTypeEnum.Read, null);
-                string id = req.Http.Request.Url.Parameters?["id"];
-                Models.RequestHistoryEntry entry = _Database.RequestHistory.Read(id);
-                if (entry == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified request history entry was not found.");
-                return entry;
-            }, api => Describe(api, "Request History", "Read a captured request")
-                .WithDescription("Returns a single captured request including headers and bodies.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Request history entry", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
-
-            _Server.Delete("/v1.0/api/request-history/{id}", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.RequestHistory, SharpAI.Security.OperationTypeEnum.Delete, null);
-                string id = req.Http.Request.Url.Parameters?["id"];
-                bool deleted = _Database.RequestHistory.Delete(id);
-                return new { deleted = deleted };
-            }, api => Describe(api, "Request History", "Delete a captured request")
-                .WithDescription("Deletes a single captured request by identifier.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Delete("/v1.0/api/request-history", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.RequestHistory, SharpAI.Security.OperationTypeEnum.Delete, null);
-                Models.RequestHistoryQuery query = new Models.RequestHistoryQuery();
-                query.ApplyQuerystringOverrides(key => req.Http.Request.Query.Elements?[key]);
-                int deletedCount = _Database.RequestHistory.DeleteMany(query);
-                return new { deletedCount = deletedCount };
-            }, api => Describe(api, "Request History", "Bulk delete captured requests")
-                .WithDescription("Deletes all captured requests matching the supplied filter. Returns the number of rows deleted.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Bulk delete result", OpenApiSchemaMetadata.Create("object"))));
-
-            #endregion
 
             #region Authentication-Endpoints
 
@@ -856,6 +783,370 @@ namespace SharpAI.Server
 
             #endregion
 
+            #region Management-Endpoints
+
+            // ---- Tenants (platform administration) ----
+
+            _Server.Get("/v1.0/tenants", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Admin, SharpAI.Security.OperationTypeEnum.Admin, null);
+                return _Database.Tenants.Enumerate(ParseEnumQuery(req));
+            }, api => Describe(api, "Management - Tenants", "List tenants")
+                .WithDescription("Paginated list of tenants. Requires platform-administrator (Admin) privileges.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Tenant page", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post<SharpAI.Security.Tenant>("/v1.0/tenants", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Admin, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Security.Tenant body = req.GetData<SharpAI.Security.Tenant>();
+                if (body == null || String.IsNullOrEmpty(body.Name)) throw new WebserverException(ApiResultEnum.BadRequest, "A tenant name is required.");
+                if (_Database.Tenants.GetByName(body.Name) != null) throw new WebserverException(ApiResultEnum.Conflict, "A tenant with that name already exists.");
+                SharpAI.Security.Tenant created = new SharpAI.Security.Tenant { Name = body.Name };
+                return _Database.Tenants.Create(created);
+            }, api => Describe(api, "Management - Tenants", "Create a tenant")
+                .WithDescription("Creates a tenant. Requires platform-administrator (Admin) privileges.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Tenant", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created tenant", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Tenant, SharpAI.Security.OperationTypeEnum.Read, null);
+                SharpAI.Security.Tenant tenant = _Database.Tenants.Read(tenantGuid);
+                if (tenant == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified tenant was not found.");
+                return tenant;
+            }, api => Describe(api, "Management - Tenants", "Read a tenant")
+                .WithDescription("Returns a single tenant. Callers are constrained to their own tenant unless they are platform administrators.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Tenant", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            _Server.Delete("/v1.0/tenants/{tenantGuid}", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Admin, SharpAI.Security.OperationTypeEnum.Admin, null);
+                string tenantGuid = RouteParam(req, "tenantGuid");
+                SharpAI.Security.Tenant tenant = _Database.Tenants.Read(tenantGuid);
+                if (tenant == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified tenant was not found.");
+                if (tenant.IsProtected) throw new WebserverException(ApiResultEnum.Forbidden, "This tenant is protected and cannot be deleted.");
+                _Database.Tenants.Delete(tenantGuid);
+                return new { deleted = true, tenantId = tenantGuid };
+            }, api => Describe(api, "Management - Tenants", "Delete a tenant")
+                .WithDescription("Deletes a tenant. Protected tenants cannot be deleted. Requires platform-administrator (Admin) privileges.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            // ---- Users ----
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/users", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.User, SharpAI.Security.OperationTypeEnum.Read, null);
+                Models.EnumerationResult<SharpAI.Security.User> page = _Database.Users.Enumerate(tenantGuid, ParseEnumQuery(req));
+                if (page.Objects != null) foreach (SharpAI.Security.User u in page.Objects) Redact(u);
+                return page;
+            }, api => Describe(api, "Management - Users", "List users")
+                .WithDescription("Paginated, tenant-scoped list of users. Password hashes are redacted.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("User page", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post<SharpAI.Server.Classes.Requests.CreateUserRequest>("/v1.0/tenants/{tenantGuid}/users", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.User, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Server.Classes.Requests.CreateUserRequest body = req.GetData<SharpAI.Server.Classes.Requests.CreateUserRequest>();
+                if (body == null || String.IsNullOrEmpty(body.Email)) throw new WebserverException(ApiResultEnum.BadRequest, "An email address is required.");
+                if (_Database.Users.GetByEmail(tenantGuid, body.Email) != null) throw new WebserverException(ApiResultEnum.Conflict, "A user with that email already exists in this tenant.");
+
+                SharpAI.Security.User user = new SharpAI.Security.User
+                {
+                    TenantGuid = tenantGuid,
+                    Email = body.Email,
+                    FirstName = body.FirstName,
+                    LastName = body.LastName,
+                    PasswordSha256 = SharpAI.Security.PasswordHasher.Hash(body.Password),
+                    IsAdmin = body.IsAdmin,
+                    IsTenantAdmin = body.IsTenantAdmin
+                };
+                _Database.Users.Create(user);
+                return Redact(user);
+            }, api => Describe(api, "Management - Users", "Create a user")
+                .WithDescription("Creates a tenant user. The plaintext password is hashed server-side and never returned.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Create user request", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created user", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/users/{userGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.User, SharpAI.Security.OperationTypeEnum.Read, null);
+                SharpAI.Security.User user = _Database.Users.Read(RouteParam(req, "userGuid"));
+                if (user == null || !String.Equals(user.TenantGuid, tenantGuid, StringComparison.Ordinal))
+                    throw new WebserverException(ApiResultEnum.NotFound, "The specified user was not found.");
+                return Redact(user);
+            }, api => Describe(api, "Management - Users", "Read a user")
+                .WithDescription("Returns a single user (password hash redacted).")
+                .WithResponse(200, OpenApiResponseMetadata.Json("User", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            _Server.Delete("/v1.0/tenants/{tenantGuid}/users/{userGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.User, SharpAI.Security.OperationTypeEnum.Admin, null);
+                string userGuid = RouteParam(req, "userGuid");
+                SharpAI.Security.User user = _Database.Users.Read(userGuid);
+                if (user == null || !String.Equals(user.TenantGuid, tenantGuid, StringComparison.Ordinal))
+                    throw new WebserverException(ApiResultEnum.NotFound, "The specified user was not found.");
+                if (user.IsProtected) throw new WebserverException(ApiResultEnum.Forbidden, "This user is protected and cannot be deleted.");
+
+                // Cascade: remove the user's role assignments and owned credentials.
+                foreach (SharpAI.Security.UserRoleAssignment a in _Database.UserRoleAssignments.GetForUser(tenantGuid, userGuid)) _Database.UserRoleAssignments.Delete(a.Guid);
+                Models.EnumerationResult<SharpAI.Security.Credential> creds = _Database.Credentials.Enumerate(tenantGuid, new Models.EnumerationQuery { PageSize = 1000 });
+                if (creds.Objects != null) foreach (SharpAI.Security.Credential c in creds.Objects) { if (String.Equals(c.UserGuid, userGuid, StringComparison.Ordinal)) _Database.Credentials.Delete(c.Guid); }
+                _Database.Users.Delete(userGuid);
+                return new { deleted = true, userId = userGuid };
+            }, api => Describe(api, "Management - Users", "Delete a user")
+                .WithDescription("Deletes a user and cascades to their credentials and role assignments. Protected users cannot be deleted.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            // ---- Credentials ----
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/credentials", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Credential, SharpAI.Security.OperationTypeEnum.Read, null);
+                Models.EnumerationResult<SharpAI.Security.Credential> page = _Database.Credentials.Enumerate(tenantGuid, ParseEnumQuery(req));
+                if (page.Objects != null) foreach (SharpAI.Security.Credential c in page.Objects) Redact(c);
+                return page;
+            }, api => Describe(api, "Management - Credentials", "List credentials")
+                .WithDescription("Paginated, tenant-scoped list of credentials. Secret hashes are redacted.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Credential page", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post<SharpAI.Server.Classes.Requests.CreateCredentialRequest>("/v1.0/tenants/{tenantGuid}/credentials", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Credential, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Server.Classes.Requests.CreateCredentialRequest body = req.GetData<SharpAI.Server.Classes.Requests.CreateCredentialRequest>();
+                if (body == null || String.IsNullOrEmpty(body.UserGuid)) throw new WebserverException(ApiResultEnum.BadRequest, "A userGuid is required.");
+                SharpAI.Security.User owner = _Database.Users.Read(body.UserGuid);
+                if (owner == null || !String.Equals(owner.TenantGuid, tenantGuid, StringComparison.Ordinal))
+                    throw new WebserverException(ApiResultEnum.BadRequest, "The specified owning user does not exist in this tenant.");
+
+                string secretKey = SharpAI.Security.CredentialKeyGenerator.GenerateSecretKey();
+                SharpAI.Security.Credential credential = new SharpAI.Security.Credential
+                {
+                    UserGuid = body.UserGuid,
+                    TenantGuid = tenantGuid,
+                    Name = body.Name,
+                    AccessKey = SharpAI.Security.CredentialKeyGenerator.GenerateAccessKey(),
+                    SecretSha256 = SharpAI.Security.PasswordHasher.Hash(secretKey),
+                    ExpiresUtc = body.ExpiresUtc
+                };
+                _Database.Credentials.Create(credential);
+
+                // The plaintext secret is returned exactly once.
+                return new
+                {
+                    guid = credential.Guid,
+                    userId = credential.UserGuid,
+                    tenantId = credential.TenantGuid,
+                    name = credential.Name,
+                    accessKey = credential.AccessKey,
+                    secretKey = secretKey,
+                    expiresUtc = credential.ExpiresUtc
+                };
+            }, api => Describe(api, "Management - Credentials", "Create a credential")
+                .WithDescription("Creates a credential and returns the access key plus the plaintext secret key ONCE. The secret is never retrievable again.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Create credential request", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created credential (with one-time secret)", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Credential, SharpAI.Security.OperationTypeEnum.Read, null);
+                SharpAI.Security.Credential credential = _Database.Credentials.Read(RouteParam(req, "credentialGuid"));
+                if (credential == null || !String.Equals(credential.TenantGuid, tenantGuid, StringComparison.Ordinal))
+                    throw new WebserverException(ApiResultEnum.NotFound, "The specified credential was not found.");
+                return Redact(credential);
+            }, api => Describe(api, "Management - Credentials", "Read a credential")
+                .WithDescription("Returns a single credential (secret hash redacted).")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Credential", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            _Server.Delete("/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Credential, SharpAI.Security.OperationTypeEnum.Admin, null);
+                string credentialGuid = RouteParam(req, "credentialGuid");
+                SharpAI.Security.Credential credential = _Database.Credentials.Read(credentialGuid);
+                if (credential == null || !String.Equals(credential.TenantGuid, tenantGuid, StringComparison.Ordinal))
+                    throw new WebserverException(ApiResultEnum.NotFound, "The specified credential was not found.");
+                _Database.Credentials.Delete(credentialGuid);
+                return new { deleted = true, credentialId = credentialGuid };
+            }, api => Describe(api, "Management - Credentials", "Delete a credential")
+                .WithDescription("Deletes a credential.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            // ---- Roles ----
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/roles", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Role, SharpAI.Security.OperationTypeEnum.Read, null);
+                return _Database.Roles.Enumerate(tenantGuid, ParseEnumQuery(req));
+            }, api => Describe(api, "Management - Roles", "List roles")
+                .WithDescription("Paginated list of the tenant's custom roles plus the globally-visible built-in roles.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Role page", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post<SharpAI.Security.UserRole>("/v1.0/tenants/{tenantGuid}/roles", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Role, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Security.UserRole body = req.GetData<SharpAI.Security.UserRole>();
+                if (body == null || String.IsNullOrEmpty(body.Name)) throw new WebserverException(ApiResultEnum.BadRequest, "A role name is required.");
+                SharpAI.Security.UserRole role = new SharpAI.Security.UserRole { TenantGuid = tenantGuid, Name = body.Name, IsBuiltIn = false };
+                return _Database.Roles.Create(role);
+            }, api => Describe(api, "Management - Roles", "Create a custom role")
+                .WithDescription("Creates a tenant-scoped custom role. Built-in roles are immutable; clone by creating a custom role and mapping permissions.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Role", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created role", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Delete("/v1.0/tenants/{tenantGuid}/roles/{roleGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Role, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Security.UserRole role = _Database.Roles.Read(RouteParam(req, "roleGuid"));
+                if (role == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified role was not found.");
+                if (role.IsBuiltIn || role.IsProtected) throw new WebserverException(ApiResultEnum.Forbidden, "Built-in and protected roles cannot be deleted.");
+                if (!String.Equals(role.TenantGuid, tenantGuid, StringComparison.Ordinal)) throw new WebserverException(ApiResultEnum.NotFound, "The specified role was not found.");
+                _Database.Roles.Delete(role.Guid);
+                return new { deleted = true, roleId = role.Guid };
+            }, api => Describe(api, "Management - Roles", "Delete a custom role")
+                .WithDescription("Deletes a tenant-scoped custom role. Built-in and protected roles cannot be deleted.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            // ---- Permissions ----
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/permissions", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Permission, SharpAI.Security.OperationTypeEnum.Read, null);
+                return _Database.Permissions.Enumerate(tenantGuid, ParseEnumQuery(req));
+            }, api => Describe(api, "Management - Permissions", "List permissions")
+                .WithDescription("Paginated list of the tenant's permissions plus globally-visible built-in permissions.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Permission page", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post<SharpAI.Security.Permission>("/v1.0/tenants/{tenantGuid}/permissions", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Permission, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Security.Permission body = req.GetData<SharpAI.Security.Permission>();
+                if (body == null || body.ResourceTypes.Count == 0 || body.OperationTypes.Count == 0)
+                    throw new WebserverException(ApiResultEnum.BadRequest, "resourceTypes and operationTypes are required.");
+                SharpAI.Security.Permission permission = new SharpAI.Security.Permission
+                {
+                    TenantGuid = tenantGuid,
+                    Name = body.Name,
+                    ResourceTypes = body.ResourceTypes,
+                    OperationTypes = body.OperationTypes,
+                    Effect = body.Effect
+                };
+                return _Database.Permissions.Create(permission);
+            }, api => Describe(api, "Management - Permissions", "Create a permission")
+                .WithDescription("Creates a tenant-scoped permission (Permit or Deny) over resource types and operations.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Permission", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created permission", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post("/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions/{permissionGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Role, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Security.UserRole role = _Database.Roles.Read(RouteParam(req, "roleGuid"));
+                SharpAI.Security.Permission permission = _Database.Permissions.Read(RouteParam(req, "permissionGuid"));
+                if (role == null || permission == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified role or permission was not found.");
+                if (role.IsBuiltIn) throw new WebserverException(ApiResultEnum.Forbidden, "Built-in roles are immutable.");
+                if (!String.Equals(role.TenantGuid, tenantGuid, StringComparison.Ordinal)) throw new WebserverException(ApiResultEnum.NotFound, "The specified role was not found.");
+                SharpAI.Security.RolePermissionMap map = _Database.RolePermissionMaps.Create(new SharpAI.Security.RolePermissionMap { TenantGuid = tenantGuid, RoleGuid = role.Guid, PermissionGuid = permission.Guid });
+                return map;
+            }, api => Describe(api, "Management - Roles", "Map a permission to a role")
+                .WithDescription("Associates a permission with a custom role. Built-in roles are immutable.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Mapping", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            // ---- Role assignments ----
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/users/{userGuid}/assignments", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Assignment, SharpAI.Security.OperationTypeEnum.Read, null);
+                return _Database.UserRoleAssignments.Enumerate(tenantGuid, RouteParam(req, "userGuid"), ParseEnumQuery(req));
+            }, api => Describe(api, "Management - Assignments", "List a user's role assignments")
+                .WithDescription("Paginated list of a user's role assignments within the tenant.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Assignment page", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Post<SharpAI.Server.Classes.Requests.CreateAssignmentRequest>("/v1.0/tenants/{tenantGuid}/assignments", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Assignment, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Server.Classes.Requests.CreateAssignmentRequest body = req.GetData<SharpAI.Server.Classes.Requests.CreateAssignmentRequest>();
+                if (body == null || String.IsNullOrEmpty(body.UserGuid)) throw new WebserverException(ApiResultEnum.BadRequest, "A userGuid is required.");
+                if (String.IsNullOrEmpty(body.RoleGuid) && String.IsNullOrEmpty(body.RoleName)) throw new WebserverException(ApiResultEnum.BadRequest, "A roleGuid or roleName is required.");
+                SharpAI.Security.User target = _Database.Users.Read(body.UserGuid);
+                if (target == null || !String.Equals(target.TenantGuid, tenantGuid, StringComparison.Ordinal)) throw new WebserverException(ApiResultEnum.BadRequest, "The specified user does not exist in this tenant.");
+
+                SharpAI.Security.UserRoleAssignment assignment = new SharpAI.Security.UserRoleAssignment
+                {
+                    TenantGuid = tenantGuid,
+                    UserGuid = body.UserGuid,
+                    RoleGuid = body.RoleGuid,
+                    RoleName = body.RoleName,
+                    ResourceScope = body.ResourceScope,
+                    ResourceGuid = body.ResourceGuid,
+                    InheritsToChildren = body.InheritsToChildren
+                };
+                return _Database.UserRoleAssignments.Create(assignment);
+            }, api => Describe(api, "Management - Assignments", "Assign a role to a user")
+                .WithDescription("Grants a role to a user at tenant or resource scope. The role may be referenced by GUID or name.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Create assignment request", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created assignment", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Delete("/v1.0/tenants/{tenantGuid}/assignments/{assignmentGuid}", async (req) =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Assignment, SharpAI.Security.OperationTypeEnum.Admin, null);
+                SharpAI.Security.UserRoleAssignment assignment = _Database.UserRoleAssignments.Read(RouteParam(req, "assignmentGuid"));
+                if (assignment == null || !String.Equals(assignment.TenantGuid, tenantGuid, StringComparison.Ordinal))
+                    throw new WebserverException(ApiResultEnum.NotFound, "The specified assignment was not found.");
+                _Database.UserRoleAssignments.Delete(assignment.Guid);
+                return new { deleted = true, assignmentId = assignment.Guid };
+            }, api => Describe(api, "Management - Assignments", "Revoke a role assignment")
+                .WithDescription("Removes a role assignment from a user.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            #endregion
+
             #region Ollama-Endpoints
 
             _Server.Post<OllamaPullModelRequest>("/api/pull", async (req) =>
@@ -868,6 +1159,89 @@ namespace SharpAI.Server
                 .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Pull model request", true))
                 .WithResponse(200, OpenApiResponseMetadata.Json("Progress stream", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(400, OpenApiResponseMetadata.BadRequest()));
+
+            _Server.Post<SharpAI.Server.Classes.Requests.ImportModelRequest>("/api/import", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Model, SharpAI.Security.OperationTypeEnum.Write, null);
+                SharpAI.Server.Classes.Requests.ImportModelRequest imr = req.GetData<SharpAI.Server.Classes.Requests.ImportModelRequest>();
+                return await _OllamaApiHandler.ImportModel(req, imr, _TokenSource.Token).ConfigureAwait(false);
+            }, api => Describe(api, "Ollama - Models", "Import a local GGUF model")
+                .WithDescription(
+                    "Registers a GGUF model that already exists on the server's local filesystem — no download " +
+                    "and no HuggingFace token. Supply the local file 'path' and an optional 'name' (defaults to " +
+                    "the file name). The file is copied into the models directory and its capabilities are " +
+                    "detected from GGUF metadata. Returns the registered model details.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Import model request", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Imported model details", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound())
+                .WithResponse(409, OpenApiResponseMetadata.Json("Conflict — model name already exists", OpenApiSchemaMetadata.Create("object"))));
+
+            #region Model-Presets
+
+            _Server.Get("/v1.0/models/presets", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Model, SharpAI.Security.OperationTypeEnum.Read, null);
+                return _Database.Presets.Enumerate(ParseEnumQuery(req));
+            }, api => Describe(api, "Ollama - Models", "List model presets")
+                .WithDescription("Paginated list of Modelfile-equivalent presets (system prompt, sampling defaults, stop, template override).")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Preset page", OpenApiSchemaMetadata.Create("object"))));
+
+            _Server.Post<SharpAI.Server.Classes.Requests.CreatePresetRequest>("/v1.0/models/presets", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Model, SharpAI.Security.OperationTypeEnum.Write, null);
+                SharpAI.Server.Classes.Requests.CreatePresetRequest body = req.GetData<SharpAI.Server.Classes.Requests.CreatePresetRequest>();
+                if (body == null || String.IsNullOrEmpty(body.Name)) throw new WebserverException(ApiResultEnum.BadRequest, "A preset name is required.");
+                if (String.IsNullOrEmpty(body.Model)) throw new WebserverException(ApiResultEnum.BadRequest, "A base model name is required.");
+                if (_ModelFileService.GetByName(body.Model) == null) throw new WebserverException(ApiResultEnum.NotFound, "The base model '" + body.Model + "' was not found.");
+                if (_Database.Presets.GetByName(body.Name) != null) throw new WebserverException(ApiResultEnum.Conflict, "A preset with that name already exists.");
+
+                Models.ModelPreset preset = new Models.ModelPreset
+                {
+                    Name = body.Name,
+                    ModelName = body.Model,
+                    SystemPrompt = body.System,
+                    Temperature = body.Temperature,
+                    MaxTokens = body.MaxTokens,
+                    TopP = body.TopP,
+                    TemplateOverride = body.Template,
+                    Stop = body.Stop ?? new List<string>()
+                };
+                return _Database.Presets.Add(preset);
+            }, api => Describe(api, "Ollama - Models", "Create a model preset")
+                .WithDescription("Creates a Modelfile-equivalent preset. A request that names the preset as its model runs the base model with these defaults applied unless overridden.")
+                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Preset", true))
+                .WithResponse(200, OpenApiResponseMetadata.Json("Created preset", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(400, OpenApiResponseMetadata.BadRequest())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound())
+                .WithResponse(409, OpenApiResponseMetadata.Json("Conflict — preset name already exists", OpenApiSchemaMetadata.Create("object"))));
+
+            _Server.Get("/v1.0/models/presets/{name}", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Model, SharpAI.Security.OperationTypeEnum.Read, null);
+                string name = req.Http.Request.Url.Parameters?["name"];
+                Models.ModelPreset preset = _Database.Presets.GetByName(name);
+                if (preset == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified preset was not found.");
+                return preset;
+            }, api => Describe(api, "Ollama - Models", "Read a model preset")
+                .WithDescription("Returns a single preset by name.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Preset", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            _Server.Delete("/v1.0/models/presets/{name}", async (req) =>
+            {
+                Authorize(req, SharpAI.Security.ResourceTypes.Model, SharpAI.Security.OperationTypeEnum.Delete, null);
+                string name = req.Http.Request.Url.Parameters?["name"];
+                Models.ModelPreset preset = _Database.Presets.GetByName(name);
+                if (preset == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified preset was not found.");
+                _Database.Presets.Delete(preset.GUID);
+                return new { deleted = true, name = name };
+            }, api => Describe(api, "Ollama - Models", "Delete a model preset")
+                .WithDescription("Deletes a preset by name.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Delete result", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
+
+            #endregion
 
             _Server.Delete<OllamaDeleteModelRequest>("/api/delete", async (req) =>
             {
@@ -954,118 +1328,8 @@ namespace SharpAI.Server
                 .WithResponse(200, OpenApiResponseMetadata.Json("Model info", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(404, OpenApiResponseMetadata.NotFound()));
 
-            _Server.Post<OllamaGenerateEmbeddingsRequest>("/api/embed", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Inference, SharpAI.Security.OperationTypeEnum.Execute, null);
-                OllamaGenerateEmbeddingsRequest ger = req.GetData<OllamaGenerateEmbeddingsRequest>();
-                return await _OllamaApiHandler.GenerateEmbeddings(req, ger, _TokenSource.Token).ConfigureAwait(false);
-            }, api => Describe(api, "Ollama - Inference", "Generate embeddings")
-                .WithDescription("Generates vector embeddings for a single input or array of inputs.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Embeddings request", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Embeddings", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Post<OllamaGenerateCompletionRequest>("/api/generate", async (req) =>
-            {
-                return await RunInference(async () =>
-                {
-                    Authorize(req, SharpAI.Security.ResourceTypes.Inference, SharpAI.Security.OperationTypeEnum.Execute, null);
-                OllamaGenerateCompletionRequest gcr = req.GetData<OllamaGenerateCompletionRequest>();
-                    object ret = await _OllamaApiHandler.GenerateCompletion(req, gcr, _TokenSource.Token).ConfigureAwait(false);
-                    if (req.Http.Response.ChunkedTransfer) return null;
-                    else return ret;
-                }).ConfigureAwait(false);
-            }, api => Describe(api, "Ollama - Inference", "Generate text completion")
-                .WithDescription("Generates a text completion for the given prompt. Supports streaming via chunked transfer.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Completion request", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Completion response", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(429, OpenApiResponseMetadata.Json("Server busy or at capacity — retry later", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Post<OllamaGenerateChatCompletionRequest>("/api/chat", async (req) =>
-            {
-                return await RunInference(async () =>
-                {
-                    Authorize(req, SharpAI.Security.ResourceTypes.Inference, SharpAI.Security.OperationTypeEnum.Execute, null);
-                OllamaGenerateChatCompletionRequest gccr = req.GetData<OllamaGenerateChatCompletionRequest>();
-                    object ret = await _OllamaApiHandler.GenerateChatCompletion(req, gccr, _TokenSource.Token).ConfigureAwait(false);
-                    if (req.Http.Response.ChunkedTransfer) return null;
-                    else return ret;
-                }).ConfigureAwait(false);
-            }, api => Describe(api, "Ollama - Inference", "Generate chat completion")
-                .WithDescription("Generates a chat completion from a sequence of messages. Supports streaming via chunked transfer.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Chat completion request", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Chat completion response", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(429, OpenApiResponseMetadata.Json("Server busy or at capacity — retry later", OpenApiSchemaMetadata.Create("object"))));
-
             #endregion
 
-            #region OpenAI-Endpoints
-
-            _Server.Get("/v1/models", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Model, SharpAI.Security.OperationTypeEnum.Read, null);
-                List<Models.ModelFile> models = CollectAllModels();
-                List<object> data = new List<object>();
-                if (models != null)
-                {
-                    foreach (Models.ModelFile m in models)
-                    {
-                        data.Add(new
-                        {
-                            id = m.Name,
-                            @object = "model",
-                            created = new DateTimeOffset(DateTime.SpecifyKind(m.CreatedUtc, DateTimeKind.Utc)).ToUnixTimeSeconds(),
-                            owned_by = "sharpai"
-                        });
-                    }
-                }
-                return new { @object = "list", data = data };
-            }, api => Describe(api, "OpenAI - Models", "List models (OpenAI-compatible)")
-                .WithDescription("OpenAI-compatible model list; returns locally available models.")
-                .WithResponse(200, OpenApiResponseMetadata.Json("Model list", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Post<OpenAIGenerateEmbeddingsRequest>("/v1/embeddings", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Inference, SharpAI.Security.OperationTypeEnum.Execute, null);
-                OpenAIGenerateEmbeddingsRequest ger = req.GetData<OpenAIGenerateEmbeddingsRequest>();
-                return await _OpenAIApiHandler.GenerateEmbeddings(req, ger, _TokenSource.Token).ConfigureAwait(false);
-            }, api => Describe(api, "OpenAI - Inference", "Generate embeddings (OpenAI-compatible)")
-                .WithDescription("OpenAI-compatible embeddings endpoint.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Embeddings request", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Embeddings response", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Post<OpenAIGenerateCompletionRequest>("/v1/completions", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Inference, SharpAI.Security.OperationTypeEnum.Execute, null);
-                return await RunInference(async () =>
-                {
-                    OpenAIGenerateCompletionRequest gcr = req.GetData<OpenAIGenerateCompletionRequest>();
-                    object ret = await _OpenAIApiHandler.GenerateCompletion(req, gcr, _TokenSource.Token).ConfigureAwait(false);
-                    if (req.Http.Response.ServerSentEvents) return null;
-                    else return ret;
-                }).ConfigureAwait(false);
-            }, api => Describe(api, "OpenAI - Inference", "Generate text completion (OpenAI-compatible)")
-                .WithDescription("OpenAI-compatible text completion endpoint. Supports streaming via server-sent events.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Completion request", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Completion response", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(429, OpenApiResponseMetadata.Json("Server busy or at capacity — retry later", OpenApiSchemaMetadata.Create("object"))));
-
-            _Server.Post<OpenAIGenerateChatCompletionRequest>("/v1/chat/completions", async (req) =>
-            {
-                Authorize(req, SharpAI.Security.ResourceTypes.Inference, SharpAI.Security.OperationTypeEnum.Execute, null);
-                return await RunInference(async () =>
-                {
-                    OpenAIGenerateChatCompletionRequest gccr = req.GetData<OpenAIGenerateChatCompletionRequest>();
-                    object ret = await _OpenAIApiHandler.GenerateChatCompletion(req, gccr, _TokenSource.Token).ConfigureAwait(false);
-                    if (req.Http.Response.ServerSentEvents) return null;
-                    else return ret;
-                }).ConfigureAwait(false);
-            }, api => Describe(api, "OpenAI - Inference", "Generate chat completion (OpenAI-compatible)")
-                .WithDescription("OpenAI-compatible chat completion endpoint. Supports streaming via server-sent events.")
-                .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Chat completion request", true))
-                .WithResponse(200, OpenApiResponseMetadata.Json("Chat completion response", OpenApiSchemaMetadata.Create("object")))
-                .WithResponse(429, OpenApiResponseMetadata.Json("Server busy or at capacity — retry later", OpenApiSchemaMetadata.Create("object"))));
-
-            #endregion
         }
 
         private static List<Models.ModelFile> CollectAllModels()
@@ -1090,54 +1354,13 @@ namespace SharpAI.Server
             return all;
         }
 
-        private static async Task<object> RunInference(Func<Task<object>> handler)
-        {
-            try
-            {
-                return await handler().ConfigureAwait(false);
-            }
-            catch (SharpAI.Exceptions.EngineBusyException ex)
-            {
-                // All generation slots are busy — signal the client to back off and retry (HTTP 429).
-                throw new WebserverException(ApiResultEnum.SlowDown, ex.Message);
-            }
-            catch (SharpAI.Exceptions.ModelAdmissionException ex)
-            {
-                // The model cannot be admitted within the memory budget — treat as a capacity/back-off condition.
-                throw new WebserverException(ApiResultEnum.SlowDown, ex.Message);
-            }
-        }
-
+        // Wraps an inference handler so every pre-stream error is emitted as an OpenAI/Ollama-shaped error
+        // envelope ({"error":{"message":...,"type":...}}) rather than Watson's default error shape, so
+        // OpenAI/Ollama client SDKs never throw on parse. Errors that occur after streaming has begun cannot
+        // change the response and are swallowed by the writer.
         private static bool DirectoryExistsAndWritable(string directory)
         {
-            if (String.IsNullOrWhiteSpace(directory)) return false;
-            if (!Directory.Exists(directory)) return false;
-
-            string testFile = Path.Combine(directory, ".sharpai-write-test-" + Guid.NewGuid().ToString("N"));
-
-            try
-            {
-                using (FileStream stream = new FileStream(testFile, FileMode.CreateNew, FileAccess.Write, FileShare.None))
-                {
-                    byte[] buffer = new byte[] { 0 };
-                    stream.Write(buffer, 0, buffer.Length);
-                }
-
-                File.Delete(testFile);
-                return true;
-            }
-            catch
-            {
-                try
-                {
-                    if (File.Exists(testFile)) File.Delete(testFile);
-                }
-                catch
-                {
-                }
-
-                return false;
-            }
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.DirectoryExistsAndWritable(directory);
         }
 
         private static async Task DefaultRoute(HttpContextBase ctx)
@@ -1149,34 +1372,17 @@ namespace SharpAI.Server
 
         private static OpenApiRouteMetadata Describe(OpenApiRouteMetadata api, string tag, string summary)
         {
-            api.Summary = summary;
-            api.WithTag(tag);
-            return api;
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.Describe(api, tag, summary);
         }
 
         private static string HeaderValue(WatsonWebserver.Core.HttpContextBase ctx, string name)
         {
-            System.Collections.Specialized.NameValueCollection headers = ctx.Request.Headers;
-            if (headers == null) return null;
-
-            foreach (string key in headers.AllKeys)
-            {
-                if (key != null && key.Equals(name, StringComparison.OrdinalIgnoreCase)) return headers[key];
-            }
-
-            return null;
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.HeaderValue(ctx, name);
         }
 
         private static string ExtractBearerToken(WatsonWebserver.Core.HttpContextBase ctx)
         {
-            string authorization = HeaderValue(ctx, "authorization");
-            if (!String.IsNullOrEmpty(authorization) &&
-                authorization.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
-            {
-                return authorization.Substring(7).Trim();
-            }
-
-            return HeaderValue(ctx, "x-token");
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.ExtractBearerToken(ctx);
         }
 
         /// <summary>
@@ -1187,73 +1393,7 @@ namespace SharpAI.Server
         /// </summary>
         private static void Authorize(WatsonWebserver.Core.ApiRequest req, string resourceType, SharpAI.Security.OperationTypeEnum operation, string resourceGuid)
         {
-            SharpAI.Security.RequestContext context = req.Http.Metadata as SharpAI.Security.RequestContext;
-
-            if (context == null)
-            {
-                if (!_Settings.Auth.Enabled) return;
-                throw new WebserverException(ApiResultEnum.Forbidden, "Authorization context is unavailable.");
-            }
-
-            if (context.IsAdmin) return;
-
-            SharpAI.Security.AuthorizationRequest ar = new SharpAI.Security.AuthorizationRequest
-            {
-                TenantGuid = context.TenantGuid,
-                PrincipalType = context.PrincipalType,
-                PrincipalGuid = context.PrincipalGuid,
-                IsAdmin = context.IsAdmin,
-                IsTenantAdmin = context.IsTenantAdmin,
-                ResourceType = resourceType,
-                Operation = operation,
-                ResourceGuid = resourceGuid,
-                OwnerUserGuid = context.OwnerUserGuid
-            };
-
-            SharpAI.Security.AuthorizationDecision decision = _RbacEngine.Authorize(ar);
-            if (!decision.IsPermitted)
-            {
-                RecordAuthzDenial(req.Http, context, resourceType, operation, decision);
-                throw new WebserverException(ApiResultEnum.Forbidden, decision.Reason);
-            }
-        }
-
-        private static void RecordAuthzDenial(
-            WatsonWebserver.Core.HttpContextBase ctx,
-            SharpAI.Security.RequestContext context,
-            string resourceType,
-            SharpAI.Security.OperationTypeEnum operation,
-            SharpAI.Security.AuthorizationDecision decision)
-        {
-            try
-            {
-                string path = ctx.Request.Url != null ? ctx.Request.Url.RawWithQuery : null;
-                if (!String.IsNullOrEmpty(path))
-                {
-                    int q = path.IndexOf('?');
-                    if (q >= 0) path = path.Substring(0, q);
-                }
-
-                SharpAI.Security.AuditLogEntry entry = new SharpAI.Security.AuditLogEntry
-                {
-                    TenantGuid = context.TenantGuid,
-                    EventType = "AuthorizationDenied",
-                    PrincipalType = context.PrincipalType,
-                    PrincipalGuid = context.PrincipalGuid,
-                    Method = ctx.Request.Method.ToString(),
-                    Path = path,
-                    IpAddress = ctx.Request.Source != null ? ctx.Request.Source.IpAddress : null,
-                    AuthResult = true,
-                    AuthzResult = false,
-                    DenialReason = resourceType + ":" + operation + " — " + decision.Reason,
-                    StatusCode = 403
-                };
-                _Database.Audit.Create(entry);
-            }
-            catch (Exception e)
-            {
-                _Logging.Warn(_Header + "unable to record authorization denial: " + e.Message);
-            }
+            _AuthGate.Authorize(req, resourceType, operation, resourceGuid);
         }
 
         private static void AuthorizeInspection(
@@ -1262,28 +1402,51 @@ namespace SharpAI.Server
             SharpAI.Security.PrincipalTypeEnum principalType,
             string principalGuid)
         {
+            _AuthGate.AuthorizeInspection(req, tenantGuid, principalType, principalGuid);
+        }
+
+        private static string RouteParam(WatsonWebserver.Core.ApiRequest req, string name)
+        {
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.RouteParam(req, name);
+        }
+
+        private static Models.EnumerationQuery ParseEnumQuery(WatsonWebserver.Core.ApiRequest req)
+        {
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.ParseEnumQuery(req);
+        }
+
+        /// <summary>
+        /// Enforce tenant isolation for a management route and return the effective tenant. The implicit
+        /// system principal (auth disabled) and global administrators may target any tenant; every other
+        /// principal is constrained to its own tenant.
+        /// </summary>
+        private static string ResolveManagementTenant(WatsonWebserver.Core.ApiRequest req, string routeTenantGuid)
+        {
+            if (String.IsNullOrEmpty(routeTenantGuid))
+                throw new WebserverException(ApiResultEnum.BadRequest, "A tenant identifier is required.");
+
             SharpAI.Security.RequestContext context = req.Http.Metadata as SharpAI.Security.RequestContext;
+            if (context == null || context.IsAdmin) return routeTenantGuid;
 
-            if (context == null)
+            if (!String.IsNullOrEmpty(context.TenantGuid) &&
+                String.Equals(context.TenantGuid, routeTenantGuid, StringComparison.Ordinal))
             {
-                if (!_Settings.Auth.Enabled) return;
-                throw new WebserverException(ApiResultEnum.Forbidden, "Authorization context is unavailable.");
+                return routeTenantGuid;
             }
 
-            if (context.IsAdmin) return;
+            throw new WebserverException(ApiResultEnum.Forbidden, "Cross-tenant access is not permitted.");
+        }
 
-            // A principal may always read its own effective permissions.
-            if (context.PrincipalType == principalType
-                && !String.IsNullOrEmpty(principalGuid)
-                && String.Equals(context.PrincipalGuid, principalGuid, StringComparison.Ordinal)
-                && String.Equals(context.TenantGuid, tenantGuid, StringComparison.Ordinal))
-            {
-                return;
-            }
+        private static SharpAI.Security.User Redact(SharpAI.Security.User user)
+        {
+            if (user != null) user.PasswordSha256 = null;
+            return user;
+        }
 
-            // Otherwise this is an administrative inspection and requires Admin on the Admin resource
-            // (IsTenantAdmin satisfies this via the RBAC bypass).
-            Authorize(req, SharpAI.Security.ResourceTypes.Admin, SharpAI.Security.OperationTypeEnum.Admin, null);
+        private static SharpAI.Security.Credential Redact(SharpAI.Security.Credential credential)
+        {
+            if (credential != null) credential.SecretSha256 = null;
+            return credential;
         }
 
         private static object EffectivePermissionsResponse(

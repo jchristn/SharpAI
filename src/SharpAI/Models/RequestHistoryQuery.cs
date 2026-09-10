@@ -67,6 +67,13 @@ namespace SharpAI.Models
         public string PathContains { get; set; } = null;
 
         /// <summary>
+        /// High-level category filter. <c>"inference"</c> restricts results to the inference/embeddings
+        /// endpoints (Ollama and OpenAI chat/generate/embeddings). Null or <c>"all"</c> applies no category
+        /// restriction. Combine with <see cref="PathContains"/> to narrow to a single endpoint.
+        /// </summary>
+        public string Category { get; set; } = null;
+
+        /// <summary>
         /// Filter to requests created at or after this UTC timestamp.
         /// </summary>
         public DateTime? FromUtc { get; set; } = null;
@@ -153,6 +160,9 @@ namespace SharpAI.Models
 
             value = queryGetter("pathContains");
             if (!String.IsNullOrEmpty(value)) PathContains = value;
+
+            value = queryGetter("category");
+            if (!String.IsNullOrEmpty(value)) Category = value;
 
             value = queryGetter("fromUtc");
             if (!String.IsNullOrEmpty(value) && DateTime.TryParse(value, out DateTime fromUtc)) FromUtc = fromUtc.ToUniversalTime();

@@ -81,6 +81,29 @@ namespace Test.Shared
                         return Task.CompletedTask;
                     }),
 
+                new TestCaseDescriptor("ToolParse", "Unclosed_Tag", "Parses an unclosed <tool_call> (small models omit the closing tag)",
+                    ct =>
+                    {
+                        // Observed from Qwen2.5-1.5B: it emits the opening tag + JSON but no </tool_call>.
+                        List<ParsedToolCall> calls = ToolCallParser.Parse(
+                            "<tool_call>{\"name\": \"get_weather\", \"arguments\": {\"city\": \"Paris\"}}");
+                        TestAssert.Equal(1, calls.Count);
+                        TestAssert.Equal("get_weather", calls[0].Name);
+                        TestAssert.Contains(calls[0].ArgumentsJson, "Paris");
+                        return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("ToolParse", "Nested_Braces_In_Args", "Balanced-brace extraction handles nested objects",
+                    ct =>
+                    {
+                        List<ParsedToolCall> calls = ToolCallParser.Parse(
+                            "<tool_call>{\"name\":\"f\",\"arguments\":{\"nested\":{\"a\":{\"b\":1}},\"s\":\"}not-a-close\"}}");
+                        TestAssert.Equal(1, calls.Count);
+                        TestAssert.Equal("f", calls[0].Name);
+                        TestAssert.Contains(calls[0].ArgumentsJson, "nested");
+                        return Task.CompletedTask;
+                    }),
+
                 new TestCaseDescriptor("ToolParse", "Malformed_Skipped", "Malformed JSON in a block is skipped",
                     ct =>
                     {

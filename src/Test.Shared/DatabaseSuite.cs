@@ -261,6 +261,102 @@ namespace Test.Shared
                         EnumerationResult<AuditLogEntry> page = Db().Audit.Enumerate(tenantGuid, new EnumerationQuery());
                         TestAssert.True(page.TotalRecords >= 1, "audit enumerate should return the entry");
                         return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Database", "Rbac_DataLayer", "Roles/permissions/assignments CRUD, join, and enumerate",
+                    ct =>
+                    {
+                        string tenant = "ten_" + Guid.NewGuid().ToString("N");
+                        UserRole role = Db().Roles.Create(new UserRole { TenantGuid = tenant, Name = "custom-" + Guid.NewGuid().ToString("N") });
+                        Permission perm = Db().Permissions.Create(new Permission
+                        {
+                            TenantGuid = tenant,
+                            Name = "p",
+                            ResourceTypes = new List<string> { "Model" },
+                            OperationTypes = new List<string> { "Read" },
+                            Effect = PermissionEffectEnum.Permit
+                        });
+                        Db().RolePermissionMaps.Create(new RolePermissionMap { TenantGuid = tenant, RoleGuid = role.Guid, PermissionGuid = perm.Guid });
+
+                        List<Permission> forRole = Db().Permissions.GetForRole(role.Guid);
+                        TestAssert.True(forRole.Count == 1 && forRole[0].ResourceTypes.Contains("Model"), "GetForRole should join the mapped permission and round-trip the JSON array");
+
+                        string user = "usr_" + Guid.NewGuid().ToString("N");
+                        UserRoleAssignment assignment = Db().UserRoleAssignments.Create(new UserRoleAssignment { TenantGuid = tenant, UserGuid = user, RoleGuid = role.Guid });
+                        TestAssert.True(Db().UserRoleAssignments.GetForUser(tenant, user).Count == 1, "GetForUser should return the assignment");
+
+                        EnumerationResult<UserRole> roles = Db().Roles.Enumerate(tenant, new EnumerationQuery());
+                        EnumerationResult<Permission> perms = Db().Permissions.Enumerate(tenant, new EnumerationQuery());
+                        EnumerationResult<UserRoleAssignment> asns = Db().UserRoleAssignments.Enumerate(tenant, user, new EnumerationQuery());
+                        TestAssert.True(roles.TotalRecords >= 1 && perms.TotalRecords >= 1 && asns.TotalRecords == 1, "enumerate should report the created records");
+
+                        Db().UserRoleAssignments.Delete(assignment.Guid);
+                        TestAssert.True(Db().UserRoleAssignments.GetForUser(tenant, user).Count == 0, "assignment should be gone after delete");
+                        return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Database", "RequestHistory_Filters", "Enumerate honors method/status/path filters",
+                    ct =>
+                    {
+                        string tag = "/rhf-" + Guid.NewGuid().ToString("N");
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "GET", Path = tag + "/a", StatusCode = 200, CreatedUtc = DateTime.UtcNow });
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "POST", Path = tag + "/b", StatusCode = 500, CreatedUtc = DateTime.UtcNow });
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "GET", Path = tag + "/a2", StatusCode = 404, CreatedUtc = DateTime.UtcNow });
+
+                        EnumerationResult<RequestHistoryEntry> all = Db().RequestHistory.Enumerate(new RequestHistoryQuery { PathContains = tag, PageSize = 100 });
+                        TestAssert.True(all.TotalRecords == 3, "path filter returns the three tagged entries");
+
+                        EnumerationResult<RequestHistoryEntry> gets = Db().RequestHistory.Enumerate(new RequestHistoryQuery { PathContains = tag, Method = "GET", PageSize = 100 });
+                        TestAssert.True(gets.TotalRecords == 2, "method filter narrows to GET");
+
+                        EnumerationResult<RequestHistoryEntry> errs = Db().RequestHistory.Enumerate(new RequestHistoryQuery { PathContains = tag, StatusCode = 500, PageSize = 100 });
+                        TestAssert.True(errs.TotalRecords == 1, "status filter narrows to 500");
+                        return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Database", "RequestHistory_Category_Inference", "category=inference restricts to inference/embeddings endpoints",
+                    ct =>
+                    {
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "POST", Path = "/api/chat", StatusCode = 200, CreatedUtc = DateTime.UtcNow });
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "POST", Path = "/v1/chat/completions", StatusCode = 200, CreatedUtc = DateTime.UtcNow });
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "POST", Path = "/api/embed", StatusCode = 200, CreatedUtc = DateTime.UtcNow });
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "GET", Path = "/api/tags", StatusCode = 200, CreatedUtc = DateTime.UtcNow });
+                        Db().RequestHistory.Create(new RequestHistoryEntry { Method = "GET", Path = "/api/version", StatusCode = 200, CreatedUtc = DateTime.UtcNow });
+
+                        EnumerationResult<RequestHistoryEntry> inf = Db().RequestHistory.Enumerate(new RequestHistoryQuery { Category = "inference", PageSize = 1000 });
+                        foreach (RequestHistoryEntry e in inf.Objects)
+                        {
+                            bool isInference = e.Path.Contains("/chat") || e.Path.Contains("/generate") || e.Path.Contains("/embed") || e.Path.Contains("/completions");
+                            TestAssert.True(isInference, "non-inference path leaked into category=inference: " + e.Path);
+                        }
+                        TestAssert.True(inf.TotalRecords >= 3, "the three inference entries are included");
+
+                        // The summary honors the category too.
+                        RequestHistorySummary summary = Db().RequestHistory.Summarize(new RequestHistoryQuery { Category = "inference", BucketMinutes = 60 });
+                        TestAssert.True(summary.Buckets != null && summary.Buckets.Count >= 1, "summary returns buckets for the inference category");
+                        return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Database", "Model_Enumerate_Filters", "Enumerate honors family + quantization filters",
+                    ct =>
+                    {
+                        string family = "fam-" + Guid.NewGuid().ToString("N");
+                        ModelFile a = Sample("filter-a"); a.Family = family; a.Quantization = "Q4_K_M";
+                        ModelFile b = Sample("filter-b"); b.Family = family; b.Quantization = "Q8_0";
+                        ModelFile c = Sample("filter-c"); c.Family = "other-" + Guid.NewGuid().ToString("N"); c.Quantization = "Q4_K_M";
+                        Db().Models.Add(a);
+                        Db().Models.Add(b);
+                        Db().Models.Add(c);
+
+                        EnumerationResult<ModelFile> byFamily = Db().Models.Enumerate(new EnumerationQuery { Family = family, PageSize = 1000 });
+                        TestAssert.True(byFamily.TotalRecords == 2, "family filter returns the two in that family");
+
+                        EnumerationResult<ModelFile> byFamilyQuant = Db().Models.Enumerate(new EnumerationQuery { Family = family, Quantization = "Q8_0", PageSize = 1000 });
+                        TestAssert.True(byFamilyQuant.TotalRecords == 1, "family + quantization narrows to one");
+
+                        EnumerationResult<ModelFile> byName = Db().Models.Enumerate(new EnumerationQuery { Name = a.Name, PageSize = 1000 });
+                        TestAssert.True(byName.TotalRecords == 1 && byName.Objects[0].GUID == a.GUID, "exact-name filter returns the one model");
+                        return Task.CompletedTask;
                     })
             };
 

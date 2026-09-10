@@ -78,5 +78,44 @@ namespace SharpAI.Sdk.Interfaces
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Async enumerable of streaming completion results.</returns>
         IAsyncEnumerable<OllamaStreamingCompletionResult> GenerateCompletionStream(OllamaGenerateCompletionRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Import a GGUF model already present on the server's local filesystem (no download, no token).
+        /// </summary>
+        /// <param name="request">Import request (local path + optional name).</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The registered model details.</returns>
+        Task<object?> ImportModel(SharpAIImportModelRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// List Modelfile-equivalent presets.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The preset enumeration result.</returns>
+        Task<object?> ListPresets(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Create a Modelfile-equivalent preset.
+        /// </summary>
+        /// <param name="request">Preset definition.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The created preset.</returns>
+        Task<object?> CreatePreset(SharpAICreatePresetRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Read a preset by name.
+        /// </summary>
+        /// <param name="name">Preset name.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The preset, or default when not found.</returns>
+        Task<object?> GetPreset(string name, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete a preset by name.
+        /// </summary>
+        /// <param name="name">Preset name.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The delete result.</returns>
+        Task<object?> DeletePreset(string name, CancellationToken cancellationToken = default);
     }
 }

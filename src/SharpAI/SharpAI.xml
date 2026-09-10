@@ -361,6 +361,11 @@
             Model registry data-access methods.
             </summary>
         </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Presets">
+            <summary>
+            Model-preset (Modelfile-equivalent) data-access methods. Never null.
+            </summary>
+        </member>
         <member name="P:SharpAI.Database.DatabaseDriverBase.RequestHistory">
             <summary>
             Request-history data-access methods.
@@ -605,6 +610,13 @@
             for storage. Timestamps are stored as sortable ISO-8601 UTC text; booleans as 0/1 integers.
             </summary>
         </member>
+        <member name="T:SharpAI.Database.Implementations.ModelPresetMethods">
+            <summary>
+            Handwritten-SQL implementation of the model-preset methods. Portable ANSI SQL executed through the
+            driver's connection-agnostic helpers; nullable numerics and the stop list are stored as text so the
+            schema is identical across providers.
+            </summary>
+        </member>
         <member name="T:SharpAI.Database.Implementations.ModelRegistryMethods">
             <summary>
             Handwritten-SQL implementation of the model registry methods. The SQL is portable ANSI executed
@@ -764,6 +776,53 @@
         <member name="M:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods.Delete(System.String)">
             <summary>Delete an assignment by identifier.</summary>
             <param name="guid">Assignment identifier.</param>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.IModelPresetMethods">
+            <summary>
+            Data-access contract for Modelfile-equivalent model presets. Implementations use portable, handwritten
+            SQL over the shared driver so every supported provider honors the same contract.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelPresetMethods.Enumerate(SharpAI.Models.EnumerationQuery)">
+            <summary>
+            Enumerate presets using a paginated query.
+            </summary>
+            <param name="query">Enumeration query. When null, defaults are used.</param>
+            <returns>Enumeration result.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelPresetMethods.GetByGuid(System.Guid)">
+            <summary>
+            Get a preset by GUID.
+            </summary>
+            <param name="guid">GUID.</param>
+            <returns>Instance, or null when not found.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelPresetMethods.GetByName(System.String)">
+            <summary>
+            Get a preset by name.
+            </summary>
+            <param name="name">Name.</param>
+            <returns>Instance, or null when not found.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelPresetMethods.Add(SharpAI.Models.ModelPreset)">
+            <summary>
+            Create a preset. Returns the existing preset when one with the same name already exists.
+            </summary>
+            <param name="preset">Preset to create.</param>
+            <returns>The created (or existing) instance.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelPresetMethods.Update(SharpAI.Models.ModelPreset)">
+            <summary>
+            Update an existing preset.
+            </summary>
+            <param name="preset">Preset to update.</param>
+            <returns>The updated instance.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IModelPresetMethods.Delete(System.Guid)">
+            <summary>
+            Delete a preset by GUID.
+            </summary>
+            <param name="guid">GUID.</param>
         </member>
         <member name="T:SharpAI.Database.Interfaces.IModelRegistryMethods">
             <summary>
@@ -1527,14 +1586,68 @@
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generate text, optionally constrained by a GBNF grammar (JSON mode / structured outputs). When
+            <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the grammar permits.
+            </summary>
+            <param name="prompt">Prompt.</param>
+            <param name="maxTokens">Maximum tokens to generate.</param>
+            <param name="temperature">Sampling temperature.</param>
+            <param name="stopSequences">Anti-prompt stop sequences.</param>
+            <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>The generated text.</returns>
+        </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>
+            Stream text, optionally constrained by a GBNF grammar (JSON mode / structured outputs). When
+            <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the grammar permits.
+            </summary>
+            <param name="prompt">Prompt.</param>
+            <param name="maxTokens">Maximum tokens to generate.</param>
+            <param name="temperature">Sampling temperature.</param>
+            <param name="stopSequences">Anti-prompt stop sequences.</param>
+            <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>An async stream of generated token strings.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>
+            Generate a chat completion, optionally constrained by a GBNF grammar (JSON mode / structured
+            outputs). When <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the
+            grammar permits, guaranteeing syntactically valid output.
+            </summary>
+            <param name="prompt">Rendered prompt.</param>
+            <param name="maxTokens">Maximum tokens to generate.</param>
+            <param name="temperature">Sampling temperature.</param>
+            <param name="stopSequences">Anti-prompt stop sequences.</param>
+            <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>The generated text.</returns>
+        </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>
+            Stream a chat completion, optionally constrained by a GBNF grammar (JSON mode / structured
+            outputs). When <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the
+            grammar permits.
+            </summary>
+            <param name="prompt">Rendered prompt.</param>
+            <param name="maxTokens">Maximum tokens to generate.</param>
+            <param name="temperature">Sampling temperature.</param>
+            <param name="stopSequences">Anti-prompt stop sequences.</param>
+            <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>An async stream of generated token strings.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.RenderEmbeddedChatPrompt(System.Collections.Generic.IReadOnlyList{SharpAI.Prompts.ChatMessage},System.Boolean)">
             <inheritdoc />
@@ -1588,6 +1701,47 @@
             </summary>
             <param name="message">Message describing the condition.</param>
             <param name="innerException">Inner exception.</param>
+        </member>
+        <member name="T:SharpAI.Grammars.JsonGrammar">
+            <summary>
+            Provides GBNF grammars for JSON-mode / structured-output decoding, and maps the OpenAI
+            <c>response_format</c> and Ollama <c>format</c> request fields onto a grammar. When a grammar is
+            applied during sampling the model can only emit tokens permitted by the grammar, so the output is
+            guaranteed to be syntactically valid JSON.
+            <para>
+            Schema-constrained decoding (OpenAI <c>json_schema</c>, Ollama schema objects) currently falls back to
+            the general JSON grammar — the output is guaranteed valid JSON but is not yet constrained to the exact
+            schema. Full JSON-Schema-to-GBNF translation is a future enhancement.
+            </para>
+            </summary>
+        </member>
+        <member name="F:SharpAI.Grammars.JsonGrammar.GenericJson">
+            <summary>
+            GBNF grammar (root rule <c>root</c>) that accepts any valid JSON value. Mirrors the canonical
+            llama.cpp <c>json.gbnf</c>.
+            </summary>
+        </member>
+        <member name="F:SharpAI.Grammars.JsonGrammar.RootRule">
+            <summary>
+            Root rule name for the grammars returned by this type.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Grammars.JsonGrammar.ForOpenAIResponseFormat(SharpAI.Models.OpenAI.OpenAIResponseFormat)">
+            <summary>
+            Resolve a GBNF grammar for an OpenAI <c>response_format</c>. Returns the general JSON grammar for
+            <c>json_object</c> and <c>json_schema</c>, or null when the caller did not request a JSON format
+            (<c>text</c> or absent).
+            </summary>
+            <param name="responseFormat">The OpenAI response_format, or null.</param>
+            <returns>A GBNF grammar string, or null when no JSON constraint applies.</returns>
+        </member>
+        <member name="M:SharpAI.Grammars.JsonGrammar.ForOllamaFormat(System.String)">
+            <summary>
+            Resolve a GBNF grammar for an Ollama <c>format</c> value. Returns the general JSON grammar for the
+            literal <c>"json"</c> or any non-empty schema value; returns null when the format is absent.
+            </summary>
+            <param name="format">The Ollama format value, or null.</param>
+            <returns>A GBNF grammar string, or null when no JSON constraint applies.</returns>
         </member>
         <member name="T:SharpAI.Helpers.DataTableHelper">
             <summary>
@@ -2451,7 +2605,9 @@
             Initializes a new instance of the HuggingFace client.
             </summary>
             <param name="logging">LoggingModule instance for logging operations.</param>
-            <param name="apiKey">HuggingFace API key for authentication.</param>
+            <param name="apiKey">HuggingFace API token, or null/empty for anonymous access. A token is only
+            required to download gated or private repositories; public repositories download without one
+            (W5.T2). When supplied it is sent as a bearer token; when absent no Authorization header is set.</param>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelMetadata(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -3407,6 +3563,75 @@
             Convert to an Ollama model details API object.
             </summary>
             <returns>Object.</returns>
+        </member>
+        <member name="T:SharpAI.Models.ModelPreset">
+            <summary>
+            A Modelfile-equivalent preset: a named configuration layered over a base model that supplies a
+            default system prompt, sampling parameters, stop sequences, and an optional template override. A
+            request that names the preset (as its <c>model</c>) runs against the preset's base model with these
+            defaults applied, unless the request overrides them explicitly.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.GUID">
+            <summary>
+            GUID (primary identifier).
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.Name">
+            <summary>
+            Preset name. Unique; used as the <c>model</c> value in inference requests to select this preset.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.ModelName">
+            <summary>
+            Name of the base model (in the registry) that this preset runs against. Required.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.SystemPrompt">
+            <summary>
+            Default system prompt injected ahead of the conversation, or null for none.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.Temperature">
+            <summary>
+            Default sampling temperature applied when the request does not specify one, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.MaxTokens">
+            <summary>
+            Default maximum tokens to generate when the request does not specify one, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.TopP">
+            <summary>
+            Default top-p (nucleus) sampling value applied when the request does not specify one, or null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.TemplateOverride">
+            <summary>
+            Optional raw chat-template override (GGUF/Jinja-style) stored with the preset, or null to use the
+            model's own template.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.Stop">
+            <summary>
+            Default stop sequences merged with any supplied by the request. Never null.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.CreatedUtc">
+            <summary>
+            Timestamp from creation, in UTC time.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Models.ModelPreset.LastUpdateUtc">
+            <summary>
+            Timestamp from last update, in UTC time.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Models.ModelPreset.#ctor">
+            <summary>
+            A Modelfile-equivalent preset.
+            </summary>
         </member>
         <member name="T:SharpAI.Models.Ollama.OllamaChatCompletionMetrics">
             <summary>
@@ -7236,6 +7461,13 @@
             Filter to requests whose path contains this substring.
             </summary>
         </member>
+        <member name="P:SharpAI.Models.RequestHistoryQuery.Category">
+            <summary>
+            High-level category filter. <c>"inference"</c> restricts results to the inference/embeddings
+            endpoints (Ollama and OpenAI chat/generate/embeddings). Null or <c>"all"</c> applies no category
+            restriction. Combine with <see cref="P:SharpAI.Models.RequestHistoryQuery.PathContains"/> to narrow to a single endpoint.
+            </summary>
+        </member>
         <member name="P:SharpAI.Models.RequestHistoryQuery.FromUtc">
             <summary>
             Filter to requests created at or after this UTC timestamp.
@@ -9678,6 +9910,100 @@
             </summary>
             <param name="modelOutput">The raw text produced by the model.</param>
             <returns>The tool calls found, in order. Empty when the output is not a tool call.</returns>
+        </member>
+        <member name="T:SharpAI.Tools.ToolDefinition">
+            <summary>
+            A model-independent description of a callable tool/function, used to render tool definitions into a
+            prompt. The Ollama and OpenAI request handlers map their respective tool shapes onto this type.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Tools.ToolDefinition.Name">
+            <summary>
+            Tool/function name.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Tools.ToolDefinition.Description">
+            <summary>
+            Human-readable description of what the tool does.
+            </summary>
+        </member>
+        <member name="P:SharpAI.Tools.ToolDefinition.ParametersJson">
+            <summary>
+            JSON Schema (as a JSON string) describing the tool's parameters, or null when it takes none.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Tools.ToolDefinition.#ctor">
+            <summary>
+            Instantiate.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Tools.ToolDefinition.#ctor(System.String,System.String,System.String)">
+            <summary>
+            Instantiate with values.
+            </summary>
+            <param name="name">Tool name.</param>
+            <param name="description">Tool description.</param>
+            <param name="parametersJson">Parameters JSON schema, or null.</param>
+        </member>
+        <member name="T:SharpAI.Tools.ToolPromptBuilder">
+            <summary>
+            Renders tool/function definitions into a system-prompt instruction that asks the model to emit tool
+            calls in the <c>&lt;tool_call&gt;{...}&lt;/tool_call&gt;</c> format that <see cref="T:SharpAI.Tools.ToolCallParser"/>
+            understands. This is the model-independent half of tool calling — the instruction is injected into
+            the prompt, and the model's output is parsed back with <see cref="M:SharpAI.Tools.ToolCallParser.Parse(System.String)"/>.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Tools.ToolPromptBuilder.BuildSystemInstruction(System.Collections.Generic.IReadOnlyList{SharpAI.Tools.ToolDefinition})">
+            <summary>
+            Build the system-prompt instruction describing the available tools. Returns an empty string when
+            no tools are supplied (so callers can inject unconditionally).
+            </summary>
+            <param name="tools">Tool definitions.</param>
+            <returns>The instruction text, or an empty string.</returns>
+        </member>
+        <member name="T:SharpAI.Tools.ToolRequestMapper">
+            <summary>
+            Maps the provider-specific tool request shapes (OpenAI <c>tools[]</c> and Ollama <c>tools[]</c>) onto
+            the model-independent <see cref="T:SharpAI.Tools.ToolDefinition"/> list consumed by <see cref="T:SharpAI.Tools.ToolPromptBuilder"/>.
+            Parameter schemas are carried through as their JSON text.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Tools.ToolRequestMapper.FromOpenAI(System.Collections.Generic.IReadOnlyList{SharpAI.Models.OpenAI.OpenAITool})">
+            <summary>
+            Convert OpenAI tool definitions to the model-independent form. Returns an empty list when the
+            input is null or empty.
+            </summary>
+            <param name="tools">OpenAI tools.</param>
+            <returns>Model-independent tool definitions; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Tools.ToolRequestMapper.FromOllama(System.Collections.Generic.IReadOnlyList{SharpAI.Models.Ollama.OllamaTool})">
+            <summary>
+            Convert Ollama tool definitions to the model-independent form. Returns an empty list when the
+            input is null or empty.
+            </summary>
+            <param name="tools">Ollama tools.</param>
+            <returns>Model-independent tool definitions; never null.</returns>
+        </member>
+        <member name="T:SharpAI.Tools.ToolResponseMapper">
+            <summary>
+            Maps the parsed, model-independent tool calls from <see cref="T:SharpAI.Tools.ToolCallParser"/> onto the OpenAI- and
+            Ollama-compatible tool-call response shapes emitted by the chat handlers.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Tools.ToolResponseMapper.ToOpenAI(System.Collections.Generic.IReadOnlyList{SharpAI.Tools.ParsedToolCall})">
+            <summary>
+            Map parsed tool calls to the OpenAI <c>tool_calls</c> shape. Each call receives a stable id
+            (<c>call_{index}</c>) unique within the response.
+            </summary>
+            <param name="calls">Parsed tool calls.</param>
+            <returns>OpenAI tool calls; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Tools.ToolResponseMapper.ToOllama(System.Collections.Generic.IReadOnlyList{SharpAI.Tools.ParsedToolCall})">
+            <summary>
+            Map parsed tool calls to the Ollama tool-call shape.
+            </summary>
+            <param name="calls">Parsed tool calls.</param>
+            <returns>Ollama tool calls; never null.</returns>
         </member>
     </members>
 </doc>

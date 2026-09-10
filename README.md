@@ -32,6 +32,32 @@
 
 ---
 
+## What's new in 5.0
+
+Version 5.0 is a unified, enterprise-focused release across the library, server, dashboard, and SDKs. The
+highlights:
+
+- **Correct prompts by default.** Chat requests render through each model's own GGUF-embedded chat
+  template when present, falling back to the built-in formatter otherwise.
+- **A rebuilt dashboard.** A React 19 single-page app (no Ant Design, no axios) covering overview, models,
+  an inference playground, request history with an activity chart, an API explorer, observability, and
+  settings — with light/dark theming, sign-in, and internationalization (English, Arabic/RTL).
+- **Authentication, authorization, and accounting — off by default.** Multi-tenant users, credentials,
+  and sessions; an RBAC engine with explicit-deny-wins and built-in roles; a security audit trail; and a
+  full account-management REST surface. When disabled, the server stays an open local Ollama.
+- **Four databases.** A provider-neutral, hand-written data layer over SQLite (default), MySQL,
+  PostgreSQL, and SQL Server with versioned migrations.
+- **Observability.** Prometheus `/metrics`, OTLP metrics/traces/logs, and a Docker Compose stack
+  (Prometheus, Loki, Tempo, Grafana with provisioned dashboards).
+- **Request history.** Every request is captured and queryable through the API and dashboard.
+- **SDKs at parity.** The C#, JavaScript/TypeScript, and Python clients all cover the Ollama/OpenAI APIs
+  plus authentication, request history, and account management.
+
+The task-by-task plan and status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md); changes are logged in
+[CHANGELOG.md](CHANGELOG.md).
+
+---
+
 ## 📁 Monorepo Structure
 
 SharpAI is organized as a monorepo containing the core library, server, dashboard, and client SDKs:
@@ -678,7 +704,9 @@ Operational endpoints:
 
 ### Docker Compose
 
-For production deployments, you can use Docker Compose. Create a `compose.yaml` file:
+For production deployments, use Docker Compose. The repository ships ready-to-use files under `docker/`:
+`compose.yaml` (SharpAI plus the Prometheus/Loki/Tempo/Grafana observability stack), `compose-cpu.yaml`,
+and `compose-cuda.yaml`. A minimal standalone service looks like this:
 
 ```yaml
 services:
@@ -767,7 +795,7 @@ services:
 
 Please see the [CHANGELOG.md](CHANGELOG.md) file for detailed version history and release notes.
 
-Have a bug, feature request, or idea? Please [file an issue](https://github.com/yourusername/sharpai/issues) on our GitHub repository. We welcome community input on our roadmap!
+Have a bug, feature request, or idea? Please [file an issue](https://github.com/jchristn/SharpAI/issues) on our GitHub repository. We welcome community input on our roadmap!
 
 ## 📄 License
 

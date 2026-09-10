@@ -168,4 +168,41 @@ export class OllamaMethods implements IOllamaMethods {
 
     yield* this.sdk.postStreamAsync<OllamaStreamingCompletionResult>(url, body, signal);
   }
+
+  async importModel(
+    request: { path: string; name?: string },
+    signal?: AbortSignal
+  ): Promise<object | null> {
+    return this.sdk.postAsync<object>(`${this.sdk.endpoint}/api/import`, request, signal);
+  }
+
+  async listPresets(signal?: AbortSignal): Promise<object | null> {
+    return this.sdk.getAsync<object>(`${this.sdk.endpoint}/v1.0/models/presets`, signal);
+  }
+
+  async createPreset(
+    request: {
+      name: string;
+      model: string;
+      system?: string;
+      temperature?: number;
+      max_tokens?: number;
+      top_p?: number;
+      template?: string;
+      stop?: string[];
+    },
+    signal?: AbortSignal
+  ): Promise<object | null> {
+    return this.sdk.postAsync<object>(`${this.sdk.endpoint}/v1.0/models/presets`, request, signal);
+  }
+
+  async getPreset(name: string, signal?: AbortSignal): Promise<object | null> {
+    const url = `${this.sdk.endpoint}/v1.0/models/presets/${encodeURIComponent(name)}`;
+    return this.sdk.sendAsync<object>('GET', url, undefined, signal);
+  }
+
+  async deletePreset(name: string, signal?: AbortSignal): Promise<object | null> {
+    const url = `${this.sdk.endpoint}/v1.0/models/presets/${encodeURIComponent(name)}`;
+    return this.sdk.sendAsync<object>('DELETE', url, undefined, signal);
+  }
 }

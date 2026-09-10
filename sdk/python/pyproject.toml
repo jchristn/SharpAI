@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sharpai"
+version = "5.0.0"
+description = "Python SDK for SharpAI — a local AI inference server with Ollama- and OpenAI-compatible APIs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Joel Christner" }]
+keywords = ["sharpai", "llm", "inference", "ollama", "openai", "gguf"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/jchristn/SharpAI"
+Repository = "https://github.com/jchristn/SharpAI"
+
+[tool.setuptools.packages.find]
+where = ["src"]
