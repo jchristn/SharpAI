@@ -96,7 +96,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
   const [error, setError] = useState<string | null>(null);
   const [detail, setDetail] = useState<Row | null>(null);
   const [rangeKey, setRangeKey] = useState<string>(DEFAULT_RANGE_KEY);
-  const [refreshNonce, setRefreshNonce] = useState<number>(0);
+  const [anchorMs, setAnchorMs] = useState<number>(() => Date.now());
   const [drill, setDrill] = useState<{ fromUtc: string; toUtc: string } | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
 
@@ -107,17 +107,16 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
   const [filters, setFilters] = useState<Record<string, string>>(emptyFilters);
   const [applied, setApplied] = useState<Record<string, string>>(emptyFilters);
 
-  // Compute the [from, to] window and bucket size from the selected preset. refreshNonce re-anchors "now".
+  // Compute the [from, to] window and bucket size from the selected preset. anchorMs pins "now"
+  // to the moment the range was selected or refreshed, so it stays stable across re-renders.
   const rangeWindow = useMemo(() => {
     const preset = rangeByKey(rangeKey);
-    const now = Date.now();
-    void refreshNonce;
     return {
-      fromUtc: new Date(now - preset.rangeMs).toISOString(),
-      toUtc: new Date(now).toISOString(),
+      fromUtc: new Date(anchorMs - preset.rangeMs).toISOString(),
+      toUtc: new Date(anchorMs).toISOString(),
       bucketMinutes: preset.bucketMinutes,
     };
-  }, [rangeKey, refreshNonce]);
+  }, [rangeKey, anchorMs]);
 
   const filterFields: FilterField[] = [
     { key: 'method', label: t('requestHistory.filterMethod'), type: 'select', options: ['GET', 'POST', 'PUT', 'DELETE'].map((m) => ({ label: m, value: m })) },
@@ -210,6 +209,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
               aria-pressed={rangeKey === r.key}
               onClick={() => {
                 setRangeKey(r.key);
+                setAnchorMs(Date.now());
                 setDrill(null);
                 setPageNumber(1);
               }}
@@ -217,7 +217,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
               {t(r.labelKey)}
             </button>
           ))}
-          <button type="button" className="sa-btn sa-btn--sm" onClick={() => setRefreshNonce((n) => n + 1)} disabled={loading}>
+          <button type="button" className="sa-btn sa-btn--sm" onClick={() => setAnchorMs(Date.now())} disabled={loading}>
             {t('common.refresh')}
           </button>
         </div>
