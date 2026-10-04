@@ -14,7 +14,7 @@
 # compose-cuda.yaml. For Apple Metal, run SharpAI directly on macOS (Docker on Apple
 # Silicon runs Linux containers which cannot access Metal).
 #
-# Metrics and traces light up once the in-app telemetry (Radiant + Watson 7.1) is
+# Metrics and traces light up once the in-app telemetry (Radiant + Watson 7.2) is
 # enabled (plan workstream W17); logs flow immediately because the collector tails the
 # server's rolling log files under ./logs.
 
@@ -25,7 +25,7 @@ services:
   #
   sharpai:
     container_name: 'sharpai'
-    image: 'jchristn77/sharpai:v5.0.0'
+    image: 'jchristn77/sharpai:v2.0.0'
     ports:
       - '8000:8000'
     stdin_open: true
@@ -80,7 +80,7 @@ services:
   #
   sharpai-ui:
     container_name: 'sharpai-ui'
-    image: 'jchristn77/sharpai-ui:v5.0.0'
+    image: 'jchristn77/sharpai-ui:v2.0.0'
     ports:
       - '3000:3000'
     depends_on:

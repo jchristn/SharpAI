@@ -9127,26 +9127,34 @@
         <member name="T:SharpAI.Security.SessionTokenService">
             <summary>
             Encrypts and decrypts opaque bearer tokens that reference a server-side session. Tokens carry only
-            the internal session identifier, encrypted with AES-256-CBC using a fresh random IV per token (the
-            IV is prepended to the ciphertext). The AES key is derived from the configured key material.
+            the internal session identifier, encrypted with AES-256-CBC using a fresh random IV per token, then
+            authenticated with HMAC-SHA256 over the IV and ciphertext (encrypt-then-MAC). Token layout is
+            IV (16 bytes) + ciphertext + tag (32 bytes), base64-encoded. Tokens that fail authentication, including
+            tokens produced under different key material, are rejected before decryption.
+            Thread safety: instances are immutable after construction and safe for concurrent use.
             </summary>
         </member>
         <member name="M:SharpAI.Security.SessionTokenService.#ctor(System.String)">
             <summary>
-            Instantiate with key material. The 256-bit AES key is derived as SHA-256 of the material.
+            Instantiate with key material. The 256-bit AES key is derived as SHA-256 of the material; a separate
+            HMAC-SHA256 key is derived from the AES key.
             </summary>
             <param name="keyMaterial">Key material. May not be null or empty.</param>
+            <exception cref="T:System.ArgumentNullException">Thrown when keyMaterial is null or empty.</exception>
         </member>
         <member name="M:SharpAI.Security.SessionTokenService.Encrypt(System.String)">
             <summary>
-            Encrypt a session identifier into an opaque base64 token (random IV prepended).
+            Encrypt a session identifier into an opaque, authenticated base64 token (random IV prepended,
+            HMAC tag appended).
             </summary>
             <param name="sessionId">Session identifier. May not be null or empty.</param>
             <returns>Opaque token.</returns>
+            <exception cref="T:System.ArgumentNullException">Thrown when sessionId is null or empty.</exception>
         </member>
         <member name="M:SharpAI.Security.SessionTokenService.Decrypt(System.String)">
             <summary>
-            Decrypt an opaque token back into its session identifier, or null when the token is invalid.
+            Decrypt an opaque token back into its session identifier, or null when the token is malformed,
+            tampered with, or was produced under different key material.
             </summary>
             <param name="token">Opaque token.</param>
             <returns>Session identifier, or null.</returns>

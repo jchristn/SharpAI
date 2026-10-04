@@ -1,6 +1,6 @@
 {
   "name": "@sharpai/sdk",
-  "version": "5.0.0",
+  "version": "2.0.0",
   "description": "TypeScript SDK for interacting with SharpAI server instances - providing Ollama and OpenAI compatible API wrappers for local AI inference",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

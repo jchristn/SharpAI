@@ -40,7 +40,7 @@ namespace SharpAI.Server
         #region Private-Members
 
         private static string _Header = "[SharpAI] ";
-        private static string _Version = "5.0.0";
+        private static string _Version = "2.0.0";
         private static Serializer _Serializer = new Serializer();
         private static Settings _Settings = null;
         private static LoggingModule _Logging = null;
@@ -528,7 +528,7 @@ namespace SharpAI.Server
 
         private static void InitializeRestServer()
         {
-            // Enable Watson 7.1 native telemetry (HTTP server metrics + spans) and serve an in-process
+            // Enable Watson 7.2 native telemetry (HTTP server metrics + spans) and serve an in-process
             // Prometheus endpoint on the existing listener when telemetry is enabled. Watson metrics are
             // scraped from /metrics; Watson spans are exported via Radiant (see TelemetryHost).
             if (_Settings.Telemetry != null && _Settings.Telemetry.Enable)

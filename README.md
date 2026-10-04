@@ -32,9 +32,9 @@
 
 ---
 
-## What's new in 5.0
+## What's new in 2.0
 
-Version 5.0 is a unified, enterprise-focused release across the library, server, dashboard, and SDKs. The
+Version 2.0 is a unified, enterprise-focused release across the library, server, dashboard, and SDKs. The
 highlights:
 
 - **Correct prompts by default.** Chat requests render through each model's own GGUF-embedded chat
@@ -578,12 +578,12 @@ SharpAI.Server is available as a Docker image, providing an easy way to deploy t
 
 For Windows:
 ```batch
-run.bat v5.0.0
+run.bat v2.0.0
 ```
 
 For Linux/macOS:
 ```bash
-./run.sh v5.0.0
+./run.sh v2.0.0
 ```
 
 #### Using Docker Compose
@@ -680,10 +680,10 @@ Operational endpoints:
 3. Run the container:
    ```bash
    # Windows
-   run.bat v5.0.0
+   run.bat v2.0.0
    
    # Linux/macOS
-   ./run.sh v5.0.0
+   ./run.sh v2.0.0
    ```
 
 4. Download a model using the API (GGUF format required):
@@ -711,7 +711,7 @@ and `compose-cuda.yaml`. A minimal standalone service looks like this:
 ```yaml
 services:
   sharpai:
-    image: jchristn77/sharpai:v5.0.0
+    image: jchristn77/sharpai:v2.0.0
     ports:
       - "8000:8000"
     volumes:
@@ -763,7 +763,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn77/sharpai:v5.0.0
+  jchristn77/sharpai:v2.0.0
 ```
 
 For Docker Compose, add:

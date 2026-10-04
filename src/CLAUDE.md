@@ -59,15 +59,16 @@ cd SharpAI.Server/bin/Debug/net8.0  # or Release
 The startup scripts automatically handle platform-specific library configuration.
 
 ### Docker Build
-Use the provided batch script:
+Use the provided build scripts from the repository root (multi-arch buildx push to Docker Hub, then pull locally):
 ```bash
-build-docker.bat <tag>
+./build-server.sh <tag>      # or build-server.bat <tag>     -> jchristn77/sharpai:<tag> + latest
+./build-dashboard.sh <tag>   # or build-dashboard.bat <tag>  -> jchristn77/sharpai-ui:<tag> + latest
 ```
 
 ## Key Dependencies
 
 - **LLamaSharp** - Local model inference engine with CPU, CUDA12, and Metal backends
-- **Watson** (7.1) - Webserver for the server's REST routing, OpenAPI/Swagger, and native telemetry meters
+- **Watson** (7.2) - Webserver for the server's REST routing, OpenAPI/Swagger, and native telemetry meters
 - **Hand-written ADO.NET data layer** - A provider-neutral database layer (interface/implementation pattern)
   over Microsoft.Data.Sqlite, Npgsql, MySqlConnector, and Microsoft.Data.SqlClient. SQLite is the default;
   MySQL, PostgreSQL, and SQL Server are all supported. Portable SQL with versioned migrations. (This replaces

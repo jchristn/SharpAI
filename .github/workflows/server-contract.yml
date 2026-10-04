@@ -43,8 +43,8 @@ jobs:
           mkdir -p run/models run/logs
           cat > run/sharpai.json <<'JSON'
           {
-            "SchemaVersion": "5.0.0",
-            "SoftwareVersion": "5.0.0",
+            "SchemaVersion": "2.0.0",
+            "SoftwareVersion": "2.0.0",
             "Storage": { "ModelsDirectory": "./models/" },
             "Rest": { "Port": 18080, "Host": "localhost" },
             "Logging": { "ConsoleLogging": true, "LogDirectory": "./logs/" },
@@ -73,8 +73,8 @@ jobs:
           mkdir -p runauth/models runauth/logs
           cat > runauth/sharpai.json <<'JSON'
           {
-            "SchemaVersion": "5.0.0",
-            "SoftwareVersion": "5.0.0",
+            "SchemaVersion": "2.0.0",
+            "SoftwareVersion": "2.0.0",
             "Storage": { "ModelsDirectory": "./models/" },
             "Rest": { "Port": 18081, "Host": "localhost" },
             "Logging": { "ConsoleLogging": true, "LogDirectory": "./logs/" },
@@ -103,8 +103,8 @@ jobs:
           mkdir -p runtel/models runtel/logs
           cat > runtel/sharpai.json <<'JSON'
           {
-            "SchemaVersion": "5.0.0",
-            "SoftwareVersion": "5.0.0",
+            "SchemaVersion": "2.0.0",
+            "SoftwareVersion": "2.0.0",
             "Storage": { "ModelsDirectory": "./models/" },
             "Rest": { "Port": 18082, "Host": "localhost" },
             "Logging": { "ConsoleLogging": true, "LogDirectory": "./logs/" },

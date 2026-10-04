@@ -1,9 +1,15 @@
 # Changelog
 
-## Unreleased — v5.0.0 (in progress)
+## v2.0.0
 
-The 5.0.0 line is a unified, breaking, enterprise-focused release. The full scope and task-by-task
-status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md); entries here are added as slices land.
+The 2.0.0 release is a unified, breaking, enterprise-focused release. The full scope and task-by-task
+status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md).
+
+> **Versioning note.** This release was developed under the working number 5.0.0 and ships as **2.0.0**.
+> All artifacts now share that one version: the `SharpAI` and `SharpAI.Sdk` NuGet packages (previously
+> 1.0.17 / 1.0.1), the server, the dashboard, the JS and Python SDKs, default configuration, and the
+> `jchristn77/sharpai` / `jchristn77/sharpai-ui` Docker images (`v2.0.0` + `latest`; the older `v4.0.x`
+> image tags were a separate server-only numbering track and are superseded).
 
 ### Added
 
@@ -277,16 +283,30 @@ status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md); entries here are adde
   embedding context is created on first embedding request.
 - **Watson upgraded to 7.1.0**, enabling native HTTP-server telemetry: the server exposes a Prometheus
   `/metrics` endpoint on its listener and emits request spans (exported via Radiant) when telemetry is on.
-- **Version normalized to `5.0.0`** across the core library, server, dashboard, C#/JS SDKs, Docker
+- **Version normalized to `2.0.0`** across the core library, server, dashboard, C#/JS/Python SDKs, Docker
   images, and default configuration (previously split across 1.x/4.0.1/1.0.x tracks).
+- **Dependency updates.** `Microsoft.Data.SqlClient` 7.0.2 -> 7.1.1, `Microsoft.Data.Sqlite` 10.0.11 ->
+  10.0.12, `RestWrapper` 3.2.0 -> 3.3.1, `SyslogLogging` 2.2.1 -> 2.3.1, `System.Text.Json` 10.0.11 ->
+  10.0.12, `Watson` 7.1.0 -> 7.2.2, `PersistentCollection` 2.0.12 -> 2.2.0. Test tooling: `Touchstone.*`
+  0.1.12 -> 0.2.0, `NUnit` 4.6.1 -> 5.0.0, `NUnit3TestAdapter` 6.2.0 -> 6.3.0, `Microsoft.NET.Test.Sdk`
+  18.9.0 -> 18.10.1, `coverlet.collector` 10.0.1 -> 10.1.0. C# SDK: `SharpAI` 1.0.17 -> 2.0.0,
+  `RestWrapper` 3.2.0 -> 3.3.1, `System.Text.Json` 10.0.11 -> 10.0.12. No public-API changes were required.
+- **Build scripts.** Added `build-server.sh` and `build-dashboard.sh` alongside the existing `.bat` scripts.
 - `.gitignore` now excludes Docker runtime artifacts (`docker/logs/`, `docker/models/`,
   `docker/sharpai.db`), which are seeded from `docker/factory/`.
 - **Docs.** Added `DOCKERHUB_README.md`, a `docs/OBSERVABILITY.md` runbook (metrics catalog, PromQL,
-  dashboard reading, external-collector setup), a "What's new in 5.0" README section, and corrected stale
+  dashboard reading, external-collector setup), a "What's new in 2.0" README section, and corrected stale
   dependency notes in `src/CLAUDE.md` (Watson 7.1, hand-written ADO.NET 4-DB layer).
 
 ### Fixed
 
+- **Security: session tokens are now authenticated (encrypt-then-MAC).** `SessionTokenService` used
+  unauthenticated AES-256-CBC, so a token could occasionally (about 1 in 256) "decrypt" under the wrong key
+  into a garbage session id instead of being rejected, and ciphertext could be tampered with undetected.
+  Tokens now carry an HMAC-SHA256 tag over the IV and ciphertext that is verified in constant time before
+  decryption. **Existing session tokens are invalidated on upgrade; users must sign in again.** Found as an
+  intermittent `Token_RoundTrip_And_Garbage` failure; locked by new `Token_Wrong_Key_Always_Rejected`
+  (2,000 wrong-key attempts) and `Token_Tampered_Rejected` (every-byte bit-flip) tests.
 - **Critical: `MaxConcurrentGenerations > 1` crashed under load.** Concurrent generations shared one
   `StatelessExecutor` and raced on its internal context, throwing `ObjectDisposedException`. Each concurrent
   generation now runs on its own executor/context (the shared executor is used only in the default serialized

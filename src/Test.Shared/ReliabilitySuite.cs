@@ -65,6 +65,33 @@ namespace Test.Shared
                         return Task.CompletedTask;
                     }),
 
+                new TestCaseDescriptor("Reliability", "Token_Wrong_Key_Always_Rejected", "Tokens never decrypt under a different key (no padding-oracle false positives)",
+                    ct =>
+                    {
+                        SessionTokenService tokens = new SessionTokenService("reliability-key");
+                        SessionTokenService other = new SessionTokenService("different-key");
+                        for (int i = 0; i < 2000; i++)
+                        {
+                            string token = tokens.Encrypt("ses_" + i);
+                            TestAssert.True(other.Decrypt(token) == null, "token " + i + " must not decrypt under a different key");
+                        }
+                        return Task.CompletedTask;
+                    }),
+
+                new TestCaseDescriptor("Reliability", "Token_Tampered_Rejected", "A token with any modified byte is rejected",
+                    ct =>
+                    {
+                        SessionTokenService tokens = new SessionTokenService("reliability-key");
+                        byte[] data = Convert.FromBase64String(tokens.Encrypt("ses_abc123"));
+                        for (int i = 0; i < data.Length; i++)
+                        {
+                            byte[] copy = (byte[])data.Clone();
+                            copy[i] ^= 0x01;
+                            TestAssert.True(tokens.Decrypt(Convert.ToBase64String(copy)) == null, "flipping byte " + i + " must invalidate the token");
+                        }
+                        return Task.CompletedTask;
+                    }),
+
                 new TestCaseDescriptor("Reliability", "Token_Encrypt_Null_Throws", "Encrypting a null/empty session id is rejected",
                     ct =>
                     {

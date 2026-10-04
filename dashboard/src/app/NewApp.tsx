@@ -33,7 +33,7 @@ export interface NewAppProps {
  * React Router 7 BrowserRouter, with the AppShell hosting the routed views. Deep links and browser
  * back/forward work; the nginx SPA fallback serves index.html for client-side routes.
  */
-export function NewApp({ baseUrl, version = '5.0.0' }: NewAppProps): JSX.Element {
+export function NewApp({ baseUrl, version = '2.0.0' }: NewAppProps): JSX.Element {
   const resolvedBaseUrl = baseUrl ?? (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
 
   return (

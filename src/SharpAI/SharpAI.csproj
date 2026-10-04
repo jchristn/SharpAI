@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0;net10.0</TargetFrameworks>
-		<Version>5.0.0</Version>
+		<Version>2.0.0</Version>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<Title>SharpAI</Title>
 		<Authors>Joel Christner</Authors>
@@ -17,7 +17,7 @@
 		<RepositoryUrl>https://github.com/jchristn/sharpai</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>ai embedding embeddings completion completions chat assistant agent model models huggingface ollama openai inference llama gguf telemetry</PackageTags>
-		<PackageReleaseNotes>5.0.0: unified enterprise release. GGUF-native chat templates, concurrent inference and model lifecycle management, four-database support, telemetry (Radiant + Watson 7.1, Prometheus/Loki/Grafana/Tempo), tool calling, and vision/llava removed. See CHANGELOG.md.</PackageReleaseNotes>
+		<PackageReleaseNotes>2.0.0: unified enterprise release. GGUF-native chat templates, concurrent inference and model lifecycle management, four-database support, telemetry (Radiant + Watson 7.2, Prometheus/Loki/Grafana/Tempo), tool calling, and vision/llava removed. See CHANGELOG.md.</PackageReleaseNotes>
 		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<IncludeSymbols>True</IncludeSymbols>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
@@ -47,12 +47,12 @@
 		<PackageReference Include="LLamaSharp" Version="0.27.0" />
 		<PackageReference Include="LLamaSharp.Backend.Cpu" Version="0.27.0" />
 		<PackageReference Include="LLamaSharp.Backend.Cuda12" Version="0.27.0" />
-		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.11" />
-		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
 		<PackageReference Include="MySqlConnector" Version="2.6.2" />
 		<PackageReference Include="Npgsql" Version="10.0.3" />
-		<PackageReference Include="RestWrapper" Version="3.2.0" />
-		<PackageReference Include="SyslogLogging" Version="2.2.1" />
-		<PackageReference Include="System.Text.Json" Version="10.0.11" />
+		<PackageReference Include="RestWrapper" Version="3.3.1" />
+		<PackageReference Include="SyslogLogging" Version="2.3.1" />
+		<PackageReference Include="System.Text.Json" Version="10.0.12" />
 	</ItemGroup>
 </Project>

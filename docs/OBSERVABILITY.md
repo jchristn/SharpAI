@@ -1,7 +1,7 @@
 # Observability runbook
 
 SharpAI emits metrics, traces, and logs through the standard .NET telemetry APIs, hosted in-process by
-[Radiant](https://www.nuget.org/packages/Radiant) and by Watson 7.1's built-in webserver meter. This
+[Radiant](https://www.nuget.org/packages/Radiant) and by Watson 7.2's built-in webserver meter. This
 document explains what the signals mean, how to read the bundled Grafana dashboards, and how to send the
 data to your own monitoring system instead of the shipped stack. For the topology of the local
 Prometheus + Loki + Tempo + Grafana stack, see [`docker/telemetry/README.md`](../docker/telemetry/README.md).

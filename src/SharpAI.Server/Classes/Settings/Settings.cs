@@ -29,7 +29,7 @@
             }
             set
             {
-                _SchemaVersion = String.IsNullOrEmpty(value) ? "5.0.0" : value;
+                _SchemaVersion = String.IsNullOrEmpty(value) ? "2.0.0" : value;
             }
         }
 
@@ -222,7 +222,7 @@
 
         #region Private-Members
 
-        private string _SchemaVersion = "5.0.0";
+        private string _SchemaVersion = "2.0.0";
         private string _SoftwareVersion = "unknown";
         private LoggingSettings _Logging = new LoggingSettings();
         private StorageSettings _Storage = new StorageSettings();

@@ -73,7 +73,7 @@ namespace Test.Shared
                     }));
             }
 
-            // New 5.0-era aliases that must resolve correctly.
+            // New 2.0-era aliases that must resolve correctly.
             Dictionary<string, ChatFormatEnum> aliases = new Dictionary<string, ChatFormatEnum>
             {
                 { "qwen3.5", ChatFormatEnum.ChatML },

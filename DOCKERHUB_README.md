@@ -42,7 +42,7 @@ docker run -d \
   -p 8000:8000 \
   -v sharpai-models:/app/models \
   -v sharpai-data:/app \
-  jchristn/sharpai:v5.0.0
+  jchristn/sharpai:v2.0.0
 ```
 
 The server listens on port 8000. Pull a model and chat with it using any Ollama client, or `curl`:

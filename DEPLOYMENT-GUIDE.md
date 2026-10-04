@@ -493,11 +493,11 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 }
 ```
 
-**Complete configuration (5.0):**
+**Complete configuration (2.0):**
 ```json
 {
-  "SchemaVersion": "5.0.0",
-  "SoftwareVersion": "5.0.0",
+  "SchemaVersion": "2.0.0",
+  "SoftwareVersion": "2.0.0",
   "HuggingFace": {
     "ApiKey": "hf_YOUR_API_KEY_HERE"
   },
@@ -545,7 +545,7 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 }
 ```
 
-### Version 5.0 configuration blocks
+### Version 2.0 configuration blocks
 
 - **`Database`** — the metadata store. `Type` is one of `Sqlite` (default), `Mysql`, `Postgresql`, or
   `SqlServer`. SQLite uses `Filename`; the server databases use `Hostname`/`Port`/`DatabaseName`/`Username`/

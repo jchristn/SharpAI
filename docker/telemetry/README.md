@@ -18,7 +18,7 @@ and logs — without wiring up an external monitoring system first.
 ## How data flows
 
 The SharpAI server emits metrics and traces through the .NET telemetry APIs, hosted in-process
-by [Radiant](https://www.nuget.org/packages/Radiant) and by Watson 7.1's built-in `"Watson"`
+by [Radiant](https://www.nuget.org/packages/Radiant) and by Watson 7.2's built-in `"Watson"`
 meter. Those are pushed over OTLP to the collector, which forwards metrics to Prometheus and
 traces to Tempo. Logs take a different path: the server writes rolling files to `docker/logs/`,
 the collector's `filelog` receiver tails them, and ships the lines to Loki. Grafana reads all
