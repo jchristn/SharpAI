@@ -2,6 +2,7 @@ namespace Test.Xunit
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -12,6 +13,7 @@ namespace Test.Xunit
     using SharpAI.Database.Sqlite;
     using SharpAI.Logging;
     using SharpAI.Models;
+    using SharpAI.Operations;
     using SyslogLogging;
     using Xunit;
 
@@ -54,6 +56,26 @@ namespace Test.Xunit
                 }
             }
             finally { if (File.Exists(filename)) File.Delete(filename); }
+        }
+
+        /// <summary>Post-routing capture can correlate measurements after the engine activity has ended.</summary>
+        [Fact]
+        public void TraceIdentitySurvivesActivityDisposal()
+        {
+            InferenceStatistics statistics = new InferenceStatistics();
+            string trace;
+            string span;
+            using (Activity activity = new Activity("inference.test").SetIdFormat(ActivityIdFormat.W3C).Start())
+            {
+                statistics.CaptureTrace(activity);
+                trace = activity.TraceId.ToHexString();
+                span = activity.SpanId.ToHexString();
+            }
+            Assert.Equal(trace, statistics.TraceId);
+            Assert.Equal(span, statistics.SpanId);
+            Assert.Equal(32, statistics.TraceId.Length);
+            statistics.CaptureTrace(null!);
+            Assert.Equal(trace, statistics.TraceId);
         }
 
         /// <summary>Existing engine payload fields stay queryable instead of being escaped inside a message string.</summary>

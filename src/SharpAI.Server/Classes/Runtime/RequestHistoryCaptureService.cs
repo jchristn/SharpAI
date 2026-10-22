@@ -125,6 +125,8 @@ namespace SharpAI.Server.Classes.Runtime
             catch (System.Text.Json.JsonException) { }
             if (stats != null)
             {
+                entry.TraceId = stats.TraceId ?? entry.TraceId;
+                entry.SpanId = stats.SpanId ?? entry.SpanId;
                 entry.InputTokens = stats.PromptTokens;
                 entry.OutputTokens = stats.CompletionTokens;
                 // The engine does not expose cached-token counts. Null is not a measured zero.

@@ -7802,6 +7802,16 @@
             <summary>True when native counters are unavailable and measured backend-step wall times are used.
             Prompt time then includes inference-context creation and first sampling; consumer/network waits are excluded.</summary>
         </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.TraceId">
+            <summary>First measured inference trace identifier, or null when tracing is unavailable.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.SpanId">
+            <summary>First measured inference span identifier, or null when tracing is unavailable.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.InferenceStatistics.CaptureTrace(System.Diagnostics.Activity)">
+            <summary>Retain trace identity before its activity is disposed. Null leaves existing identity unchanged.</summary>
+            <param name="activity">The measured engine activity. May be null when no listener is attached.</param>
+        </member>
         <member name="M:SharpAI.Operations.InferenceStatistics.#ctor(System.Int64)">
             <summary>Create a request accumulator, optionally including cold model load time.</summary>
             <param name="loadDurationNanoseconds">Load time, zero for an already resident model.</param>

@@ -1,6 +1,7 @@
 namespace SharpAI.Operations
 {
     using System;
+    using System.Diagnostics;
     using SharpAI.Models.OpenAI;
 
     /// <summary>Per-call inference statistics, measured before output filtering. Caller-owned; do not share between concurrent calls.</summary>
@@ -38,6 +39,22 @@ namespace SharpAI.Operations
         /// Prompt time then includes inference-context creation and first sampling; consumer/network waits are excluded.</summary>
         public bool PhaseTimingsApproximate { get { return _PhaseTimingsApproximate; } internal set { _PhaseTimingsApproximate = value; } }
 
+        private string _TraceId;
+        /// <summary>First measured inference trace identifier, or null when tracing is unavailable.</summary>
+        public string TraceId { get { return _TraceId; } internal set { _TraceId = value; } }
+        private string _SpanId;
+        /// <summary>First measured inference span identifier, or null when tracing is unavailable.</summary>
+        public string SpanId { get { return _SpanId; } internal set { _SpanId = value; } }
+
+        /// <summary>Retain trace identity before its activity is disposed. Null leaves existing identity unchanged.</summary>
+        /// <param name="activity">The measured engine activity. May be null when no listener is attached.</param>
+        public void CaptureTrace(Activity activity)
+        {
+            if (activity == null || TraceId != null) return;
+            TraceId = activity.TraceId.ToHexString();
+            SpanId = activity.SpanId.ToHexString();
+        }
+
         /// <summary>Create a request accumulator, optionally including cold model load time.</summary>
         /// <param name="loadDurationNanoseconds">Load time, zero for an already resident model.</param>
         public InferenceStatistics(long loadDurationNanoseconds = 0)
@@ -56,6 +73,8 @@ namespace SharpAI.Operations
 
         internal void Add(InferenceStatistics value)
         {
+            TraceId ??= value.TraceId;
+            SpanId ??= value.SpanId;
             PromptTokens = checked(PromptTokens + value.PromptTokens);
             CompletionTokens = checked(CompletionTokens + value.CompletionTokens);
             TotalDurationNanoseconds += value.TotalDurationNanoseconds;

@@ -1014,6 +1014,7 @@ namespace SharpAI.Engines
             InferenceStatistics measured = new InferenceStatistics();
             measured.PromptTokens = _Context.Tokenize(prompt ?? String.Empty, true, true).Length;
             using Activity activity = SharpAITelemetry.StartInference(operation, TelemetryModelLabel());
+            measured.CaptureTrace(activity);
             Stopwatch watch = Stopwatch.StartNew();
             bool acquired = false;
             bool success = false;
