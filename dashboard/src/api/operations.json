@@ -592,5 +592,138 @@
     "tag": "Administration",
     "summary": "Revoke a tenant session",
     "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/library-context",
+    "tag": "Library",
+    "summary": "Read library visibility and publication rights",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/system-prompts",
+    "tag": "SystemPrompt",
+    "summary": "List visible system-prompts",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/system-prompts",
+    "tag": "SystemPrompt",
+    "summary": "Create system-prompts",
+    "example": {
+      "Name": "My saved prompt",
+      "Description": "A reusable starting point",
+      "Scope": "User",
+      "Content": "Answer clearly and accurately."
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/system-prompts/{id}",
+    "tag": "SystemPrompt",
+    "summary": "Read system-prompts",
+    "example": null
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/system-prompts/{id}",
+    "tag": "SystemPrompt",
+    "summary": "Update system-prompts",
+    "example": {
+      "Name": "My saved prompt",
+      "Description": "A reusable starting point",
+      "Scope": "User",
+      "Content": "Answer clearly and accurately."
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/system-prompts/{id}/duplicate",
+    "tag": "SystemPrompt",
+    "summary": "Duplicate system-prompts",
+    "example": {
+      "Name": "My copy",
+      "Scope": "User"
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/system-prompts/{id}",
+    "tag": "SystemPrompt",
+    "summary": "Delete system-prompts",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/model-configurations",
+    "tag": "ModelConfiguration",
+    "summary": "List visible model-configurations",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/model-configurations",
+    "tag": "ModelConfiguration",
+    "summary": "Create model-configurations",
+    "example": {
+      "Name": "My generation settings",
+      "Description": "A reusable starting point",
+      "Scope": "User",
+      "Configuration": {
+        "Temperature": 0.6,
+        "MaxTokens": 128,
+        "TopP": 0.9,
+        "Stop": [],
+        "StreamResponse": true,
+        "JsonOutput": false,
+        "DisplayThinking": false
+      }
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/model-configurations/{id}",
+    "tag": "ModelConfiguration",
+    "summary": "Read model-configurations",
+    "example": null
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/model-configurations/{id}",
+    "tag": "ModelConfiguration",
+    "summary": "Update model-configurations",
+    "example": {
+      "Name": "My generation settings",
+      "Description": "A reusable starting point",
+      "Scope": "User",
+      "Configuration": {
+        "Temperature": 0.6,
+        "MaxTokens": 128,
+        "TopP": 0.9,
+        "Stop": [],
+        "StreamResponse": true,
+        "JsonOutput": false,
+        "DisplayThinking": false
+      }
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/model-configurations/{id}/duplicate",
+    "tag": "ModelConfiguration",
+    "summary": "Duplicate model-configurations",
+    "example": {
+      "Name": "My copy",
+      "Scope": "User"
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/model-configurations/{id}",
+    "tag": "ModelConfiguration",
+    "summary": "Delete model-configurations",
+    "example": null
   }
 ]

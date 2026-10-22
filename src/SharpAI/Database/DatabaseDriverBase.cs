@@ -37,6 +37,9 @@ namespace SharpAI.Database
         /// </summary>
         public IModelPresetMethods Presets { get; }
 
+        /// <summary>Scoped system prompt and generation configuration persistence.</summary>
+        public ILibraryMethods Library { get; }
+
         /// <summary>
         /// Request-history data-access methods.
         /// </summary>
@@ -138,6 +141,7 @@ namespace SharpAI.Database
             Logging = logging ?? throw new ArgumentNullException(nameof(logging));
             Models = new ModelRegistryMethods(this);
             Presets = new ModelPresetMethods(this);
+            Library = new LibraryMethods(this);
             RequestHistory = new RequestHistoryMethods(this);
             Tenants = new TenantMethods(this);
             Users = new UserMethods(this);

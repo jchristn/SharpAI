@@ -1,6 +1,8 @@
 namespace SharpAI.Server.API.REST.Routes
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
 
     using SharpAI.Database;
     using SharpAI.Security;
@@ -149,6 +151,49 @@ namespace SharpAI.Server.API.REST.Routes
             RecordAuthzDenial(req.Http, context, ResourceTypes.Admin, OperationTypeEnum.Admin,
                 AuthorizationDecision.Deny(SharpAI.Security.AuthorizationResultEnum.DeniedImplicit, "Platform administrator privileges required."));
             throw new WebserverException(ApiResultEnum.Forbidden, "Platform administrator privileges required.");
+        }
+
+        /// <summary>Whether RBAC permits a library operation, including intrinsic human self-service rights but excluding ownership checks.</summary>
+        public bool CanUseLibrary(ApiRequest req,string resourceType,OperationTypeEnum operation,string id)
+        {
+            RequestContext actor=req.Http.Metadata as RequestContext;
+            if(actor==null || actor.ShouldChallenge || !actor.IsAuthenticated)return false;
+            if(actor.IsAdmin)return true;
+            AuthorizationDecision decision=_Rbac.Authorize(new AuthorizationRequest {TenantGuid=actor.TenantGuid,PrincipalType=actor.PrincipalType,PrincipalGuid=actor.PrincipalGuid,OwnerUserGuid=actor.OwnerUserGuid,IsTenantAdmin=actor.IsTenantAdmin,ResourceType=resourceType,Operation=operation,ResourceGuid=id});
+            return decision.IsPermitted || (actor.PrincipalType==PrincipalTypeEnum.User && decision.Result==SharpAI.Security.AuthorizationResultEnum.DeniedImplicit);
+        }
+
+        /// <summary>Resource-specific read restrictions to apply in SQL before a library page and count are computed.</summary>
+        public List<string> LibraryReadExclusions(ApiRequest req,string resourceType)
+        {
+            RequestContext actor=req.Http.Metadata as RequestContext;
+            if(actor==null||actor.IsAdmin||actor.IsTenantAdmin)return new List<string>();
+            List<EffectivePermission> grants=_Rbac.GetEffectivePermissions(actor.PrincipalType,actor.PrincipalGuid,actor.TenantGuid);
+            if(actor.PrincipalType==PrincipalTypeEnum.Credential&&!String.IsNullOrEmpty(actor.OwnerUserGuid))
+                grants.AddRange(_Rbac.GetEffectivePermissions(PrincipalTypeEnum.User,actor.OwnerUserGuid,actor.TenantGuid));
+            return grants.Where(grant=>grant.ResourceScope==ResourceScopeEnum.Resource&&!String.IsNullOrEmpty(grant.ResourceGuid))
+                .Select(grant=>grant.ResourceGuid).Distinct(StringComparer.Ordinal)
+                .Where(id=>!CanUseLibrary(req,resourceType,OperationTypeEnum.Read,id)).ToList();
+        }
+
+        /// <summary>Library self-service rights for human users. Explicit denies and credential owner ceilings remain enforced; routes additionally enforce scope ownership.</summary>
+        public void AuthorizeLibrary(ApiRequest req, string resourceType, OperationTypeEnum operation, string id)
+        {
+            RequestContext actor=req.Http.Metadata as RequestContext;
+            if(actor==null || actor.ShouldChallenge || !actor.IsAuthenticated)throw new WebserverException(ApiResultEnum.NotAuthorized,"Authentication required.");
+            if(actor.IsAdmin)return;
+            AuthorizationDecision decision=_Rbac.Authorize(new AuthorizationRequest {TenantGuid=actor.TenantGuid,PrincipalType=actor.PrincipalType,PrincipalGuid=actor.PrincipalGuid,OwnerUserGuid=actor.OwnerUserGuid,IsTenantAdmin=actor.IsTenantAdmin,ResourceType=resourceType,Operation=operation,ResourceGuid=id});
+            if(decision.IsPermitted || (actor.PrincipalType==PrincipalTypeEnum.User && decision.Result==SharpAI.Security.AuthorizationResultEnum.DeniedImplicit))return;
+            RecordAuthzDenial(req.Http,actor,resourceType,operation,decision);
+            throw new WebserverException(ApiResultEnum.Forbidden,decision.Reason);
+        }
+
+        /// <summary>Reject and audit a library ownership or publication violation.</summary>
+        public void DenyLibrary(ApiRequest req,string reason)
+        {
+            RequestContext actor=req.Http.Metadata as RequestContext;
+            if(actor!=null)RecordAuthzDenial(req.Http,actor,"Library",OperationTypeEnum.Update,AuthorizationDecision.Deny(SharpAI.Security.AuthorizationResultEnum.DeniedImplicit,reason));
+            throw new WebserverException(ApiResultEnum.Forbidden,reason);
         }
 
         #endregion

@@ -21,6 +21,8 @@ export function ControlHelp():null {
       document.querySelectorAll<HTMLElement>('button,label,legend,dt,th,select,input,textarea,summary,a,meter,[role=menuitem],.sa-kpi__label,.sa-detail-tokens span,.sa-detail-timings span').forEach(element=>{
         if(element instanceof HTMLInputElement && element.type==='hidden')return;
         // Form authors own explicit help. Do not overwrite it with a label heuristic.
+        const authored=element.closest<HTMLElement>('label[data-library-help]');
+        if(authored?.title){element.title=authored.title;delete element.dataset.autoHelp;return;}
         const setting=element.closest<HTMLElement>('label[data-setting-path]');
         if(setting?.title){element.title=setting.title;delete element.dataset.autoHelp;return;}
         if(element.title && !element.dataset.autoHelp && element.title!==identify(element) && !element.classList.contains('sa-copy-button'))return;

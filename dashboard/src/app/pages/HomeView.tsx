@@ -39,19 +39,25 @@ export function HomeView(): JSX.Element {
   const [error, setError] = useState(false);
   const [onDisk, setOnDisk] = useState<number | null>(null);
   const [resident, setResident] = useState<number | null>(null);
+  const [promptCount,setPromptCount]=useState<number|null>(null);
+  const [configurationCount,setConfigurationCount]=useState<number|null>(null);
   const [summary, setSummary] = useState<HomeSummary | null>(null);
 
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
-    const [tags, ps, sum] = await Promise.all([
+    const [tags, ps, sum, prompts, configurations] = await Promise.all([
       api.listModels().catch(() => null),
       api.runningModels().catch(() => null),
       api.requestHistorySummary().catch(() => null),
+      api.libraryList('system-prompts',{pageSize:1}).catch(()=>null),
+      api.libraryList('model-configurations',{pageSize:1}).catch(()=>null),
     ]);
-    setError([tags, ps, sum].some(value => value === null));
+    setError([tags, ps, sum, prompts, configurations].some(value => value === null));
     setLoading(false);
     setOnDisk(tags === null ? null : countModels(tags));
+    setPromptCount(prompts?Number(prompts.TotalRecords):null);
+    setConfigurationCount(configurations?Number(configurations.TotalRecords):null);
     setResident(ps === null ? null : countModels(ps));
     setSummary(sum === null ? null : readSummary(sum));
   }, [api]);
@@ -70,23 +76,13 @@ export function HomeView(): JSX.Element {
       </div>
 
       {error && <div className="sa-settings-note" role="alert">{t('text.someServerDataCouldNotBeLoaded')}</div>}
-      <div className="sa-kpis">
-        <div className="sa-kpi">
-          <div className="sa-kpi__label">{t('home.modelsOnDisk')}</div>
-          <div className="sa-kpi__value">{show(onDisk)}</div>
-        </div>
-        <div className="sa-kpi">
-          <div className="sa-kpi__label">{t('home.residentModels')}</div>
-          <div className="sa-kpi__value">{show(resident)}</div>
-        </div>
-        <div className="sa-kpi">
-          <div className="sa-kpi__label">{t('home.requests')}</div>
-          <div className="sa-kpi__value">{summary ? formatNumber(summary.total, i18n.language) : '—'}</div>
-        </div>
-      </div>
+      <div className="sa-kpis sa-home-kpis">{[
+        ['home.modelsOnDisk','/models',show(onDisk),'violet'],['home.residentModels','/playground',show(resident),'green'],['home.requests','/request-history',show(summary?.total??null),'blue'],
+        ['library.promptsTitle','/system-prompts',show(promptCount),'amber'],['library.configurationsTitle','/model-configurations',show(configurationCount),'cyan'],
+      ].map(([label,icon,value,color])=><div className={`sa-kpi sa-kpi--${color}`} key={label}><div className="sa-kpi__label"><Icon name={icon}/>{t(label)}</div><div className="sa-kpi__value">{value}</div></div>)}</div>
 
       <div className="sa-quick-actions">{[
-        ['/models','quick.models','quick.modelsHelp'],['/playground','quick.test','quick.testHelp'],['/observability','quick.observe','quick.observeHelp'],['/api-explorer','quick.api','quick.apiHelp'],
+        ['/system-prompts','library.managePrompts','library.promptsHelp'],['/model-configurations','library.manageConfigurations','library.configurationsHelp'],['/models','quick.models','quick.modelsHelp'],['/playground','quick.test','quick.testHelp'],['/observability','quick.observe','quick.observeHelp'],['/api-explorer','quick.api','quick.apiHelp'],
       ].map(([path,label,help])=><Link className="sa-quick-card" to={path} key={path}><Icon name={path}/><strong>{t(label)}</strong><p>{t(help)}</p></Link>)}</div>
     </div>
   );

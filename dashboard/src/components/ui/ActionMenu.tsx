@@ -9,6 +9,7 @@ export interface ActionMenuItem {
   onClick: () => void;
   danger?: boolean;
   disabled?: boolean;
+  help?: string;
 }
 
 export interface ActionMenuProps {
@@ -82,6 +83,7 @@ export function ActionMenu({ items, label }: ActionMenuProps): JSX.Element {
                   key={item.label}
                   type="button"
                   role="menuitem"
+                  title={item.help}
                   className={`sa-menu__item ${item.danger ? 'sa-menu__item--danger' : ''}`}
                   disabled={item.disabled}
                   onClick={() => {

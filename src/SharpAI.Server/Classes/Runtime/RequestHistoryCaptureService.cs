@@ -102,7 +102,7 @@ namespace SharpAI.Server.Classes.Runtime
             {
                 Method = ctx.Request.Method.ToString(),
                 Path = path,
-                Url = url,
+                Url = LibraryPrivacy.IsLibraryPath(path) ? path : url,
                 StatusCode = ctx.Response.StatusCode,
                 DurationMs = ctx.Timestamp.TotalMs.HasValue ? ctx.Timestamp.TotalMs.Value : 0,
                 SourceIp = ctx.Request.Source != null ? ctx.Request.Source.IpAddress : null,
@@ -191,6 +191,7 @@ namespace SharpAI.Server.Classes.Runtime
 
         private static string RedactBody(string body, string path)
         {
+                if (LibraryPrivacy.IsLibraryPath(path)) return "[private library payload withheld]";
                 // Never retain passwords, signing keys, or credential secrets in request history.
                 try
                 {

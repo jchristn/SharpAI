@@ -380,6 +380,9 @@
             Model-preset (Modelfile-equivalent) data-access methods. Never null.
             </summary>
         </member>
+        <member name="P:SharpAI.Database.DatabaseDriverBase.Library">
+            <summary>Scoped system prompt and generation configuration persistence.</summary>
+        </member>
         <member name="P:SharpAI.Database.DatabaseDriverBase.RequestHistory">
             <summary>
             Request-history data-access methods.
@@ -624,6 +627,27 @@
             for storage. Timestamps are stored as sortable ISO-8601 UTC text; booleans as 0/1 integers.
             </summary>
         </member>
+        <member name="T:SharpAI.Database.Implementations.LibraryMethods">
+            <summary>Portable parameterized persistence for scoped prompts and generation configurations. All list queries filter ownership in SQL.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Implementations.LibraryMethods.#ctor(SharpAI.Database.DatabaseDriverBase)">
+            <summary>Bind to a database driver.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Implementations.LibraryMethods.Enumerate(System.String,System.String,System.String,System.String,SharpAI.Models.EnumerationQuery,System.Collections.Generic.IReadOnlyCollection{System.String})">
+            <summary>Page through system defaults, selected tenant defaults, and the caller's private items. Missing identities never match private records.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Implementations.LibraryMethods.Read(System.String)">
+            <summary>Read a record by ID. The route must check visibility before returning it.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Implementations.LibraryMethods.Create(SharpAI.Models.LibraryItem)">
+            <summary>Persist a newly authorized item.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Implementations.LibraryMethods.Update(SharpAI.Models.LibraryItem)">
+            <summary>Replace the mutable fields of an authorized item.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Implementations.LibraryMethods.Delete(System.String)">
+            <summary>Delete an authorized item.</summary>
+        </member>
         <member name="T:SharpAI.Database.Implementations.ModelPresetMethods">
             <summary>
             Handwritten-SQL implementation of the model-preset methods. Portable ANSI SQL executed through the
@@ -795,6 +819,24 @@
         <member name="M:SharpAI.Database.Interfaces.ICredentialScopeAssignmentMethods.Delete(System.String)">
             <summary>Delete an assignment by identifier.</summary>
             <param name="guid">Assignment identifier.</param>
+        </member>
+        <member name="T:SharpAI.Database.Interfaces.ILibraryMethods">
+            <summary>Provider-neutral persistence for scoped reusable prompts and generation configurations. Route handlers enforce privileges.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ILibraryMethods.Enumerate(System.String,System.String,System.String,System.String,SharpAI.Models.EnumerationQuery,System.Collections.Generic.IReadOnlyCollection{System.String})">
+            <summary>Enumerate system defaults, selected tenant defaults and only the current user's private items; exclusions apply before paging and counts.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ILibraryMethods.Read(System.String)">
+            <summary>Read by immutable ID, or null. Callers must authorize before returning the result.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ILibraryMethods.Create(SharpAI.Models.LibraryItem)">
+            <summary>Create a new authorized item.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ILibraryMethods.Update(SharpAI.Models.LibraryItem)">
+            <summary>Update an authorized item without changing identity.</summary>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.ILibraryMethods.Delete(System.String)">
+            <summary>Delete an authorized item.</summary>
         </member>
         <member name="T:SharpAI.Database.Interfaces.IModelPresetMethods">
             <summary>
@@ -3607,6 +3649,93 @@
             <summary>
             Instantiates the object.
             </summary>
+        </member>
+        <member name="T:SharpAI.Models.GenerationConfiguration">
+            <summary>Reusable generation parameters. Null numeric values use engine defaults; excludes the system prompt and model.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.Temperature">
+            <summary>Temperature. Optional; allowed range 0 through 2.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.MaxTokens">
+            <summary>MaxTokens. Optional; allowed range 1 through 32768.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.TopP">
+            <summary>TopP. Optional; allowed range 0 through 1.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.TopK">
+            <summary>TopK. Optional; allowed range 0 through 100.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.MinP">
+            <summary>MinP. Optional; allowed range 0 through 1.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.RepeatPenalty">
+            <summary>RepeatPenalty. Optional; allowed range 0 through 2.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.RepeatLastN">
+            <summary>RepeatLastN. Optional; allowed range 0 through 32768.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.PresencePenalty">
+            <summary>PresencePenalty. Optional; allowed range -2 through 2.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.FrequencyPenalty">
+            <summary>FrequencyPenalty. Optional; allowed range -2 through 2.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.Seed">
+            <summary>Seed. Optional; allowed range 0 through 2147483647.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.Stop">
+            <summary>Literal stop sequences. Defaults to empty.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.StreamResponse">
+            <summary>Whether replies stream incrementally. Default true.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.JsonOutput">
+            <summary>Request a JSON response. Default false.</summary>
+        </member>
+        <member name="P:SharpAI.Models.GenerationConfiguration.DisplayThinking">
+            <summary>Show model thinking when supported. Default false.</summary>
+        </member>
+        <member name="T:SharpAI.Models.LibraryItem">
+            <summary>A scoped system prompt or model configuration. Shared defaults and private user records use the same ownership rules.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Id">
+            <summary>Immutable identifier.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Kind">
+            <summary>SystemPrompt or ModelConfiguration, assigned by the endpoint.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Name">
+            <summary>Display name, at most 256 characters.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Description">
+            <summary>Optional operator description, at most 4096 characters.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Scope">
+            <summary>System, Tenant, or User. Default User.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.TenantId">
+            <summary>Owning tenant for Tenant and User items; null for System items.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.UserId">
+            <summary>Owning user for User items; otherwise null. Always derived from the authenticated user.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Content">
+            <summary>System prompt text. Only present for SystemPrompt items.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.Configuration">
+            <summary>Generation parameters. Only present for ModelConfiguration items.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.CreatedUtc">
+            <summary>Creation timestamp.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.UpdatedUtc">
+            <summary>Modification timestamp.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.CanEdit">
+            <summary>Whether the current caller can edit this record. Computed by REST, never trusted on writes.</summary>
+        </member>
+        <member name="P:SharpAI.Models.LibraryItem.CanDelete">
+            <summary>Whether the current caller may delete this record. Computed by REST.</summary>
         </member>
         <member name="T:SharpAI.Models.ModelFile">
             <summary>
@@ -9117,6 +9246,18 @@
             Instantiate.
             </summary>
         </member>
+        <member name="T:SharpAI.Security.LibraryAccess">
+            <summary>Intrinsic library ownership rules. RBAC may further restrict these rights; it never broadens private-item visibility.</summary>
+        </member>
+        <member name="M:SharpAI.Security.LibraryAccess.UserId(SharpAI.Security.RequestContext)">
+            <summary>Human user identity, or credential owner. Implicit system principals have no private library.</summary>
+        </member>
+        <member name="M:SharpAI.Security.LibraryAccess.CanRead(SharpAI.Models.LibraryItem,SharpAI.Security.RequestContext,System.String)">
+            <summary>Whether an item is visible in this tenant workspace.</summary>
+        </member>
+        <member name="M:SharpAI.Security.LibraryAccess.CanEdit(SharpAI.Models.LibraryItem,SharpAI.Security.RequestContext)">
+            <summary>Whether ownership and administrator level permit changing an item.</summary>
+        </member>
         <member name="T:SharpAI.Security.OperationTypeEnum">
             <summary>
             The operation a request performs against a resource, used for authorization. <see cref="F:SharpAI.Security.OperationTypeEnum.Write"/> is a
@@ -9461,6 +9602,12 @@
         <member name="F:SharpAI.Security.ResourceTypes.RequestHistory">
             <summary>Request-history records.</summary>
         </member>
+        <member name="F:SharpAI.Security.ResourceTypes.SystemPrompt">
+            <summary>Scoped reusable system prompts.</summary>
+        </member>
+        <member name="F:SharpAI.Security.ResourceTypes.ModelConfiguration">
+            <summary>Scoped reusable generation parameters.</summary>
+        </member>
         <member name="T:SharpAI.Security.RolePermissionMap">
             <summary>
             Associates a role with a permission (the many-to-many role↔permission relationship). Built-in maps
@@ -9554,7 +9701,7 @@
         </member>
         <member name="P:SharpAI.Security.Tenant.Guid">
             <summary>
-            Tenant identifier (prefix "ten_").
+            Tenant identifier (prefix "ten_", or "default" for the seeded default tenant).
             </summary>
         </member>
         <member name="P:SharpAI.Security.Tenant.Name">

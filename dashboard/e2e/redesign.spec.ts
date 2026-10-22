@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {libraryFixture} from './library-fixture';
 
 const configuration = {
   SoftwareVersion: '4.0.1', SchemaVersion: '2.0.0',
@@ -12,7 +13,9 @@ const configuration = {
 };
 
 test.beforeEach(async ({ page }) => {
+  const library=libraryFixture();
   await page.route('**/*', async route => {
+    if(await library(route))return;
     const path = new URL(route.request().url()).pathname;
     let body: unknown;
     if (path === '/api/settings') body = route.request().method() === 'PUT' ? route.request().postDataJSON() : configuration;
@@ -217,10 +220,15 @@ test('conversation sends parameters and history, trims initial newlines, and dis
   });
   await page.goto('/playground');
   await page.getByLabel('Model',{exact:true}).selectOption('test-model');
-  await page.locator('.sa-chat-settings summary').click();
-  await page.getByLabel('System prompt',{exact:true}).fill('Be concise.');
+  await page.getByRole('button',{name:'Edit selected system prompt',exact:true}).click();
+  await page.getByRole('dialog').getByLabel('System prompt',{exact:true}).fill('Be concise.');
+  await page.getByRole('dialog').getByRole('button',{name:'Save',exact:true}).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
   await page.getByLabel('Top-p',{exact:true}).fill('0.5');
   await page.getByLabel('Random seed',{exact:true}).fill('42');
+  await page.getByRole('dialog').getByRole('button',{name:'Save',exact:true}).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByLabel('Prompt',{exact:true}).fill('Hello');
   await page.getByRole('button',{name:'Send',exact:true}).click();
   await expect(page.locator('.sa-chat-message--assistant .sa-chat-content')).toHaveText('Hello world');
@@ -239,7 +247,7 @@ test('conversation sends parameters and history, trims initial newlines, and dis
 
 test('overview offers quick actions without the activity and failures panels',async({page})=>{
   await page.goto('/');
-  await expect(page.locator('.sa-quick-actions a')).toHaveCount(4);
+  await expect(page.locator('.sa-quick-actions a')).toHaveCount(6);
   await expect(page.locator('.sa-chart')).toHaveCount(0);
   await expect(page.getByText('Recent failures',{exact:true})).toHaveCount(0);
   await expect(page.getByText('Local intelligence. Your control.',{exact:true})).toHaveCount(0);
@@ -262,9 +270,9 @@ test('invalid sampling values prevent submission',async({page})=>{
   await page.route('**/api/chat',route=>{requests++;return route.fulfill({contentType:'application/x-ndjson',body:'{"done":true}\n'});});
   await page.goto('/playground');
   await page.getByLabel('Prompt',{exact:true}).fill('Hello');
-  await page.locator('.sa-chat-settings summary').click();
+  await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
   await page.getByLabel('Temperature',{exact:true}).fill('3');
-  await page.getByRole('button',{name:'Send',exact:true}).click();
+  await page.getByRole('dialog').getByRole('button',{name:'Save',exact:true}).click();
   expect(await page.getByLabel('Temperature',{exact:true}).evaluate((input:HTMLInputElement)=>input.validity.rangeOverflow)).toBe(true);
   expect(requests).toBe(0);
   await expect(page.locator('.sa-chat-message')).toHaveCount(0);
@@ -282,9 +290,10 @@ test('chat streaming keeps its composer and page position stable',async({page})=
   expect(send!.y+send!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
 });
 
-test('compact playground starts with collapsed parameters and no telemetry',async({page})=>{
+test('compact playground uses reusable selectors and no initial telemetry',async({page})=>{
   await page.goto('/playground');
-  await expect(page.locator('.sa-chat-settings')).not.toHaveAttribute('open');
+  await expect(page.locator('.sa-chat-settings')).toHaveCount(0);
+  await expect(page.getByRole('combobox',{name:'Model configuration',exact:true})).toBeVisible();
   await expect(page.getByLabel('Temperature',{exact:true})).not.toBeVisible();
   await expect(page.getByRole('button',{name:'Response telemetry'})).toHaveCount(0);
   await expect(page.getByText('AI can make mistakes. Please check answers.')).toBeVisible();
@@ -292,7 +301,7 @@ test('compact playground starts with collapsed parameters and no telemetry',asyn
   const send=await page.getByRole('button',{name:'Send',exact:true}).boundingBox();
   expect(input!.height).toBeLessThanOrEqual(34);
   expect(Math.abs(input!.y-send!.y)).toBeLessThan(2);
-  await page.locator('.sa-chat-settings summary').click();
+  await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
   await expect(page.getByLabel('Temperature',{exact:true})).toBeVisible();
 });
 
@@ -337,11 +346,11 @@ for(const locale of ['en','es','pt','fr','it','de','zh','ar','ru','ms','hi','ja'
   await page.goto('/settings');await page.getByRole('combobox',{name:'Language',exact:true}).selectOption(locale);
   for(const path of ['/settings','/playground','/models','/request-history','/api-explorer']) {
    await page.goto(path);await expect(page.locator('main h1')).toBeVisible();
-   if(path==='/playground')await page.locator('.sa-chat-settings summary').click();
+   if(path==='/playground')await page.locator('.sa-library-picker button').last().click();
    if(path==='/models')await page.locator('button:has(svg)').filter({has:page.locator('svg path[d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"]')}).click();
    await expect.poll(()=>page.evaluate(()=>Array.from(document.querySelectorAll<HTMLElement>('main button,main label,main th,main select,main input,main textarea,[role=dialog] button,[role=dialog] input')).filter(element=>!element.title || element.title.length<8 || element.title===element.textContent?.trim()).map(element=>element.outerHTML.slice(0,160)))).toEqual([]);
    expect(await page.locator('body').innerText()).not.toMatch(/help\.[a-z]|samplingHelp\./);
-   if(path==='/models')await page.keyboard.press('Escape');
+   if(path==='/models'||path==='/playground')await page.keyboard.press('Escape');
   }
  });
 }
@@ -349,8 +358,10 @@ for(const locale of ['en','es','pt','fr','it','de','zh','ar','ru','ms','hi','ja'
 test('non-streaming playground submits false and shows the complete reply',async({page})=>{
  await page.route('**/api/tags',route=>route.fulfill({json:{models:[{name:'test-model'}]}}));
  await page.route('**/api/chat',route=>route.fulfill({json:{message:{content:'Complete answer'},done:true,prompt_eval_count:5,eval_count:2,first_token_duration:12000000}}));
- await page.goto('/playground');await page.locator('.sa-chat-settings summary').click();
+ await page.goto('/playground');await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
  await page.getByLabel('Stream response',{exact:true}).uncheck();
+ await page.getByRole('dialog').getByRole('button',{name:'Save',exact:true}).click();
+ await expect(page.getByRole('dialog')).toHaveCount(0);
  await page.getByLabel('Prompt',{exact:true}).fill('Hello');
  const request=page.waitForRequest(req=>req.url().endsWith('/api/chat'));await page.getByRole('button',{name:'Send',exact:true}).click();
  expect((await request).postDataJSON().stream).toBe(false);
@@ -437,8 +448,9 @@ test('playground uses a red square stop control and content-sized replies',async
  const pending=new Promise<void>(resolve=>{release=resolve;});
  await page.route('**/api/tags',route=>route.fulfill({json:{models:[{name:'test-model'}]}}));
  await page.route('**/api/chat',async route=>{await pending;await route.fulfill({contentType:'application/x-ndjson',body:'{"message":{"content":"Hi!"},"done":true}\n'});});
- await page.goto('/playground');await page.locator('.sa-chat-settings summary').click();
+ await page.goto('/playground');await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
  await expect(page.getByLabel('Stream response',{exact:true})).toHaveAttribute('title',/tokens as they arrive/);
+ await page.getByRole('dialog').getByRole('button',{name:'Cancel',exact:true}).click();
  await page.getByLabel('Prompt',{exact:true}).fill('Hello');await page.getByRole('button',{name:'Send',exact:true}).click();
  const stop=page.getByRole('button',{name:'Stop generating',exact:true});await expect(stop).toBeVisible();
  await expect(stop.locator('rect')).toHaveAttribute('fill','currentColor');

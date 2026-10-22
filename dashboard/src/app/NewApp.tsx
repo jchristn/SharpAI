@@ -13,11 +13,14 @@ import { RequestHistoryView } from './pages/RequestHistoryView';
 import { InferenceHistoryView } from './pages/InferenceHistoryView';
 import { AdministrationProvider } from './AdministrationProvider';
 import { AccessView } from './pages/AccessView';
+import { LibraryView } from './pages/LibraryView';
 import { SettingsView } from './pages/SettingsView';
 
 const NAV: NavItem[] = [
   { path: '/', labelKey: 'nav.overview', group: 'overview' },
   { path: '/models', labelKey: 'nav.models', group: 'models' },
+  {path:'/system-prompts',labelKey:'library.promptsTitle',group:'models'},
+  {path:'/model-configurations',labelKey:'library.configurationsTitle',group:'models'},
   { path: '/playground', labelKey: 'nav.playground', group: 'models' },
   { path: '/request-history', labelKey: 'nav.requestHistory', group: 'operations' },
   { path: '/inference-history', labelKey: 'nav.inferenceHistory', group: 'operations' },
@@ -47,6 +50,8 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
           <Routes>
             <Route path="/" element={<HomeView />} />
             <Route path="/models" element={<ModelsView />} />
+            <Route path="/system-prompts" element={<LibraryView kind="system-prompts"/>}/>
+            <Route path="/model-configurations" element={<LibraryView kind="model-configurations"/>}/>
             <Route path="/playground" element={<PlaygroundView />} />
             <Route path="/request-history" element={<RequestHistoryView />} />
             <Route path="/inference-history" element={<InferenceHistoryView />} />

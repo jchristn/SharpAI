@@ -48,5 +48,9 @@ namespace SharpAI.Security
 
         /// <summary>Request-history records.</summary>
         public const string RequestHistory = "RequestHistory";
+        /// <summary>Scoped reusable system prompts.</summary>
+        public const string SystemPrompt = "SystemPrompt";
+        /// <summary>Scoped reusable generation parameters.</summary>
+        public const string ModelConfiguration = "ModelConfiguration";
     }
 }

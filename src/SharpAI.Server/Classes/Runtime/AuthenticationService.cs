@@ -90,8 +90,14 @@ namespace SharpAI.Server.Classes.Runtime
             string accessKey = GetHeader(ctx, "x-access-key");
             string secretKey = GetHeader(ctx, "x-secret-key");
 
+            // Personal libraries need a real identity even when inference is open. Anonymous open access
+            // retains the existing implicit platform principal and has no private user library.
+            bool libraryPath=path.StartsWith("/v1.0/system-prompts",StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/v1.0/model-configurations",StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/v1.0/library-context",StringComparison.OrdinalIgnoreCase);
+            bool suppliedIdentity=libraryPath && (!String.IsNullOrEmpty(bearer)||!String.IsNullOrEmpty(accessKey)||!String.IsNullOrEmpty(apiKey));
             return _Engine.Authenticate(
-                _Settings.Enabled, path, apiKey, _Settings.AdminApiKeys, bearer, accessKey, secretKey);
+                _Settings.Enabled || suppliedIdentity, path, apiKey, _Settings.AdminApiKeys, bearer, accessKey, secretKey);
         }
 
         private void RecordDenial(HttpContextBase ctx, string path, string reason)

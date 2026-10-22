@@ -57,6 +57,7 @@ namespace SharpAI.Database.Implementations
         public void Delete(string guid)
         {
             if (String.IsNullOrEmpty(guid)) throw new ArgumentNullException(nameof(guid));
+            _Db.NonQuery("DELETE FROM library_items WHERE tenantid = @guid", One("@guid", guid));
             _Db.NonQuery("DELETE FROM tenants WHERE guid = @guid", One("@guid", guid));
         }
 

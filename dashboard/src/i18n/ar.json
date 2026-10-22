@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "منح تعيين اعتماد على نطاق الدور",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "قم بإلغاء تعيين نطاق الاعتماد",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "قم بإدراج جلسات المستأجر بدون مادة مميزة",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "إلغاء جلسة المستأجر"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "إلغاء جلسة المستأجر",
+    "GET /v1.0/library-context": "العناصر الشخصية لصاحب الحساب فقط. ينشر مدير المستأجر في مستأجره ومدير النظام على مستوى النظام.",
+    "GET /v1.0/system-prompts": "تعليمات قابلة لإعادة الاستخدام مشتركة للنظام أو المستأجر أو خاصة بحسابك.",
+    "POST /v1.0/system-prompts": "إنشاء · مطالبات النظام",
+    "GET /v1.0/system-prompts/{id}": "تعليمات قابلة لإعادة الاستخدام مشتركة للنظام أو المستأجر أو خاصة بحسابك.",
+    "PUT /v1.0/system-prompts/{id}": "تعديل · مطالبات النظام",
+    "POST /v1.0/system-prompts/{id}/duplicate": "ينشئ نسخة قابلة للتحرير دون تغيير المصدر؛ تكون شخصية افتراضياً عند الدخول. · مطالبات النظام",
+    "DELETE /v1.0/system-prompts/{id}": "حذف · مطالبات النظام",
+    "GET /v1.0/model-configurations": "إعدادات توليد محفوظة تشمل أخذ العينات والتنسيق والبث؛ تدار المطالبات منفصلة.",
+    "POST /v1.0/model-configurations": "إنشاء · تكوينات النموذج",
+    "GET /v1.0/model-configurations/{id}": "إعدادات توليد محفوظة تشمل أخذ العينات والتنسيق والبث؛ تدار المطالبات منفصلة.",
+    "PUT /v1.0/model-configurations/{id}": "تعديل · تكوينات النموذج",
+    "POST /v1.0/model-configurations/{id}/duplicate": "ينشئ نسخة قابلة للتحرير دون تغيير المصدر؛ تكون شخصية افتراضياً عند الدخول. · تكوينات النموذج",
+    "DELETE /v1.0/model-configurations/{id}": "حذف · تكوينات النموذج"
   },
   "apiGroups": {
     "General": "عام",
@@ -562,7 +575,10 @@
     "Management - Permissions": "الإدارة - الأذونات",
     "Management - Assignments": "الإدارة - المهام",
     "Ollama - Models": "العلماء - النماذج",
-    "Administration": "الإدارة"
+    "Administration": "الإدارة",
+    "Library": "مطالبات النظام / تكوينات النموذج",
+    "SystemPrompt": "مطالبات النظام",
+    "ModelConfiguration": "تكوينات النموذج"
   },
   "pull": {
     "complete": "النموذج جاهز",
@@ -744,7 +760,9 @@
       "Model": "النماذج",
       "Inference": "الاستدلال",
       "Settings": "الإعدادات",
-      "RequestHistory": "سجل الطلب"
+      "RequestHistory": "سجل الطلب",
+      "SystemPrompt": "مطالبات النظام",
+      "ModelConfiguration": "تكوينات النموذج"
     },
     "operationTypes": {
       "All": "كافة العمليات",
@@ -925,5 +943,41 @@
     "headersLength": "يضيف Content-Length عند معرفة طول جسم الاستجابة.",
     "keepAlive": "يسمح باتصالات HTTP مستمرة بدلاً من إغلاقها بعد كل تبادل؛ يتطلب إعادة التشغيل.",
     "accessList": "قواعد IP لوضع التحكم بالوصول؛ تطبق قبل معالجة المسارات."
+  },
+  "library": {
+    "promptsTitle": "مطالبات النظام",
+    "configurationsTitle": "تكوينات النموذج",
+    "promptsHelp": "تعليمات قابلة لإعادة الاستخدام مشتركة للنظام أو المستأجر أو خاصة بحسابك.",
+    "configurationsHelp": "إعدادات توليد محفوظة تشمل أخذ العينات والتنسيق والبث؛ تدار المطالبات منفصلة.",
+    "System": "افتراضي النظام",
+    "Tenant": "افتراضي المستأجر",
+    "User": "شخصي",
+    "scope": "الرؤية",
+    "description": "الوصف",
+    "updated": "آخر تحديث",
+    "empty": "لا توجد عناصر متاحة في مساحة العمل.",
+    "create": "إنشاء",
+    "edit": "تعديل",
+    "duplicate": "نسخ مكرر",
+    "copySuffix": "نسخة",
+    "readOnlyHelp": "تنشئ نسخة مستقلة؛ لن تتغير النسخة الأصلية المشتركة.",
+    "deleteConfirm": "حذف «{{name}}»؟ تحتفظ المحادثات الموجودة بالقيم المرسلة.",
+    "error": "تعذر تحميل المكتبة أو حفظها.",
+    "promptSelector": "مطالبة النظام",
+    "configurationSelector": "تكوين النموذج",
+    "noPrompt": "دون مطالبة نظام",
+    "engineDefaults": "افتراضيات المحرك",
+    "editPrompt": "تعديل المطالبة المختارة",
+    "editConfiguration": "تعديل التكوين المختار",
+    "managePrompts": "إدارة المطالبات",
+    "manageConfigurations": "إدارة تكوينات النموذج",
+    "scopeHelp": "العناصر الشخصية لصاحب الحساب فقط. ينشر مدير المستأجر في مستأجره ومدير النظام على مستوى النظام.",
+    "nameHelp": "استخدم اسماً واضحاً في Playground؛ قد تتكرر الأسماء لكن المعرفات فريدة.",
+    "descriptionHelp": "اشرح متى يستخدم العنصر؛ لا يرسل الوصف للنموذج.",
+    "contentHelp": "تعليمات تسبق رسائل المحادثة؛ الحفظ يؤثر في الطلبات القادمة لا الردود السابقة.",
+    "duplicateHelp": "ينشئ نسخة قابلة للتحرير دون تغيير المصدر؛ تكون شخصية افتراضياً عند الدخول.",
+    "promptSelectorHelp": "اختر التعليمات المتاحة لحسابك؛ تعرض الافتراضيات المشتركة والخاصة في مجموعات منفصلة.",
+    "configurationSelectorHelp": "اختر إعدادات العينات والتوقف والتنسيق والتفكير والبث المحفوظة.",
+    "editSelectionHelp": "يعدل عنصرك أو يفتح نسخة مستقلة من افتراضي مشترك للقراءة فقط."
   }
 }

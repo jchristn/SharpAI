@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "Grant a role-scoped credential assignment",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "Revoke a credential scope assignment",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "List tenant sessions without token material",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Revoke a tenant session"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Revoke a tenant session",
+    "GET /v1.0/library-context": "Personal items belong only to your account. Tenant admins can publish in their tenant; system admins can publish system-wide.",
+    "GET /v1.0/system-prompts": "Reusable instructions shared system-wide, within your tenant, or saved privately for your account.",
+    "POST /v1.0/system-prompts": "Create · System prompts",
+    "GET /v1.0/system-prompts/{id}": "Reusable instructions shared system-wide, within your tenant, or saved privately for your account.",
+    "PUT /v1.0/system-prompts/{id}": "Edit · System prompts",
+    "POST /v1.0/system-prompts/{id}/duplicate": "Create an editable copy without changing the source. Copies default to personal visibility when signed in. · System prompts",
+    "DELETE /v1.0/system-prompts/{id}": "Delete · System prompts",
+    "GET /v1.0/model-configurations": "Reusable generation settings, including sampling, output format and streaming. System prompts are managed separately.",
+    "POST /v1.0/model-configurations": "Create · Model configurations",
+    "GET /v1.0/model-configurations/{id}": "Reusable generation settings, including sampling, output format and streaming. System prompts are managed separately.",
+    "PUT /v1.0/model-configurations/{id}": "Edit · Model configurations",
+    "POST /v1.0/model-configurations/{id}/duplicate": "Create an editable copy without changing the source. Copies default to personal visibility when signed in. · Model configurations",
+    "DELETE /v1.0/model-configurations/{id}": "Delete · Model configurations"
   },
   "apiGroups": {
     "General": "General",
@@ -562,7 +575,10 @@
     "Management - Permissions": "Management - Permissions",
     "Management - Assignments": "Management - Assignments",
     "Ollama - Models": "Ollama - Models",
-    "Administration": "Administration"
+    "Administration": "Administration",
+    "Library": "System prompts / Model configurations",
+    "SystemPrompt": "System prompts",
+    "ModelConfiguration": "Model configurations"
   },
   "pull": {
     "complete": "Model ready",
@@ -744,7 +760,9 @@
       "Model": "Models",
       "Inference": "Inference",
       "Settings": "Settings",
-      "RequestHistory": "Request history"
+      "RequestHistory": "Request history",
+      "SystemPrompt": "System prompts",
+      "ModelConfiguration": "Model configurations"
     },
     "operationTypes": {
       "All": "All operations",
@@ -925,5 +943,41 @@
     "headersLength": "Include the HTTP Content-Length response header when the server knows the body length.",
     "keepAlive": "Allow persistent HTTP connections instead of closing after each exchange; restart to apply.",
     "accessList": "IP-address rules used by the listener access-control mode. Permit and deny lists apply before route handling."
+  },
+  "library": {
+    "promptsTitle": "System prompts",
+    "configurationsTitle": "Model configurations",
+    "promptsHelp": "Reusable instructions shared system-wide, within your tenant, or saved privately for your account.",
+    "configurationsHelp": "Reusable generation settings, including sampling, output format and streaming. System prompts are managed separately.",
+    "System": "System default",
+    "Tenant": "Tenant default",
+    "User": "Personal",
+    "scope": "Visibility",
+    "description": "Description",
+    "updated": "Updated",
+    "empty": "No items are available in this workspace.",
+    "create": "Create",
+    "edit": "Edit",
+    "duplicate": "Duplicate",
+    "copySuffix": "copy",
+    "readOnlyHelp": "You are creating a separate copy. Changes will not affect the original shared item.",
+    "deleteConfirm": "Delete “{{name}}”? Existing conversations keep the values already submitted.",
+    "error": "Unable to load or save the library.",
+    "promptSelector": "System prompt",
+    "configurationSelector": "Model configuration",
+    "noPrompt": "No system prompt",
+    "engineDefaults": "Engine defaults",
+    "editPrompt": "Edit selected system prompt",
+    "editConfiguration": "Edit selected model configuration",
+    "managePrompts": "Manage prompts",
+    "manageConfigurations": "Manage model configurations",
+    "scopeHelp": "Personal items belong only to your account. Tenant admins can publish in their tenant; system admins can publish system-wide.",
+    "nameHelp": "Use a descriptive name to distinguish this item in the Playground dropdown. Names may repeat; IDs remain unique.",
+    "descriptionHelp": "Explain when this prompt or configuration should be used. This note is not sent to the model.",
+    "contentHelp": "Instructions inserted before conversation messages. Saving changes affects future requests, not previous responses.",
+    "duplicateHelp": "Create an editable copy without changing the source. Copies default to personal visibility when signed in.",
+    "promptSelectorHelp": "Choose instructions visible to your account. Shared defaults and your private prompts appear in separate groups.",
+    "configurationSelectorHelp": "Choose saved generation parameters. This controls sampling, stop sequences, output format, thinking and streaming.",
+    "editSelectionHelp": "Edit an owned item. For a read-only shared default, this opens a new editable copy; saving keeps the original unchanged."
   }
 }

@@ -152,6 +152,13 @@ namespace SharpAI.Database.Mysql
                         "ALTER TABLE request_history ADD phasetimingsapproximate INTEGER NULL",
                         "ALTER TABLE request_history ADD traceid TEXT NULL",
                         "ALTER TABLE request_history ADD spanid TEXT NULL"
+                    }),
+                    new SchemaMigration(7, "Scoped prompt and model configuration libraries", new List<string>
+                    {
+                        "CREATE TABLE IF NOT EXISTS library_items (id VARCHAR(256) PRIMARY KEY, kind VARCHAR(32) NOT NULL, name VARCHAR(256) NOT NULL, description LONGTEXT, scope VARCHAR(16) NOT NULL, tenantid VARCHAR(64), userid VARCHAR(64), content LONGTEXT, configurationjson LONGTEXT, createdutc VARCHAR(256) NOT NULL, updatedutc VARCHAR(256) NOT NULL)",
+                        "CREATE INDEX idx_library_visibility ON library_items (kind, scope, tenantid, userid)",
+                        "INSERT INTO library_items (id,kind,name,description,scope,content,configurationjson,createdutc,updatedutc) VALUES ('system-starter-prompt','SystemPrompt','Helpful assistant','General-purpose starter instructions.','System','You are a helpful assistant. Answer clearly and accurately.',NULL,'2026-10-22T00:00:00.0000000Z','2026-10-22T00:00:00.0000000Z')",
+                        "INSERT INTO library_items (id,kind,name,description,scope,content,configurationjson,createdutc,updatedutc) VALUES ('system-starter-configuration','ModelConfiguration','Balanced','A compact starting point for interactive chat.','System',NULL,'{\"Temperature\":0.6,\"MaxTokens\":128,\"StreamResponse\":true,\"Stop\":[]}', '2026-10-22T00:00:00.0000000Z','2026-10-22T00:00:00.0000000Z')"
                     })
                 };
             }

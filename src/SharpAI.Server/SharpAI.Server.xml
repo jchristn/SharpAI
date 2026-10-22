@@ -98,6 +98,18 @@
             <summary>Require a platform administrator, excluding tenant administrator bypasses.</summary>
             <param name="req">Request.</param>
         </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.CanUseLibrary(WatsonWebserver.Core.ApiRequest,System.String,SharpAI.Security.OperationTypeEnum,System.String)">
+            <summary>Whether RBAC permits a library operation, including intrinsic human self-service rights but excluding ownership checks.</summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.LibraryReadExclusions(WatsonWebserver.Core.ApiRequest,System.String)">
+            <summary>Resource-specific read restrictions to apply in SQL before a library page and count are computed.</summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.AuthorizeLibrary(WatsonWebserver.Core.ApiRequest,System.String,SharpAI.Security.OperationTypeEnum,System.String)">
+            <summary>Library self-service rights for human users. Explicit denies and credential owner ceilings remain enforced; routes additionally enforce scope ownership.</summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.DenyLibrary(WatsonWebserver.Core.ApiRequest,System.String)">
+            <summary>Reject and audit a library ownership or publication violation.</summary>
+        </member>
         <member name="T:SharpAI.Server.API.REST.Routes.GeneralRoutes">
             <summary>
             Registrar for the general, unauthenticated server endpoints: homepage, liveness (<c>/health</c>),
@@ -127,6 +139,12 @@
             <param name="req">API request.</param>
             <param name="handler">Handler to run.</param>
             <returns>The handler's result, or null after an error was written.</returns>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.LibraryRoutes">
+            <summary>Scoped reusable system prompts and model configurations. List, read, write and duplicate all enforce ownership on the server.</summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.LibraryRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext)">
+            <summary>Register the library contract on the application server.</summary>
         </member>
         <member name="T:SharpAI.Server.API.REST.Routes.OllamaInferenceRoutes">
             <summary>
@@ -542,6 +560,12 @@
             </summary>
             <param name="ctx">HTTP context.</param>
             <returns>The attached request context.</returns>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.LibraryPrivacy">
+            <summary>Identifies library payloads that must not bypass item ownership through shared request history or debug body logs.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.LibraryPrivacy.IsLibraryPath(System.String)">
+            <summary>Whether a request targets a managed library collection or item.</summary>
         </member>
         <member name="T:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper">
             <summary>

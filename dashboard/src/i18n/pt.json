@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "Conceder uma atribuição de credenciais com escopo de função",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "Revogar uma atribuição de escopo de credencial",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "Listar sessões de locatário sem material de token",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Revogar uma sessão de inquilino"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Revogar uma sessão de inquilino",
+    "GET /v1.0/library-context": "Itens pessoais são privados. Admins do tenant publicam no próprio tenant; admins do sistema publicam globalmente.",
+    "GET /v1.0/system-prompts": "Instruções reutilizáveis compartilhadas no sistema, no tenant ou privadas para sua conta.",
+    "POST /v1.0/system-prompts": "Criar · Prompts do sistema",
+    "GET /v1.0/system-prompts/{id}": "Instruções reutilizáveis compartilhadas no sistema, no tenant ou privadas para sua conta.",
+    "PUT /v1.0/system-prompts/{id}": "Editar · Prompts do sistema",
+    "POST /v1.0/system-prompts/{id}/duplicate": "Cria cópia editável sem mudar a origem; pessoal por padrão quando conectado. · Prompts do sistema",
+    "DELETE /v1.0/system-prompts/{id}": "Excluir · Prompts do sistema",
+    "GET /v1.0/model-configurations": "Parâmetros reutilizáveis de geração, amostragem, formato e streaming. Prompts são geridos separadamente.",
+    "POST /v1.0/model-configurations": "Criar · Configurações do modelo",
+    "GET /v1.0/model-configurations/{id}": "Parâmetros reutilizáveis de geração, amostragem, formato e streaming. Prompts são geridos separadamente.",
+    "PUT /v1.0/model-configurations/{id}": "Editar · Configurações do modelo",
+    "POST /v1.0/model-configurations/{id}/duplicate": "Cria cópia editável sem mudar a origem; pessoal por padrão quando conectado. · Configurações do modelo",
+    "DELETE /v1.0/model-configurations/{id}": "Excluir · Configurações do modelo"
   },
   "apiGroups": {
     "General": "Geral",
@@ -562,7 +575,10 @@
     "Management - Permissions": "Gestão - Permissões",
     "Management - Assignments": "Gestão - Atribuições",
     "Ollama - Models": "Ollama - Modelos",
-    "Administration": "Administração"
+    "Administration": "Administração",
+    "Library": "Prompts do sistema / Configurações do modelo",
+    "SystemPrompt": "Prompts do sistema",
+    "ModelConfiguration": "Configurações do modelo"
   },
   "pull": {
     "complete": "Modelo pronto",
@@ -744,7 +760,9 @@
       "Model": "Modelos",
       "Inference": "Inferência",
       "Settings": "Configurações",
-      "RequestHistory": "Histórico de solicitações"
+      "RequestHistory": "Histórico de solicitações",
+      "SystemPrompt": "Prompts do sistema",
+      "ModelConfiguration": "Configurações do modelo"
     },
     "operationTypes": {
       "All": "Todas as operações",
@@ -925,5 +943,41 @@
     "headersLength": "Inclui Content-Length quando o tamanho do corpo da resposta é conhecido.",
     "keepAlive": "Permite conexões HTTP persistentes em vez de fechar após cada troca. Requer reinício.",
     "accessList": "Regras IP do modo de acesso; aplicadas antes do processamento das rotas."
+  },
+  "library": {
+    "promptsTitle": "Prompts do sistema",
+    "configurationsTitle": "Configurações do modelo",
+    "promptsHelp": "Instruções reutilizáveis compartilhadas no sistema, no tenant ou privadas para sua conta.",
+    "configurationsHelp": "Parâmetros reutilizáveis de geração, amostragem, formato e streaming. Prompts são geridos separadamente.",
+    "System": "Padrão do sistema",
+    "Tenant": "Padrão do tenant",
+    "User": "Pessoal",
+    "scope": "Visibilidade",
+    "description": "Descrição",
+    "updated": "Atualizado",
+    "empty": "Nenhum item disponível neste espaço.",
+    "create": "Criar",
+    "edit": "Editar",
+    "duplicate": "Duplicar",
+    "copySuffix": "cópia",
+    "readOnlyHelp": "Você está criando uma cópia independente; alterações não afetam o original.",
+    "deleteConfirm": "Excluir “{{name}}”? Conversas existentes mantêm os valores já enviados.",
+    "error": "Não foi possível carregar ou salvar a biblioteca.",
+    "promptSelector": "Prompt do sistema",
+    "configurationSelector": "Configuração do modelo",
+    "noPrompt": "Sem prompt do sistema",
+    "engineDefaults": "Padrões do motor",
+    "editPrompt": "Editar prompt selecionado",
+    "editConfiguration": "Editar configuração selecionada",
+    "managePrompts": "Gerenciar prompts",
+    "manageConfigurations": "Gerenciar configurações do modelo",
+    "scopeHelp": "Itens pessoais são privados. Admins do tenant publicam no próprio tenant; admins do sistema publicam globalmente.",
+    "nameHelp": "Use um nome descritivo no Playground. Nomes podem repetir; IDs são únicos.",
+    "descriptionHelp": "Explique quando usar este item; a nota não é enviada ao modelo.",
+    "contentHelp": "Instruções antes das mensagens. Salvar afeta solicitações futuras, não respostas anteriores.",
+    "duplicateHelp": "Cria cópia editável sem mudar a origem; pessoal por padrão quando conectado.",
+    "promptSelectorHelp": "Selecione instruções visíveis à sua conta; padrões compartilhados e privados são agrupados separadamente.",
+    "configurationSelectorHelp": "Selecione parâmetros salvos de amostragem, paradas, formato, pensamento e streaming.",
+    "editSelectionHelp": "Edita item próprio ou abre cópia editável de padrão compartilhado somente leitura."
   }
 }

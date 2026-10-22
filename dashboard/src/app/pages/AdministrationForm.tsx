@@ -24,6 +24,8 @@ const RESOURCES = [
   "Inference",
   "Settings",
   "RequestHistory",
+  "SystemPrompt",
+  "ModelConfiguration",
 ];
 const OPERATIONS = [
   "All",

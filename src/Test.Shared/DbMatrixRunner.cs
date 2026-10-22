@@ -163,6 +163,41 @@ namespace Test.Shared
                 Require(db.RequestHistory.Read(historyId) == null, "history entry still present after delete");
             });
 
+            // ---- Scoped libraries ----
+            string libraryName="library-"+Guid.NewGuid().ToString("N");
+            List<string> libraryIds=new List<string>();
+            string personalId=String.Empty;
+            Check(result,"library.create+visibility+paging",()=>
+            {
+                foreach(string scope in new[] {"System","Tenant","User"})
+                {
+                    LibraryItem item=db.Library.Create(new LibraryItem {Kind="SystemPrompt",Name=libraryName,Scope=scope,TenantId=scope=="System"?null:"matrix-tenant",UserId=scope=="User"?"matrix-user":null,Content="Initial instructions"});
+                    libraryIds.Add(item.Id);if(scope=="User")personalId=item.Id;
+                }
+                libraryIds.Add(db.Library.Create(new LibraryItem {Kind="SystemPrompt",Name=libraryName,Scope="User",TenantId="matrix-tenant",UserId="other-user",Content="Hidden"}).Id);
+                EnumerationResult<LibraryItem> page=db.Library.Enumerate("SystemPrompt","matrix-tenant","matrix-tenant","matrix-user",new EnumerationQuery {Name=libraryName,PageSize=1});
+                Require(page.TotalRecords==3&&page.Objects.Count==1&&page.RecordsRemaining==2,"library ownership filtering must precede page and count");
+                Require(db.Library.Enumerate("SystemPrompt","matrix-tenant",null,null,new EnumerationQuery {Name=libraryName}).TotalRecords==2,"anonymous callers must not see user records");
+            });
+            Check(result,"library.explicit-read-exclusions",()=>
+            {
+                EnumerationResult<LibraryItem> page=db.Library.Enumerate("SystemPrompt","matrix-tenant","matrix-tenant","matrix-user",new EnumerationQuery {Name=libraryName},new[] {personalId});
+                Require(page.TotalRecords==2,"resource denial must affect the SQL count");
+                foreach(LibraryItem item in page.Objects)Require(item.Id!=personalId,"excluded item leaked");
+            });
+            Check(result,"library.configuration+unicode-roundtrip",()=>
+            {
+                LibraryItem item=db.Library.Create(new LibraryItem {Kind="ModelConfiguration",Name=libraryName,Scope="User",TenantId="matrix-tenant",UserId="matrix-user",Configuration=new GenerationConfiguration {Temperature=.71,MaxTokens=256,TopK=12,PresencePenalty=-.3,StreamResponse=false,JsonOutput=true,DisplayThinking=true,Stop=new List<string> {"END","line one\nline two"}}});
+                libraryIds.Add(item.Id);LibraryItem loaded=db.Library.Read(item.Id);
+                Require(loaded.Configuration.Temperature==.71&&!loaded.Configuration.StreamResponse&&loaded.Configuration.JsonOutput&&loaded.Configuration.Stop.Count==2,"generation settings did not round-trip");
+                LibraryItem prompt=db.Library.Read(personalId);prompt.Content="更新 · مرحباً";db.Library.Update(prompt);
+                Require(db.Library.Read(personalId).Content==prompt.Content,"Unicode prompt update did not persist");
+            });
+            Check(result,"library.delete",()=>
+            {
+                foreach(string id in libraryIds){db.Library.Delete(id);Require(db.Library.Read(id)==null,"library item survived deletion");}
+            });
+
             return result;
         }
 

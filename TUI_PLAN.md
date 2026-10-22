@@ -140,3 +140,21 @@ Use an isolated SQLite server for workflow tests, unique ports and disposable te
 Headless tests record input sequences and rendered cells, not just controller state. Assert focus, scroll anchoring, tooltip/help text, copy success/failure, form validation, modal dismissal, cancellation and resize during work. Run every route with populated, empty, loading, forbidden and failed data, all locales, and representative narrow/wide terminal sizes. Store fixtures and logs with secrets removed. Benchmark comparison must include wall time, allocation/working set, idle CPU and rendered bytes/frames with tolerances based on repeated baseline runs.
 
 CI must build both TFMs, run shared suites through the existing test adapters, check locale and parity drift, launch isolated server/TUI simulations, compare benchmarks, and smoke packaged binaries on the runtime matrix. The release evidence names the exact commits, TUIKit/SDK/runtime versions, OS/architecture, terminal mode, model/config hashes, commands, results and any unsupported capability. A checked-off plan item without that evidence reopens automatically during the parity audit.
+
+## Scoped libraries added to web parity
+
+The web dashboard now manages System prompts (`/system-prompts`) and Model configurations
+(`/model-configurations`). TUI implementation must include list/pagination, structured inspection,
+create/edit/delete and Duplicate for both resources. Add their entry points to the home screen.
+
+Use `/v1.0/library-context`, `/v1.0/system-prompts` and `/v1.0/model-configurations`. Enforce the same
+System/Tenant/User publication choices in the interface; the server remains authoritative. Private
+items are visible only to their owner, including when the caller is an administrator. Duplicate defaults
+to the current user's private scope, and offers authorized shared scopes for administrators. A visibility
+change requires duplication, not an in-place owner change.
+
+Replace T07's inline prompt/parameter ownership with the two saved-library selectors and adjacent edit
+actions. Read-only shared selections open a copy editor. The model configuration editor contains all
+sampling fields, stop sequences, streaming, JSON format and thinking visibility, but no system prompt.
+Test that selection and editing preserve all fields, private records disappear on identity changes,
+and duplicated items leave the source unchanged. See [the contract](docs/SCOPED_LIBRARIES.md).

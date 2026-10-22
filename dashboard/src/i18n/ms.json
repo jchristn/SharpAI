@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "Berikan tugasan kelayakan berskop peranan",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "Batalkan tugasan skop kelayakan",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "Senaraikan sesi penyewa tanpa bahan token",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Batalkan sesi penyewa"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Batalkan sesi penyewa",
+    "GET /v1.0/library-context": "Item peribadi hanya untuk akaun anda. Pentadbir penyewa menerbitkan dalam penyewa sendiri; pentadbir sistem untuk seluruh sistem.",
+    "GET /v1.0/system-prompts": "Arahan boleh guna semula untuk seluruh sistem, penyewa atau akaun peribadi anda.",
+    "POST /v1.0/system-prompts": "Cipta · Prom sistem",
+    "GET /v1.0/system-prompts/{id}": "Arahan boleh guna semula untuk seluruh sistem, penyewa atau akaun peribadi anda.",
+    "PUT /v1.0/system-prompts/{id}": "Sunting · Prom sistem",
+    "POST /v1.0/system-prompts/{id}/duplicate": "Cipta salinan boleh sunting tanpa menukar sumber; peribadi secara lalai selepas log masuk. · Prom sistem",
+    "DELETE /v1.0/system-prompts/{id}": "Padam · Prom sistem",
+    "GET /v1.0/model-configurations": "Tetapan penjanaan disimpan termasuk pensampelan, format dan penstriman. Prom diurus berasingan.",
+    "POST /v1.0/model-configurations": "Cipta · Konfigurasi model",
+    "GET /v1.0/model-configurations/{id}": "Tetapan penjanaan disimpan termasuk pensampelan, format dan penstriman. Prom diurus berasingan.",
+    "PUT /v1.0/model-configurations/{id}": "Sunting · Konfigurasi model",
+    "POST /v1.0/model-configurations/{id}/duplicate": "Cipta salinan boleh sunting tanpa menukar sumber; peribadi secara lalai selepas log masuk. · Konfigurasi model",
+    "DELETE /v1.0/model-configurations/{id}": "Padam · Konfigurasi model"
   },
   "apiGroups": {
     "General": "Am",
@@ -562,7 +575,10 @@
     "Management - Permissions": "Pengurusan - Kebenaran",
     "Management - Assignments": "Pengurusan - Tugasan",
     "Ollama - Models": "Ollama - Model",
-    "Administration": "Pentadbiran"
+    "Administration": "Pentadbiran",
+    "Library": "Prom sistem / Konfigurasi model",
+    "SystemPrompt": "Prom sistem",
+    "ModelConfiguration": "Konfigurasi model"
   },
   "pull": {
     "complete": "Model sedia",
@@ -744,7 +760,9 @@
       "Model": "Model",
       "Inference": "Inferens",
       "Settings": "Tetapan",
-      "RequestHistory": "Sejarah permintaan"
+      "RequestHistory": "Sejarah permintaan",
+      "SystemPrompt": "Prom sistem",
+      "ModelConfiguration": "Konfigurasi model"
     },
     "operationTypes": {
       "All": "Semua operasi",
@@ -925,5 +943,41 @@
     "headersLength": "Sertakan Content-Length apabila panjang badan respons diketahui.",
     "keepAlive": "Benarkan sambungan HTTP berterusan dan bukan tutup selepas setiap pertukaran. Perlu mula semula.",
     "accessList": "Peraturan IP mod akses pendengar; digunakan sebelum pengendalian laluan."
+  },
+  "library": {
+    "promptsTitle": "Prom sistem",
+    "configurationsTitle": "Konfigurasi model",
+    "promptsHelp": "Arahan boleh guna semula untuk seluruh sistem, penyewa atau akaun peribadi anda.",
+    "configurationsHelp": "Tetapan penjanaan disimpan termasuk pensampelan, format dan penstriman. Prom diurus berasingan.",
+    "System": "Lalai sistem",
+    "Tenant": "Lalai penyewa",
+    "User": "Peribadi",
+    "scope": "Keterlihatan",
+    "description": "Penerangan",
+    "updated": "Dikemas kini",
+    "empty": "Tiada item tersedia dalam ruang kerja ini.",
+    "create": "Cipta",
+    "edit": "Sunting",
+    "duplicate": "Duplikasi",
+    "copySuffix": "salinan",
+    "readOnlyHelp": "Anda mencipta salinan berasingan; perubahan tidak menjejaskan asal dikongsi.",
+    "deleteConfirm": "Padam “{{name}}”? Perbualan sedia ada mengekalkan nilai yang telah dihantar.",
+    "error": "Tidak dapat memuat atau menyimpan pustaka.",
+    "promptSelector": "Prom sistem",
+    "configurationSelector": "Konfigurasi model",
+    "noPrompt": "Tiada prom sistem",
+    "engineDefaults": "Lalai enjin",
+    "editPrompt": "Sunting prom dipilih",
+    "editConfiguration": "Sunting konfigurasi dipilih",
+    "managePrompts": "Urus prom",
+    "manageConfigurations": "Urus konfigurasi model",
+    "scopeHelp": "Item peribadi hanya untuk akaun anda. Pentadbir penyewa menerbitkan dalam penyewa sendiri; pentadbir sistem untuk seluruh sistem.",
+    "nameHelp": "Gunakan nama jelas dalam Playground. Nama boleh berulang; ID tetap unik.",
+    "descriptionHelp": "Terangkan kegunaan item; nota ini tidak dihantar kepada model.",
+    "contentHelp": "Arahan sebelum mesej perbualan. Simpan mempengaruhi permintaan akan datang, bukan jawapan lalu.",
+    "duplicateHelp": "Cipta salinan boleh sunting tanpa menukar sumber; peribadi secara lalai selepas log masuk.",
+    "promptSelectorHelp": "Pilih arahan akaun anda; lalai dikongsi dan prom peribadi dalam kumpulan berasingan.",
+    "configurationSelectorHelp": "Pilih tetapan pensampelan, hentian, format, pemikiran dan penstriman disimpan.",
+    "editSelectionHelp": "Sunting item sendiri atau buka salinan berasingan lalai dikongsi baca sahaja."
   }
 }

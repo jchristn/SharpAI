@@ -12,6 +12,7 @@ export interface Column<T> {
   /** Accessor used when no render is provided. */
   accessor?: (row: T) => ReactNode;
   sortable?: boolean;
+  help?: string;
   width?: string;
 }
 
@@ -66,6 +67,7 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
                 <th
                   key={column.key}
                   data-column-key={column.key}
+                  title={column.help}
                   aria-label={typeof column.header === 'string' ? column.header || (column.key==='actions' ? t('common.actions') : undefined) : undefined}
                   className={column.sortable ? 'sa-sortable' : undefined}
                   style={column.width ? { width: column.width } : undefined}
@@ -100,7 +102,7 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={rowKey(row)} className={onRowClick ? 'sa-table-row--interactive' : undefined} onClick={onRowClick ? ()=>onRowClick(row) : undefined} onKeyDown={onRowClick ? event=>{if(event.target===event.currentTarget && (event.key==='Enter'||event.key===' ')){event.preventDefault();onRowClick(row);}} : undefined} tabIndex={onRowClick ? 0 : undefined}>
+                <tr key={rowKey(row)} className={onRowClick ? 'sa-table-row--interactive' : undefined} onClick={onRowClick ? event=>{const target=event.target as HTMLElement;if(target.closest('button,a,input,select,textarea,[role=menuitem],[role=button]'))return;onRowClick(row);} : undefined} onKeyDown={onRowClick ? event=>{if(event.target===event.currentTarget && (event.key==='Enter'||event.key===' ')){event.preventDefault();onRowClick(row);}} : undefined} tabIndex={onRowClick ? 0 : undefined}>
                   {columns.map((column) => (
                     <td key={column.key}>
                       {column.render ? column.render(row) : column.accessor ? column.accessor(row) : null}

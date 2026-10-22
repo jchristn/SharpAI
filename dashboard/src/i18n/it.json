@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "Concedere un'assegnazione di credenziali con ambito di ruolo",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "Revoca l'assegnazione di un ambito di credenziale",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "Elenca le sessioni del tenant senza materiale token",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Revoca una sessione dell'inquilino"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Revoca una sessione dell'inquilino",
+    "GET /v1.0/library-context": "Gli elementi personali sono privati. Gli admin tenant pubblicano nel proprio tenant; gli admin di sistema globalmente.",
+    "GET /v1.0/system-prompts": "Istruzioni riutilizzabili condivise nel sistema, nel tenant o private per il proprio account.",
+    "POST /v1.0/system-prompts": "Crea · Prompt di sistema",
+    "GET /v1.0/system-prompts/{id}": "Istruzioni riutilizzabili condivise nel sistema, nel tenant o private per il proprio account.",
+    "PUT /v1.0/system-prompts/{id}": "Modifica · Prompt di sistema",
+    "POST /v1.0/system-prompts/{id}/duplicate": "Crea una copia modificabile senza alterare l’origine; personale per impostazione predefinita dopo l’accesso. · Prompt di sistema",
+    "DELETE /v1.0/system-prompts/{id}": "Elimina · Prompt di sistema",
+    "GET /v1.0/model-configurations": "Impostazioni di generazione per campionamento, formato e streaming. I prompt sono gestiti separatamente.",
+    "POST /v1.0/model-configurations": "Crea · Configurazioni del modello",
+    "GET /v1.0/model-configurations/{id}": "Impostazioni di generazione per campionamento, formato e streaming. I prompt sono gestiti separatamente.",
+    "PUT /v1.0/model-configurations/{id}": "Modifica · Configurazioni del modello",
+    "POST /v1.0/model-configurations/{id}/duplicate": "Crea una copia modificabile senza alterare l’origine; personale per impostazione predefinita dopo l’accesso. · Configurazioni del modello",
+    "DELETE /v1.0/model-configurations/{id}": "Elimina · Configurazioni del modello"
   },
   "apiGroups": {
     "General": "Generale",
@@ -562,7 +575,10 @@
     "Management - Permissions": "Gestione - Autorizzazioni",
     "Management - Assignments": "Gestione - Incarichi",
     "Ollama - Models": "Ollama - Modelli",
-    "Administration": "Amministrazione"
+    "Administration": "Amministrazione",
+    "Library": "Prompt di sistema / Configurazioni del modello",
+    "SystemPrompt": "Prompt di sistema",
+    "ModelConfiguration": "Configurazioni del modello"
   },
   "pull": {
     "complete": "Modello pronto",
@@ -744,7 +760,9 @@
       "Model": "Modelli",
       "Inference": "Inferenza",
       "Settings": "Impostazioni",
-      "RequestHistory": "Richiedere la cronologia"
+      "RequestHistory": "Richiedere la cronologia",
+      "SystemPrompt": "Prompt di sistema",
+      "ModelConfiguration": "Configurazioni del modello"
     },
     "operationTypes": {
       "All": "Tutte le operazioni",
@@ -925,5 +943,41 @@
     "headersLength": "Include Content-Length quando è nota la lunghezza del corpo di risposta.",
     "keepAlive": "Permette connessioni HTTP persistenti invece di chiudere dopo ogni scambio. Richiede riavvio.",
     "accessList": "Regole IP della modalità di accesso; applicate prima dell’elaborazione delle rotte."
+  },
+  "library": {
+    "promptsTitle": "Prompt di sistema",
+    "configurationsTitle": "Configurazioni del modello",
+    "promptsHelp": "Istruzioni riutilizzabili condivise nel sistema, nel tenant o private per il proprio account.",
+    "configurationsHelp": "Impostazioni di generazione per campionamento, formato e streaming. I prompt sono gestiti separatamente.",
+    "System": "Predefinito di sistema",
+    "Tenant": "Predefinito del tenant",
+    "User": "Personale",
+    "scope": "Visibilità",
+    "description": "Descrizione",
+    "updated": "Aggiornato",
+    "empty": "Nessun elemento disponibile in questo spazio.",
+    "create": "Crea",
+    "edit": "Modifica",
+    "duplicate": "Duplica",
+    "copySuffix": "copia",
+    "readOnlyHelp": "Stai creando una copia indipendente; le modifiche non cambiano l’originale.",
+    "deleteConfirm": "Eliminare «{{name}}»? Le conversazioni esistenti conservano i valori già inviati.",
+    "error": "Impossibile caricare o salvare la raccolta.",
+    "promptSelector": "Prompt di sistema",
+    "configurationSelector": "Configurazione del modello",
+    "noPrompt": "Nessun prompt di sistema",
+    "engineDefaults": "Valori del motore",
+    "editPrompt": "Modifica prompt selezionato",
+    "editConfiguration": "Modifica configurazione selezionata",
+    "managePrompts": "Gestisci prompt",
+    "manageConfigurations": "Gestisci configurazioni del modello",
+    "scopeHelp": "Gli elementi personali sono privati. Gli admin tenant pubblicano nel proprio tenant; gli admin di sistema globalmente.",
+    "nameHelp": "Usa un nome descrittivo in Playground. I nomi possono ripetersi; gli ID sono univoci.",
+    "descriptionHelp": "Spiega quando utilizzare l’elemento; questa nota non viene inviata al modello.",
+    "contentHelp": "Istruzioni prima dei messaggi. Salvare influisce sulle richieste future, non sulle risposte precedenti.",
+    "duplicateHelp": "Crea una copia modificabile senza alterare l’origine; personale per impostazione predefinita dopo l’accesso.",
+    "promptSelectorHelp": "Scegli istruzioni visibili al tuo account; prompt condivisi e privati sono raggruppati separatamente.",
+    "configurationSelectorHelp": "Scegli parametri salvati di campionamento, arresto, formato, ragionamento e streaming.",
+    "editSelectionHelp": "Modifica un elemento proprio o apre una copia di un predefinito condiviso in sola lettura."
   }
 }

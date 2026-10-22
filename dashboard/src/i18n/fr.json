@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "Accorder une attribution d'accréditation en fonction du rôle",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "Révoquer une attribution de portée d'accréditation",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "Répertorier les sessions de locataire sans matériel de jeton",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Révoquer une session de locataire"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Révoquer une session de locataire",
+    "GET /v1.0/library-context": "Les éléments personnels sont privés. Les admins du tenant publient dans leur tenant ; les admins système publient globalement.",
+    "GET /v1.0/system-prompts": "Instructions réutilisables partagées globalement, dans votre tenant, ou privées à votre compte.",
+    "POST /v1.0/system-prompts": "Créer · Prompts système",
+    "GET /v1.0/system-prompts/{id}": "Instructions réutilisables partagées globalement, dans votre tenant, ou privées à votre compte.",
+    "PUT /v1.0/system-prompts/{id}": "Modifier · Prompts système",
+    "POST /v1.0/system-prompts/{id}/duplicate": "Crée une copie modifiable sans changer la source ; personnelle par défaut après connexion. · Prompts système",
+    "DELETE /v1.0/system-prompts/{id}": "Supprimer · Prompts système",
+    "GET /v1.0/model-configurations": "Paramètres de génération réutilisables : échantillonnage, format et streaming. Les prompts sont gérés séparément.",
+    "POST /v1.0/model-configurations": "Créer · Configurations du modèle",
+    "GET /v1.0/model-configurations/{id}": "Paramètres de génération réutilisables : échantillonnage, format et streaming. Les prompts sont gérés séparément.",
+    "PUT /v1.0/model-configurations/{id}": "Modifier · Configurations du modèle",
+    "POST /v1.0/model-configurations/{id}/duplicate": "Crée une copie modifiable sans changer la source ; personnelle par défaut après connexion. · Configurations du modèle",
+    "DELETE /v1.0/model-configurations/{id}": "Supprimer · Configurations du modèle"
   },
   "apiGroups": {
     "General": "Général",
@@ -562,7 +575,10 @@
     "Management - Permissions": "Gestion - Autorisations",
     "Management - Assignments": "Gestion - Missions",
     "Ollama - Models": "Ollama - Modèles",
-    "Administration": "Administration"
+    "Administration": "Administration",
+    "Library": "Prompts système / Configurations du modèle",
+    "SystemPrompt": "Prompts système",
+    "ModelConfiguration": "Configurations du modèle"
   },
   "pull": {
     "complete": "Modèle prêt",
@@ -744,7 +760,9 @@
       "Model": "Modèles",
       "Inference": "Inférence",
       "Settings": "Paramètres",
-      "RequestHistory": "Historique des requêtes"
+      "RequestHistory": "Historique des requêtes",
+      "SystemPrompt": "Prompts système",
+      "ModelConfiguration": "Configurations du modèle"
     },
     "operationTypes": {
       "All": "Toutes les opérations",
@@ -925,5 +943,41 @@
     "headersLength": "Inclut Content-Length lorsque la longueur du corps de réponse est connue.",
     "keepAlive": "Autorise les connexions HTTP persistantes au lieu de fermer après chaque échange. Redémarrage requis.",
     "accessList": "Règles IP du mode de contrôle d’accès ; appliquées avant le traitement des routes."
+  },
+  "library": {
+    "promptsTitle": "Prompts système",
+    "configurationsTitle": "Configurations du modèle",
+    "promptsHelp": "Instructions réutilisables partagées globalement, dans votre tenant, ou privées à votre compte.",
+    "configurationsHelp": "Paramètres de génération réutilisables : échantillonnage, format et streaming. Les prompts sont gérés séparément.",
+    "System": "Valeur système",
+    "Tenant": "Valeur du tenant",
+    "User": "Personnel",
+    "scope": "Visibilité",
+    "description": "Description",
+    "updated": "Modifié",
+    "empty": "Aucun élément disponible dans cet espace.",
+    "create": "Créer",
+    "edit": "Modifier",
+    "duplicate": "Dupliquer",
+    "copySuffix": "copie",
+    "readOnlyHelp": "Vous créez une copie indépendante ; les modifications ne changent pas l’original.",
+    "deleteConfirm": "Supprimer « {{name}} » ? Les conversations existantes conservent les valeurs envoyées.",
+    "error": "Impossible de charger ou enregistrer la bibliothèque.",
+    "promptSelector": "Prompt système",
+    "configurationSelector": "Configuration du modèle",
+    "noPrompt": "Aucun prompt système",
+    "engineDefaults": "Valeurs du moteur",
+    "editPrompt": "Modifier le prompt sélectionné",
+    "editConfiguration": "Modifier la configuration sélectionnée",
+    "managePrompts": "Gérer les prompts",
+    "manageConfigurations": "Gérer les configurations du modèle",
+    "scopeHelp": "Les éléments personnels sont privés. Les admins du tenant publient dans leur tenant ; les admins système publient globalement.",
+    "nameHelp": "Choisissez un nom descriptif dans Playground. Les noms peuvent se répéter ; les ID restent uniques.",
+    "descriptionHelp": "Expliquez quand utiliser cet élément ; cette note n’est pas envoyée au modèle.",
+    "contentHelp": "Instructions placées avant les messages. L’enregistrement concerne les futures requêtes, pas les réponses passées.",
+    "duplicateHelp": "Crée une copie modifiable sans changer la source ; personnelle par défaut après connexion.",
+    "promptSelectorHelp": "Choisissez les instructions visibles pour votre compte ; valeurs partagées et privées sont groupées séparément.",
+    "configurationSelectorHelp": "Choisissez des paramètres enregistrés : échantillonnage, arrêts, format, réflexion et streaming.",
+    "editSelectionHelp": "Modifie un élément possédé ou ouvre une copie modifiable d’une valeur partagée en lecture seule."
   }
 }

@@ -157,6 +157,13 @@ namespace SharpAI.Database.SqlServer
                         "ALTER TABLE request_history ADD phasetimingsapproximate INT NULL",
                         "ALTER TABLE request_history ADD traceid NVARCHAR(512) NULL",
                         "ALTER TABLE request_history ADD spanid NVARCHAR(512) NULL"
+                    }),
+                    new SchemaMigration(7, "Scoped prompt and model configuration libraries", new List<string>
+                    {
+                        "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'library_items') CREATE TABLE library_items (id NVARCHAR(256) PRIMARY KEY, kind NVARCHAR(32) NOT NULL, name NVARCHAR(256) NOT NULL, description NVARCHAR(MAX), scope NVARCHAR(16) NOT NULL, tenantid NVARCHAR(64), userid NVARCHAR(64), content NVARCHAR(MAX), configurationjson NVARCHAR(MAX), createdutc NVARCHAR(256) NOT NULL, updatedutc NVARCHAR(256) NOT NULL)",
+                        "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_library_visibility') CREATE INDEX idx_library_visibility ON library_items (kind, scope, tenantid, userid)",
+                        "INSERT INTO library_items (id,kind,name,description,scope,content,configurationjson,createdutc,updatedutc) VALUES ('system-starter-prompt','SystemPrompt','Helpful assistant','General-purpose starter instructions.','System','You are a helpful assistant. Answer clearly and accurately.',NULL,'2026-10-22T00:00:00.0000000Z','2026-10-22T00:00:00.0000000Z')",
+                        "INSERT INTO library_items (id,kind,name,description,scope,content,configurationjson,createdutc,updatedutc) VALUES ('system-starter-configuration','ModelConfiguration','Balanced','A compact starting point for interactive chat.','System',NULL,'{\"Temperature\":0.6,\"MaxTokens\":128,\"StreamResponse\":true,\"Stop\":[]}', '2026-10-22T00:00:00.0000000Z','2026-10-22T00:00:00.0000000Z')"
                     })
                 };
             }

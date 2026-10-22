@@ -1,3 +1,5 @@
+import { LibrarySelectors } from './LibrarySelectors';
+import { defaultGeneration, generationRequest } from '../../api/library';
 import { Icon } from '../Icon';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,11 +13,6 @@ const ChatMarkdown=lazy(()=>import('./ChatMarkdown'));
 type Mode = 'chat' | 'embeddings';
 type Message = {role:'user'|'assistant';content:string; metrics?: Metrics};
 type Metrics = {ttft?:number;elapsed:number;input?:number;output?:number;generation?:number};
-const numericOptions = [
-  ['temperature',0,2,0.1],['num_predict',1,32768,1],['top_p',0,1,0.05],['top_k',0,100,1],['min_p',0,1,0.05],
-  ['repeat_penalty',0,2,0.05],['repeat_last_n',0,32768,1],['presence_penalty',-2,2,0.1],['frequency_penalty',-2,2,0.1],['seed',0,2147483647,1],
-] as const;
-
 /** Conversation playground with per-turn timing, usage, and request-scoped sampling controls. */
 export function PlaygroundView(): JSX.Element {
   const { t, i18n } = useTranslation();
@@ -32,12 +29,12 @@ export function PlaygroundView(): JSX.Element {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [system, setSystem] = useState('');
-  const [options, setOptions] = useState<Record<string,string>>({temperature:'0.6',num_predict:'128'});
-  const [stops, setStops] = useState('');
-  const [json, setJson] = useState(false);
-  const [thinking, setThinking] = useState(false);
-  const [streaming,setStreaming]=useState(true);
+  const [configuration,setConfiguration]=useState(defaultGeneration);
+  const [libraryReady,setLibraryReady]=useState(false);
+  const streaming=configuration.StreamResponse;
   const [quip,setQuip]=useState(0);
+  const [owner,setOwner]=useState(api);
+  if(owner!==api){setOwner(api);setMessages([]);setSystem('');setConfiguration(defaultGeneration());setLibraryReady(false);}
   useEffect(()=>{if(!busy)return;const interval=window.setInterval(()=>setQuip(current=>(current+1)%6),4000);return ()=>window.clearInterval(interval);},[busy]);
   useEffect(() => {
     void api.listModels().then((value) => {
@@ -49,7 +46,7 @@ export function PlaygroundView(): JSX.Element {
   useEffect(()=>{const element=log.current;if(element) element.scrollTop=element.scrollHeight;},[messages]);
   const number = (n:number) => new Intl.NumberFormat(i18n.language,{maximumFractionDigits:2}).format(n);
   const send = async (): Promise<void> => {
-    if (!model || !prompt.trim() || busy) return;
+    if (!model || !prompt.trim() || busy || (mode==='chat'&&!libraryReady)) return;
     controller.current = new AbortController();
     setBusy(true); setQuip(current=>(current+1+Math.floor(Math.random()*5))%6); setError(null); setVector(null);
     const form = document.getElementById('sa-chat-form') as HTMLFormElement | null;
@@ -65,10 +62,7 @@ export function PlaygroundView(): JSX.Element {
     if(mode==='chat') {setMessages([...conversation,{role:'assistant',content:'',metrics:stats}]);setPrompt('');}
     try {
       if (mode === 'chat') {
-        const submitted = Object.fromEntries(Object.entries(options).filter(([,v])=>v!=='').map(([k,v])=>[k,Number(v)]));
-        const request={model,messages:[...(system.trim() ? [{role:'system',content:system}] : []),...conversation.map(({role,content})=>({role,content}))],
-          options:{...submitted,display_thinking:thinking,...(stops.trim()?{stop:stops.split('\n').filter(Boolean)}:{})},
-          ...(json?{format:'json'}:{})};
+        const request={model,messages:[...(system.trim() ? [{role:'system',content:system}] : []),...conversation.map(({role,content})=>({role,content}))],...generationRequest(configuration)};
         const receive = (event:unknown):void => {
           const record = event as Record<string,unknown>;
           if(record.done===true) done=true;
@@ -104,7 +98,7 @@ export function PlaygroundView(): JSX.Element {
       <div className="sa-chat-tabs">{(['chat','embeddings'] as Mode[]).map(item=><button key={item} className={`sa-btn ${mode===item?'sa-btn--primary':''}`} disabled={busy} aria-pressed={mode===item} onClick={()=>setMode(item)}>{t(`playground.${item}`)}</button>)}<button className="sa-btn" disabled={busy || !messages.length} onClick={()=>{setMessages([]);setVector(null);setError(null);}}>{t('chat.clear')}</button></div>
     </div>
     <div className="sa-chat-layout">
-      <details className="sa-chat-settings"><summary>{t('chat.parameters')}</summary><p>{t('chat.defaults')}</p><fieldset disabled={busy || mode!=='chat'}><label className="sa-filterbar__field"><span>{t('chat.system')}</span><textarea value={system} onChange={e=>setSystem(e.target.value)}/></label><div className="sa-chat-options">{numericOptions.map(([key,min,max,step])=><label className="sa-filterbar__field" key={key}><span>{t(`sampling.${key}`)}</span><input form="sa-chat-form" type="number" min={min} max={max} step={step} value={options[key]??''} placeholder={t('chat.serverDefault')} onChange={e=>setOptions({...options,[key]:e.target.value})}/></label>)}</div><label className="sa-filterbar__field"><span>{t('chat.stop')}</span><textarea value={stops} onChange={e=>setStops(e.target.value)}/></label><label><input type="checkbox" checked={streaming} onChange={event=>setStreaming(event.target.checked)}/> {t('chat.streamToggle')}</label><label><input type="checkbox" checked={json} onChange={e=>setJson(e.target.checked)}/> {t('chat.json')}</label><label><input type="checkbox" checked={thinking} onChange={e=>setThinking(e.target.checked)}/> {t('chat.thinking')}</label></fieldset></details>
+      {mode==='chat'&&<LibrarySelectors busy={busy} onPromptChange={setSystem} onConfigurationChange={setConfiguration} onReady={setLibraryReady}/>}
       <section className="sa-chat-panel">
         <header className="sa-chat-header"><label className="sa-filterbar__field"><span className="sa-filterbar__label">{t('playground.model')}</span><select aria-label={t('playground.model')} disabled={busy} value={model} onChange={e=>{setModel(e.target.value);setMessages([]);}}><option value="" disabled>{t('chat.selectModel')}</option>{available.map(name=><option key={name} value={name}>{name}</option>)}</select></label></header>
         {modelError && <p role="alert" className="sa-error">{t('models.loadError')}</p>}
@@ -125,7 +119,7 @@ export function PlaygroundView(): JSX.Element {
           {mode==='embeddings' && vector && <article className="sa-chat-message"><strong>{t('playground.dimensions')}: {number(vector.length)} — {t('playground.preview')}</strong><pre>{`[${vector.slice(0,12).map(n=>n.toFixed(4)).join(', ')}${vector.length>12?', …':''}]`}</pre></article>}
         </div>
         {error && <p role="alert" className="sa-error">{error}</p>}
-        <form id="sa-chat-form" onInvalidCapture={()=>{const parameters=document.querySelector<HTMLDetailsElement>('.sa-chat-settings');if(parameters)parameters.open=true;}} className="sa-chat-composer" onSubmit={e=>{e.preventDefault();void send();}}><label className="sa-filterbar__field" data-help={mode==='embeddings'?'embeddingText':undefined}><textarea rows={1} aria-label={t(mode==='chat'?'playground.prompt':'playground.input')} disabled={busy} value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={t('chat.promptHelp')} onKeyDown={e=>{if(!e.shiftKey && e.key==='Enter'){e.preventDefault();void send();}}}/></label>{busy?<button type="button" className="sa-btn sa-btn--icon sa-chat-stop" aria-label={t('text.stopGenerating')} onClick={()=>controller.current?.abort()}><Icon name="stop"/></button>:<button className="sa-btn sa-btn--primary" disabled={!model || !prompt.trim()}>{t(mode==='chat'?'playground.send':'playground.embed')}</button>}<small className="sa-chat-warning">{t('chat.warning')}</small></form>
+        <form id="sa-chat-form" className="sa-chat-composer" onSubmit={e=>{e.preventDefault();void send();}}><label className="sa-filterbar__field" data-help={mode==='embeddings'?'embeddingText':undefined}><textarea rows={1} aria-label={t(mode==='chat'?'playground.prompt':'playground.input')} disabled={busy} value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={t('chat.promptHelp')} onKeyDown={e=>{if(!e.shiftKey && e.key==='Enter'){e.preventDefault();void send();}}}/></label>{busy?<button type="button" className="sa-btn sa-btn--icon sa-chat-stop" aria-label={t('text.stopGenerating')} onClick={()=>controller.current?.abort()}><Icon name="stop"/></button>:<button className="sa-btn sa-btn--primary" disabled={!model || !prompt.trim() || (mode==='chat'&&!libraryReady)}>{t(mode==='chat'?'playground.send':'playground.embed')}</button>}<small className="sa-chat-warning">{t('chat.warning')}</small></form>
       </section>
 
     </div>

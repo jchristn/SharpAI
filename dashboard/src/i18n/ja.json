@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "ロールスコープの資格情報の割り当てを付与する",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "資格証明スコープの割り当てを取り消す",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "トークンマテリアルなしのテナントセッションをリストする",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "テナントセッションを取り消す"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "テナントセッションを取り消す",
+    "GET /v1.0/library-context": "個人用は本人だけに表示。テナント管理者は自テナント、システム管理者は全体に公開できます。",
+    "GET /v1.0/system-prompts": "システム全体、テナント内、またはアカウント専用で使える再利用可能な指示。",
+    "POST /v1.0/system-prompts": "作成 · システムプロンプト",
+    "GET /v1.0/system-prompts/{id}": "システム全体、テナント内、またはアカウント専用で使える再利用可能な指示。",
+    "PUT /v1.0/system-prompts/{id}": "編集 · システムプロンプト",
+    "POST /v1.0/system-prompts/{id}/duplicate": "元を変更せず編集可能なコピーを作成。ログイン時は個人用が既定です。 · システムプロンプト",
+    "DELETE /v1.0/system-prompts/{id}": "削除 · システムプロンプト",
+    "GET /v1.0/model-configurations": "サンプリング、出力形式、ストリーミングの保存済み設定。プロンプトは別に管理します。",
+    "POST /v1.0/model-configurations": "作成 · モデル設定",
+    "GET /v1.0/model-configurations/{id}": "サンプリング、出力形式、ストリーミングの保存済み設定。プロンプトは別に管理します。",
+    "PUT /v1.0/model-configurations/{id}": "編集 · モデル設定",
+    "POST /v1.0/model-configurations/{id}/duplicate": "元を変更せず編集可能なコピーを作成。ログイン時は個人用が既定です。 · モデル設定",
+    "DELETE /v1.0/model-configurations/{id}": "削除 · モデル設定"
   },
   "apiGroups": {
     "General": "一般",
@@ -562,7 +575,10 @@
     "Management - Permissions": "管理 - 権限",
     "Management - Assignments": "管理 - 割り当て",
     "Ollama - Models": "オラマ - モデル",
-    "Administration": "管理"
+    "Administration": "管理",
+    "Library": "システムプロンプト / モデル設定",
+    "SystemPrompt": "システムプロンプト",
+    "ModelConfiguration": "モデル設定"
   },
   "pull": {
     "complete": "モデルの準備が完了しました",
@@ -744,7 +760,9 @@
       "Model": "モデル",
       "Inference": "推論",
       "Settings": "設定",
-      "RequestHistory": "リクエスト履歴"
+      "RequestHistory": "リクエスト履歴",
+      "SystemPrompt": "システムプロンプト",
+      "ModelConfiguration": "モデル設定"
     },
     "operationTypes": {
       "All": "すべての操作",
@@ -925,5 +943,41 @@
     "headersLength": "応答本文の長さが既知の場合に Content-Length を付加。",
     "keepAlive": "交換ごとに閉じず、HTTP 接続を維持。再起動で適用。",
     "accessList": "リスナーのアクセスモードで使う IP 規則。ルート処理前に適用。"
+  },
+  "library": {
+    "promptsTitle": "システムプロンプト",
+    "configurationsTitle": "モデル設定",
+    "promptsHelp": "システム全体、テナント内、またはアカウント専用で使える再利用可能な指示。",
+    "configurationsHelp": "サンプリング、出力形式、ストリーミングの保存済み設定。プロンプトは別に管理します。",
+    "System": "システム既定",
+    "Tenant": "テナント既定",
+    "User": "個人用",
+    "scope": "公開範囲",
+    "description": "説明",
+    "updated": "更新日時",
+    "empty": "このワークスペースに利用可能な項目はありません。",
+    "create": "作成",
+    "edit": "編集",
+    "duplicate": "複製",
+    "copySuffix": "コピー",
+    "readOnlyHelp": "独立したコピーを作成しています。共有元は変更されません。",
+    "deleteConfirm": "「{{name}}」を削除しますか？既存の会話は送信済みの値を保持します。",
+    "error": "ライブラリの読み込みまたは保存に失敗しました。",
+    "promptSelector": "システムプロンプト",
+    "configurationSelector": "モデル設定",
+    "noPrompt": "システムプロンプトなし",
+    "engineDefaults": "エンジン既定値",
+    "editPrompt": "選択プロンプトを編集",
+    "editConfiguration": "選択モデル設定を編集",
+    "managePrompts": "プロンプトを管理",
+    "manageConfigurations": "モデル設定を管理",
+    "scopeHelp": "個人用は本人だけに表示。テナント管理者は自テナント、システム管理者は全体に公開できます。",
+    "nameHelp": "Playground で区別しやすい名前にしてください。名前の重複は可能ですが ID は一意です。",
+    "descriptionHelp": "用途を説明してください。この説明はモデルに送信されません。",
+    "contentHelp": "会話の前に送る指示。保存は今後のリクエストに適用し、以前の応答は変えません。",
+    "duplicateHelp": "元を変更せず編集可能なコピーを作成。ログイン時は個人用が既定です。",
+    "promptSelectorHelp": "利用可能な指示を選択。共有の既定と個人用を別グループで表示します。",
+    "configurationSelectorHelp": "保存したサンプリング、停止、形式、思考、ストリーミングの設定を選択。",
+    "editSelectionHelp": "所有項目を編集。読み取り専用の共有既定の場合は編集可能なコピーを開きます。"
   }
 }

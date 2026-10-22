@@ -72,6 +72,7 @@ def main():
                 except (urllib.error.URLError, TimeoutError):
                     time.sleep(.1)
             request('GET', '/v1.0/auth/context', headers={}, expected=401)
+            request('GET', '/v1.0/system-prompts', headers={}, expected=401)
             context = request('GET', '/v1.0/auth/context')
             check(context['isAdmin'], 'API key receives platform administration context')
             seeded, _ = login('default', 'admin@sharpai.local', 'password')
@@ -89,6 +90,45 @@ def main():
             foreign = request('POST', other + '/users', {'Email': 'user@example.test', 'Password': password})
             tenant_admin, _ = login(a, ta['Email'], password)
             user_auth, old_token = login(a, user['Email'], password)
+            # Library ownership is intrinsic to human users, with explicit RBAC denies still honored.
+            library_ids={}
+            for library, payload in [('system-prompts', {'Content': 'Shared starter instructions'}), ('model-configurations', {'Configuration': {'Temperature': .7, 'MaxTokens': 256, 'TopP': .8, 'TopK': 30, 'MinP': .1, 'RepeatPenalty': 1.1, 'RepeatLastN': 32, 'PresencePenalty': .2, 'FrequencyPenalty': -.1, 'Seed': 9, 'Stop': ['END'], 'StreamResponse': False, 'JsonOutput': True, 'DisplayThinking': True}})]:
+                endpoint='/v1.0/'+library
+                system=request('POST',endpoint,{'Name':'Shared system','Scope':'System',**payload})
+                tenant_item=request('POST',endpoint,{'Name':'Shared tenant','Scope':'Tenant','TenantId':a,**payload},tenant_admin)
+                library_ids[library]=tenant_item['Id']
+                request('PUT',endpoint+'/'+tenant_item['Id'],{'Name':'Rescope','Scope':'User',**payload},tenant_admin,400)
+                other_tenant=request('POST',endpoint,{'Name':'Other tenant','Scope':'Tenant','TenantId':b,**payload})
+                private=request('POST',endpoint,{'Name':'My item','Scope':'User','TenantId':b,**payload},user_auth)
+                check(private['TenantId']==a and private['UserId']==user['Guid'],'Personal ownership is derived from the caller, not submitted tenant')
+                admin_private=request('POST',endpoint,{'Name':'Other user private','Scope':'User',**payload},tenant_admin)
+                visible=request('GET',endpoint,headers=user_auth)
+                visible_ids={item['Id'] for item in visible['Objects']}
+                check({system['Id'],tenant_item['Id'],private['Id']}<=visible_ids and not {other_tenant['Id'],admin_private['Id']}&visible_ids,'System and tenant defaults plus own private items are visible, without leaking another tenant or user')
+                check(next(item for item in visible['Objects'] if item['Id']==private['Id'])['CanEdit'] and not next(item for item in visible['Objects'] if item['Id']==system['Id'])['CanEdit'],'Edit capabilities follow item ownership')
+                request('GET',endpoint+'/'+admin_private['Id'],headers=user_auth,expected=404)
+                request('GET',endpoint+'/'+private['Id'],headers=tenant_admin,expected=404)
+                request('GET',endpoint+'?tenantId='+b,headers=user_auth,expected=403)
+                request('PUT',endpoint+'/'+system['Id'],{'Name':'Overwrite','Scope':'System',**payload},user_auth,403)
+                request('DELETE',endpoint+'/'+system['Id'],headers=user_auth,expected=403)
+                request('POST',endpoint,{'Name':'Escalated','Scope':'System',**payload},tenant_admin,403)
+                request('POST',endpoint,{'Name':'Escalated','Scope':'Tenant','TenantId':b,**payload},tenant_admin,403)
+                request('POST',endpoint,{'Name':'Escalated','Scope':'Tenant','TenantId':a,**payload},user_auth,403)
+                request('POST',endpoint,{'Name':'Forged owner','Scope':'User','UserId':ta['Guid'],**payload},user_auth,403)
+                copy=request('POST',endpoint+'/'+system['Id']+'/duplicate',{'Name':'Personal copy'},user_auth)
+                check(copy['Scope']=='User' and copy['UserId']==user['Guid'],'Duplicate defaults to the current user scope')
+                changed={**payload, 'Content':'Changed instructions'} if library=='system-prompts' else {'Configuration':{**payload['Configuration'],'Temperature':.2}}
+                edited=request('PUT',endpoint+'/'+copy['Id'],{'Name':'Edited copy','Scope':'User',**changed},user_auth)
+                unchanged=request('GET',endpoint+'/'+system['Id'],headers=user_auth)
+                check((edited['Content']!=unchanged['Content']) if library=='system-prompts' else edited['Configuration']['Temperature']!=unchanged['Configuration']['Temperature'],'Editing a duplicate leaves the shared source unchanged')
+                pages=[request('GET',endpoint+'?pageSize=1&pageNumber='+str(i),headers=user_auth)['Objects'][0]['Id'] for i in range(1,int(visible['TotalRecords'])+2)]
+                check(len(pages)==len(set(pages)) and private['Id'] in pages and admin_private['Id'] not in pages,'Pagination filters ownership before count and page boundaries')
+                request('POST',endpoint,{'Name':'No owner','Scope':'User',**payload},expected=400)
+                if library=='model-configurations':
+                    request('POST',endpoint,{'Name':'Invalid sampling','Scope':'User','Configuration':{'Temperature':3}},user_auth,400)
+                request('DELETE',endpoint+'/'+copy['Id'],headers=user_auth)
+                request('GET',endpoint+'/'+copy['Id'],headers=user_auth,expected=404)
+
             request('GET', '/v1.0/tenants', headers=tenant_admin, expected=403)
             request('POST', '/v1.0/tenants', {'Name': 'Escalated'}, tenant_admin, 403)
             request('POST', base + '/users', {'Email': 'escalate@example.test', 'Password': password, 'IsAdmin': True}, tenant_admin, 403)
@@ -108,18 +148,33 @@ def main():
             foreign_permission = request('POST', other + '/permissions', {'Name': 'Foreign', 'ResourceTypes': ['Model'], 'OperationTypes': ['Read'], 'Effect': 'Permit'})
             request('POST', base + '/roles/' + role['Guid'] + '/permissions/' + foreign_permission['Guid'], expected=404)
             request('POST', base + '/roles/' + role['Guid'] + '/permissions/' + permit['Guid'])
+            library_deny=request('POST',base+'/permissions',{'Name':'Deny prompt reads','ResourceTypes':['SystemPrompt'],'OperationTypes':['Read'],'Effect':'Deny'})
+            request('POST',base+'/roles/'+role['Guid']+'/permissions/'+library_deny['Guid'])
             mapped = request('GET', base + '/roles/' + role['Guid'] + '/permissions')
             check(any(item['Guid'] == permit['Guid'] for item in mapped), 'Custom role shows its permission mappings')
             request('POST', base + '/assignments', {'UserGuid': user['Guid'], 'RoleGuid': foreign_role['Guid']}, expected=400)
             request('POST', base + '/assignments', {'UserGuid': user['Guid'], 'RoleGuid': role['Guid'], 'ResourceScope': 'Resource'}, expected=400)
             assignment = request('POST', base + '/assignments', {'UserGuid': user['Guid'], 'RoleGuid': role['Guid'], 'ResourceScope': 'Tenant', 'InheritsToChildren': True})
             request('GET', '/v1/models', headers=user_auth)
+            request('GET','/v1.0/system-prompts',headers=user_auth,expected=403)
+            request('GET','/v1.0/model-configurations',headers=user_auth)
+            request('DELETE',base+'/roles/'+role['Guid']+'/permissions/'+library_deny['Guid'])
+            scoped_role=request('POST',base+'/roles',{'Name':'Deny one prompt'})
+            request('POST',base+'/roles/'+scoped_role['Guid']+'/permissions/'+library_deny['Guid'])
+            before_scope=request('GET','/v1.0/system-prompts',headers=user_auth)
+            scoped_assignment=request('POST',base+'/assignments',{'UserGuid':user['Guid'],'RoleGuid':scoped_role['Guid'],'ResourceScope':'Resource','ResourceGuid':library_ids['system-prompts']})
+            after_scope=request('GET','/v1.0/system-prompts?pageSize=1000',headers=user_auth)
+            check(int(after_scope['TotalRecords'])==int(before_scope['TotalRecords'])-1 and library_ids['system-prompts'] not in {row['Id'] for row in after_scope['Objects']},'Resource-specific read denials filter both list contents and totals')
+            request('GET','/v1.0/system-prompts/'+library_ids['system-prompts'],headers=user_auth,expected=403)
+            request('DELETE',base+'/assignments/'+scoped_assignment['Guid'])
+
             cred = request('POST', base + '/credentials', {'UserGuid': user['Guid'], 'Name': 'Integration'})
             credential_auth = {'x-access-key': cred['accessKey'], 'x-secret-key': cred['secretKey']}
             check(bool(cred['secretKey']), 'Creation returns a one-time secret')
             persisted = request('GET', base + '/credentials/' + cred['guid'])
             check(cred['secretKey'] not in json.dumps(persisted) and not persisted.get('SecretSha256'), 'Credential reads never return secrets or hashes')
             request('GET', '/v1/models', headers=credential_auth, expected=403)
+            request('GET', '/v1.0/system-prompts', headers=credential_auth, expected=403)
             scope = request('POST', base + '/credentials/' + cred['guid'] + '/assignments', {'RoleGuid': role['Guid'], 'ResourceScope': 'Tenant', 'InheritsToChildren': True})
             request('GET', '/v1/models', headers=credential_auth)
             request('DELETE', base + '/assignments/' + assignment['Guid'])
@@ -171,6 +226,40 @@ def main():
             request('PUT', '/v1.0/tenants/' + a, {'Name': 'Tenant A', 'Active': False})
             request('GET', '/v1.0/auth/context', headers=tenant_admin, expected=401)
             request('POST', '/v1.0/token', headers={'x-tenant-guid': a, 'x-email': ta['Email'], 'x-password': password}, expected=401)
+            library_history = next(item for item in history if item['Method']=='POST' and item['Path']=='/v1.0/system-prompts')
+            library_detail=request('GET','/v1.0/api/request-history/'+library_history['Id'])
+            check(library_detail.get('RequestBody')=='[private library payload withheld]','Shared request history cannot expose private library payloads')
+            # Open inference mode still resolves explicit identities for private libraries.
+            foreign_auth, _ = login(b, foreign['Email'], password)
+            settings['Auth']['Enabled'] = False
+            settings['Debug'] = {'RequestBody': True}
+            (runtime / 'sharpai.json').write_text(json.dumps(settings))
+            process.terminate()
+            process.wait(timeout=10)
+            process = subprocess.Popen(['dotnet', args.server_dll], cwd=runtime, stdout=log, stderr=subprocess.STDOUT)
+            for _ in range(300):
+                if process.poll() is not None: raise RuntimeError('Private open-mode server exited')
+                try:
+                    urllib.request.urlopen(root + '/health', timeout=1).close()
+                    break
+                except (urllib.error.URLError, TimeoutError): time.sleep(.1)
+            open_context=request('GET','/v1.0/library-context',headers={})
+            check(open_context['IsAdmin'] and not open_context.get('UserId'),'Anonymous open mode has platform rights but no private account identity')
+            user_context=request('GET','/v1.0/library-context',headers=foreign_auth)
+            check(not user_context['IsAdmin'] and user_context['UserId']==foreign['Guid'],'Explicit sign-in retains the real user identity when inference authentication is disabled')
+            open_private=request('POST','/v1.0/system-prompts',{'Name':'Open mode private','Scope':'User','Content':'Private account instructions'},foreign_auth)
+            anonymous_rows=request('GET','/v1.0/system-prompts',headers={})['Objects']
+            check(open_private['Id'] not in {row['Id'] for row in anonymous_rows},'Open anonymous access does not enumerate private records')
+            request('GET','/v1.0/system-prompts/'+open_private['Id'],headers={},expected=404)
+            request('POST','/v1.0/system-prompts',{'Name':'Not platform','Scope':'System','Content':'x'},foreign_auth,403)
+            request('GET','/v1.0/library-context',headers={'Authorization':'Bearer invalid'},expected=401)
+            persisted=request('GET','/v1.0/system-prompts?name=Shared%20system',headers=foreign_auth)
+            check(len(persisted['Objects'])==1,'Additive library migration and stored items survive restart without duplicate seeds')
+            request('GET','/v1.0/system-prompts?pageNumber=2147483647&pageSize=1000',headers=foreign_auth,expected=400)
+            request('POST','/v1.0/model-configurations',{'Name':'Mixed','Scope':'User','Configuration':{'SystemPrompt':'Not generation settings'}},foreign_auth,400)
+            request('POST','/v1.0/model-configurations',{'Name':'Mixed root','Scope':'User','Content':'Not generation settings','Configuration':{}},foreign_auth,400)
+            time.sleep(.2)
+            check('Private account instructions' not in (runtime/'server.log').read_text(),'Debug request-body logging withholds personal library content')
             print(f'{checks} isolated administration assertions passed', flush=True)
         finally:
             process.terminate()

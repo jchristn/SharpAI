@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "Gewähren Sie eine rollenbezogene Berechtigungszuweisung",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "Eine Zuweisung des Berechtigungsnachweisbereichs widerrufen",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "Mietersitzungen ohne Token-Material auflisten",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Eine Mandantensitzung widerrufen"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "Eine Mandantensitzung widerrufen",
+    "GET /v1.0/library-context": "Persönliche Einträge sind privat. Mandantenadmins veröffentlichen im eigenen Mandanten; Systemadmins im gesamten System.",
+    "GET /v1.0/system-prompts": "Wiederverwendbare Anweisungen für das System, Ihren Mandanten oder privat für Ihr Konto.",
+    "POST /v1.0/system-prompts": "Erstellen · System-Prompts",
+    "GET /v1.0/system-prompts/{id}": "Wiederverwendbare Anweisungen für das System, Ihren Mandanten oder privat für Ihr Konto.",
+    "PUT /v1.0/system-prompts/{id}": "Bearbeiten · System-Prompts",
+    "POST /v1.0/system-prompts/{id}/duplicate": "Erstellt eine bearbeitbare Kopie ohne Quelländerung; angemeldet standardmäßig persönlich. · System-Prompts",
+    "DELETE /v1.0/system-prompts/{id}": "Löschen · System-Prompts",
+    "GET /v1.0/model-configurations": "Gespeicherte Generierungseinstellungen für Sampling, Ausgabeformat und Streaming. System-Prompts werden separat verwaltet.",
+    "POST /v1.0/model-configurations": "Erstellen · Modellkonfigurationen",
+    "GET /v1.0/model-configurations/{id}": "Gespeicherte Generierungseinstellungen für Sampling, Ausgabeformat und Streaming. System-Prompts werden separat verwaltet.",
+    "PUT /v1.0/model-configurations/{id}": "Bearbeiten · Modellkonfigurationen",
+    "POST /v1.0/model-configurations/{id}/duplicate": "Erstellt eine bearbeitbare Kopie ohne Quelländerung; angemeldet standardmäßig persönlich. · Modellkonfigurationen",
+    "DELETE /v1.0/model-configurations/{id}": "Löschen · Modellkonfigurationen"
   },
   "apiGroups": {
     "General": "Allgemein",
@@ -562,7 +575,10 @@
     "Management - Permissions": "Verwaltung – Berechtigungen",
     "Management - Assignments": "Management – Aufgaben",
     "Ollama - Models": "Ollama – Modelle",
-    "Administration": "Verwaltung"
+    "Administration": "Verwaltung",
+    "Library": "System-Prompts / Modellkonfigurationen",
+    "SystemPrompt": "System-Prompts",
+    "ModelConfiguration": "Modellkonfigurationen"
   },
   "pull": {
     "complete": "Modell bereit",
@@ -744,7 +760,9 @@
       "Model": "Modelle",
       "Inference": "Schlussfolgerung",
       "Settings": "Einstellungen",
-      "RequestHistory": "Anfrageverlauf"
+      "RequestHistory": "Anfrageverlauf",
+      "SystemPrompt": "System-Prompts",
+      "ModelConfiguration": "Modellkonfigurationen"
     },
     "operationTypes": {
       "All": "Alle Operationen",
@@ -925,5 +943,41 @@
     "headersLength": "Fügt Content-Length hinzu, wenn die Antwortlänge bekannt ist.",
     "keepAlive": "Erlaubt dauerhafte HTTP-Verbindungen statt Schließen nach jedem Austausch. Neustart erforderlich.",
     "accessList": "IP-Regeln des Zugriffsmodus; gelten vor der Routenverarbeitung."
+  },
+  "library": {
+    "promptsTitle": "System-Prompts",
+    "configurationsTitle": "Modellkonfigurationen",
+    "promptsHelp": "Wiederverwendbare Anweisungen für das System, Ihren Mandanten oder privat für Ihr Konto.",
+    "configurationsHelp": "Gespeicherte Generierungseinstellungen für Sampling, Ausgabeformat und Streaming. System-Prompts werden separat verwaltet.",
+    "System": "Systemstandard",
+    "Tenant": "Mandantenstandard",
+    "User": "Persönlich",
+    "scope": "Sichtbarkeit",
+    "description": "Beschreibung",
+    "updated": "Aktualisiert",
+    "empty": "Keine Einträge in diesem Arbeitsbereich verfügbar.",
+    "create": "Erstellen",
+    "edit": "Bearbeiten",
+    "duplicate": "Duplizieren",
+    "copySuffix": "Kopie",
+    "readOnlyHelp": "Sie erstellen eine unabhängige Kopie; Änderungen betreffen nicht das Original.",
+    "deleteConfirm": "„{{name}}“ löschen? Bestehende Gespräche behalten bereits gesendete Werte.",
+    "error": "Bibliothek konnte nicht geladen oder gespeichert werden.",
+    "promptSelector": "System-Prompt",
+    "configurationSelector": "Modellkonfiguration",
+    "noPrompt": "Kein System-Prompt",
+    "engineDefaults": "Engine-Standardwerte",
+    "editPrompt": "Gewählten Prompt bearbeiten",
+    "editConfiguration": "Gewählte Konfiguration bearbeiten",
+    "managePrompts": "Prompts verwalten",
+    "manageConfigurations": "Modellkonfigurationen verwalten",
+    "scopeHelp": "Persönliche Einträge sind privat. Mandantenadmins veröffentlichen im eigenen Mandanten; Systemadmins im gesamten System.",
+    "nameHelp": "Wählen Sie einen aussagekräftigen Namen für Playground. Namen dürfen sich wiederholen; IDs bleiben eindeutig.",
+    "descriptionHelp": "Beschreiben Sie den Einsatzzweck; diese Notiz wird nicht an das Modell gesendet.",
+    "contentHelp": "Anweisungen vor den Gesprächsnachrichten. Speichern betrifft künftige Anfragen, nicht frühere Antworten.",
+    "duplicateHelp": "Erstellt eine bearbeitbare Kopie ohne Quelländerung; angemeldet standardmäßig persönlich.",
+    "promptSelectorHelp": "Wählen Sie sichtbare Anweisungen; gemeinsame und private Prompts sind getrennt gruppiert.",
+    "configurationSelectorHelp": "Wählen Sie gespeicherte Sampling-, Stopp-, Format-, Denk- und Streaming-Parameter.",
+    "editSelectionHelp": "Bearbeitet eigene Einträge oder öffnet eine Kopie eines schreibgeschützten gemeinsamen Standards."
   }
 }

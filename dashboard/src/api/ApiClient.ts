@@ -304,6 +304,20 @@ export class ApiClient {
     return this.request<EnumerationResult<unknown>>('GET', '/v1.0/api/audit', { query });
   }
 
+  /** Scoped reusable prompts and generation configurations. */
+  libraryContext(tenantId?:string):Promise<import('./library').LibraryContext> {
+    return this.request('GET','/v1.0/library-context',{query:tenantId?{tenantId}:undefined});
+  }
+  libraryList(kind:import('./library').LibraryKind,query?:Record<string,QueryValue>):Promise<EnumerationResult<import('./library').LibraryItem>> {
+    return this.request('GET',`/v1.0/${kind}`,{query});
+  }
+  librarySave(kind:import('./library').LibraryKind,body:Partial<import('./library').LibraryItem>,id?:string,duplicate=false):Promise<import('./library').LibraryItem> {
+    return this.request(id&&!duplicate?'PUT':'POST',`/v1.0/${kind}${id?`/${encodeURIComponent(id)}${duplicate?'/duplicate':''}`:''}`,{body});
+  }
+  libraryDelete(kind:import('./library').LibraryKind,id:string):Promise<unknown> {
+    return this.request('DELETE',`/v1.0/${kind}/${encodeURIComponent(id)}`);
+  }
+
   // ---- management (RBAC) ----
 
   administrationContext(): Promise<import('./administration').AdministrationContext> {

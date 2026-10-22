@@ -543,7 +543,20 @@
     "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": "授予角色范围的凭证分配",
     "DELETE /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": "撤销凭证范围分配",
     "GET /v1.0/tenants/{tenantGuid}/sessions": "列出没有令牌材料的租户会话",
-    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "撤销租户会话"
+    "DELETE /v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": "撤销租户会话",
+    "GET /v1.0/library-context": "个人项目仅本人可见；租户管理员可在本租户发布，系统管理员可全系统发布。",
+    "GET /v1.0/system-prompts": "可重复使用的指令，可全系统共享、租户内共享或仅由您的账户使用。",
+    "POST /v1.0/system-prompts": "创建 · 系统提示词",
+    "GET /v1.0/system-prompts/{id}": "可重复使用的指令，可全系统共享、租户内共享或仅由您的账户使用。",
+    "PUT /v1.0/system-prompts/{id}": "编辑 · 系统提示词",
+    "POST /v1.0/system-prompts/{id}/duplicate": "创建可编辑副本且不改变原件；登录后默认保存为个人项目。 · 系统提示词",
+    "DELETE /v1.0/system-prompts/{id}": "删除 · 系统提示词",
+    "GET /v1.0/model-configurations": "可重复使用的生成设置，包括采样、输出格式和流式响应；系统提示词单独管理。",
+    "POST /v1.0/model-configurations": "创建 · 模型配置",
+    "GET /v1.0/model-configurations/{id}": "可重复使用的生成设置，包括采样、输出格式和流式响应；系统提示词单独管理。",
+    "PUT /v1.0/model-configurations/{id}": "编辑 · 模型配置",
+    "POST /v1.0/model-configurations/{id}/duplicate": "创建可编辑副本且不改变原件；登录后默认保存为个人项目。 · 模型配置",
+    "DELETE /v1.0/model-configurations/{id}": "删除 · 模型配置"
   },
   "apiGroups": {
     "General": "概述",
@@ -562,7 +575,10 @@
     "Management - Permissions": "管理-权限",
     "Management - Assignments": "管理-作业",
     "Ollama - Models": "Ollama-模型",
-    "Administration": "管理"
+    "Administration": "管理",
+    "Library": "系统提示词 / 模型配置",
+    "SystemPrompt": "系统提示词",
+    "ModelConfiguration": "模型配置"
   },
   "pull": {
     "complete": "模型准备就绪",
@@ -744,7 +760,9 @@
       "Model": "型号",
       "Inference": "推论",
       "Settings": "设置",
-      "RequestHistory": "请求历史记录"
+      "RequestHistory": "请求历史记录",
+      "SystemPrompt": "系统提示词",
+      "ModelConfiguration": "模型配置"
     },
     "operationTypes": {
       "All": "所有操作",
@@ -925,5 +943,41 @@
     "headersLength": "已知响应正文长度时包含 Content-Length 响应头。",
     "keepAlive": "允许持久 HTTP 连接，而非每次交换后关闭；重启生效。",
     "accessList": "监听器访问控制模式使用的 IP 规则，在路由处理前应用。"
+  },
+  "library": {
+    "promptsTitle": "系统提示词",
+    "configurationsTitle": "模型配置",
+    "promptsHelp": "可重复使用的指令，可全系统共享、租户内共享或仅由您的账户使用。",
+    "configurationsHelp": "可重复使用的生成设置，包括采样、输出格式和流式响应；系统提示词单独管理。",
+    "System": "系统默认",
+    "Tenant": "租户默认",
+    "User": "个人",
+    "scope": "可见范围",
+    "description": "描述",
+    "updated": "更新于",
+    "empty": "此工作区没有可用项目。",
+    "create": "创建",
+    "edit": "编辑",
+    "duplicate": "复制副本",
+    "copySuffix": "副本",
+    "readOnlyHelp": "正在创建独立副本；更改不会影响共享原件。",
+    "deleteConfirm": "删除“{{name}}”？已有对话保留已提交的值。",
+    "error": "无法加载或保存资源库。",
+    "promptSelector": "系统提示词",
+    "configurationSelector": "模型配置",
+    "noPrompt": "无系统提示词",
+    "engineDefaults": "引擎默认值",
+    "editPrompt": "编辑所选系统提示词",
+    "editConfiguration": "编辑所选模型配置",
+    "managePrompts": "管理提示词",
+    "manageConfigurations": "管理模型配置",
+    "scopeHelp": "个人项目仅本人可见；租户管理员可在本租户发布，系统管理员可全系统发布。",
+    "nameHelp": "使用便于在 Playground 中区分的名称；名称可重复，ID 保持唯一。",
+    "descriptionHelp": "说明此项目适用的场景；描述不会发送给模型。",
+    "contentHelp": "在对话消息前插入的指令；保存影响后续请求，不改变之前的响应。",
+    "duplicateHelp": "创建可编辑副本且不改变原件；登录后默认保存为个人项目。",
+    "promptSelectorHelp": "选择您可见的指令，共享默认项和个人提示词分别分组显示。",
+    "configurationSelectorHelp": "选择已保存的采样、停止序列、格式、思考和流式响应设置。",
+    "editSelectionHelp": "编辑自己的项目；若为只读共享默认项，则打开独立可编辑副本。"
   }
 }

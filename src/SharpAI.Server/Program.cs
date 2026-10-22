@@ -621,7 +621,8 @@ namespace SharpAI.Server
 
                 if (_Settings.Debug.RequestBody)
                 {
-                    if (ctx.Request.ChunkedTransfer) SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "chunked request body detected, skipping logging");
+                    if (SharpAI.Server.Classes.Runtime.LibraryPrivacy.IsLibraryPath(ctx.Request.Url?.RawWithQuery)) SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "private library request body withheld");
+                    else if (ctx.Request.ChunkedTransfer) SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "chunked request body detected, skipping logging");
                     else if (!String.IsNullOrEmpty(ctx.Request.DataAsString))
                     {
                         SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "request body:" + Environment.NewLine + ctx.Request.DataAsString);
@@ -670,6 +671,7 @@ namespace SharpAI.Server
             SharpAI.Server.API.REST.Routes.GeneralRoutes.Register(_RouteContext);
             SharpAI.Server.API.REST.Routes.SettingsRoutes.Register(_RouteContext);
             SharpAI.Server.API.REST.Routes.RequestHistoryRoutes.Register(_RouteContext);
+            SharpAI.Server.API.REST.Routes.LibraryRoutes.Register(_RouteContext);
             SharpAI.Server.API.REST.Routes.OllamaInferenceRoutes.Register(_RouteContext, _OllamaApiHandler, _TokenSource.Token);
             SharpAI.Server.API.REST.Routes.OpenAIInferenceRoutes.Register(_RouteContext, _OpenAIApiHandler, _TokenSource.Token);
 

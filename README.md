@@ -819,3 +819,11 @@ This project is licensed under the MIT License.
 ## Operator interface plans and diagnostics
 
 See [the TUI implementation plan](TUI_PLAN.md) for the proposed C#/TUIKit client and complete dashboard parity checklist. The TUI is planned, not yet shipped. Current dashboard diagnostics are documented in [request and inference history](docs/HISTORY_TELEMETRY.md), [JSON logging](docs/LOGGING.md), and [Access administration](docs/DASHBOARD_ADMINISTRATION.md).
+
+### Scoped prompt and model-configuration libraries
+
+The dashboard manages system-wide defaults, tenant defaults and private user items on the **System prompts**
+and **Model configurations** pages. Playground selects these saved items using two dropdowns and adjacent
+edit actions. Users can duplicate shared defaults into their personal library; administrators may publish
+to their authorized shared scopes. See [Scoped libraries](docs/SCOPED_LIBRARIES.md) for ownership rules,
+API operations and migration behavior. Legacy model presets remain available independently.
