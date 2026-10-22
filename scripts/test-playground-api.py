@@ -20,8 +20,8 @@ def main():
         checks += 1
         print('PASS', description)
 
-    for protocol in ('ollama', 'openai'):
-        for stream in (False, True):
+    for protocol in ['ollama', 'openai']:
+        for stream in [False, True]:
             body = {'model': args.model, 'messages': [{'role': 'user', 'content': 'Reply with only OK. /no_think'}], 'stream': stream}
             options = {'temperature': 0, 'top_p': 0.9, 'presence_penalty': 0.1, 'frequency_penalty': 0.1, 'seed': 42}
             if protocol == 'ollama':

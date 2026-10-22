@@ -71,7 +71,7 @@ namespace Test.Xunit
                     {
                         for (int i = 0; i < slots; i++)
                         {
-                            var sequence = engine.GenerateTextStreamAsync("Once upon a time", 8).GetAsyncEnumerator();
+                            IAsyncEnumerator<string>? sequence = engine.GenerateTextStreamAsync("Once upon a time", 8).GetAsyncEnumerator();
                             held.Add(sequence); Assert.True(await sequence.MoveNextAsync());
                         }
                         Assert.Equal(slots, engine.ActiveGenerations);
@@ -80,7 +80,7 @@ namespace Test.Xunit
                         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => engine.GenerateTextAsync("Once", 2, 0, null!, null!, cancelled.Token, new InferenceStatistics()));
                         Assert.Equal(slots, engine.ActiveGenerations);
                     }
-                    finally { foreach (var sequence in held) await sequence.DisposeAsync(); }
+                    finally { foreach (IAsyncEnumerator<string>? sequence in held) await sequence.DisposeAsync(); }
                     Assert.Equal(0, engine.ActiveGenerations);
                     await Task.WhenAll(Enumerable.Range(0, slots).Select(_ => engine.GenerateTextAsync("Once upon a time", 2)));
                     Assert.Equal(0, engine.ActiveGenerations);
@@ -99,14 +99,14 @@ namespace Test.Xunit
         {
             using ModelEngineService service = new ModelEngineService(new LoggingModule());
             LlamaSharpEngine engine = await service.GetByModelFileAsync(ModelFixture.Path!);
-            await using (var stream = engine.GenerateTextStreamAsync("Once upon a time", 8).GetAsyncEnumerator())
+            await using (IAsyncEnumerator<string>? stream = engine.GenerateTextStreamAsync("Once upon a time", 8).GetAsyncEnumerator())
             {
                 Assert.True(await stream.MoveNextAsync());
                 Assert.False(service.UnloadModel(ModelFixture.Path!));
                 Assert.False(engine.IsDisposed);
             }
             Assert.True(service.UnloadModel(ModelFixture.Path!)); Assert.True(engine.IsDisposed);
-            var reloaded = await service.GetByModelFileAsync(ModelFixture.Path!);
+            LlamaSharpEngine? reloaded = await service.GetByModelFileAsync(ModelFixture.Path!);
             Assert.NotSame(engine, reloaded); Assert.NotEmpty(await reloaded.GenerateTextAsync("Once", outputTokens));
         }
     }

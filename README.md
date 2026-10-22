@@ -150,7 +150,7 @@ using SharpAI;
 using SyslogLogging;
 
 // Initialize the AI driver
-var ai = new AIDriver(
+AIDriver ai = new AIDriver(
     logging: new LoggingModule(), 
     databaseFilename: "./sharpai.db",     
     huggingFaceApiKey: "hf_xxxxxxxxxxxx", 
@@ -302,7 +302,7 @@ SharpAI includes prompt builders to format conversations for different model typ
 ```csharp
 using SharpAI.Prompts;
 
-var messages = new List<ChatMessage>
+List<ChatMessage> messages = new List<ChatMessage>
 {
     new ChatMessage { Role = "system", Content = "You are a helpful assistant." },
     new ChatMessage { Role = "user", Content = "What is the capital of France?" },
@@ -380,7 +380,7 @@ Write a haiku about programming
 */
 
 // Code generation with context
-var context = new Dictionary<string, string>
+Dictionary<string, string> context = new Dictionary<string, string>
 {
     ["language"] = "python",
     ["requirements"] = "Include error handling"
@@ -411,10 +411,10 @@ Answer:
 */
 
 // Few-shot examples
-var examples = new List<(string input, string output)>
+List<PromptExample> examples = new List<PromptExample>
 {
-    ("2+2", "4"),
-    ("5*3", "15")
+    new PromptExample("2+2", "4"),
+    new PromptExample("5*3", "15")
 };
 
 string fewShotPrompt = TextPromptBuilder.BuildWithExamples(
@@ -569,7 +569,22 @@ SharpAI automatically detects GPU availability and optimizes layer allocation at
 - AMD GPUs (ROCm/Vulkan not supported)
 - Intel GPUs (SYCL/Vulkan not supported)
 
-The `NativeLibraryBootstrapper` automatically detects your platform and GPU at startup, selecting the appropriate backend (CPU, CUDA, or Metal). See the [Requirements](#-requirements) section for detailed GPU requirements.
+The SharpAI library automatically selects CPU, CUDA, or Metal before loading a model. On native macOS ARM64, the packaged Metal backend is selected and model layers are offloaded by default. The server delegates to the same library initializer.
+
+For embedded use, backend selection runs automatically through `LlamaSharpEngine` (including engines created by `AIDriver`):
+
+```csharp
+using SharpAI.Classes.Runtime;
+using SharpAI.Engines;
+
+using LlamaSharpEngine engine = new LlamaSharpEngine();
+await engine.InitializeAsync("model.gguf");
+Console.WriteLine(NativeBackendInfo.SelectedBackend);
+```
+
+`SHARPAI_FORCE_BACKEND=cpu` disables automatic acceleration. `SHARPAI_GPU_LAYERS=0` keeps the selected backend but loads model layers on the CPU; positive values limit offloaded layers, and `-1` requests all layers. Set `SHARPAI_ENABLE_NATIVE_LOGGING=true` to inspect native offload messages.
+
+Embedded applications can call `NativeBackendInitializer.Initialize` with `NativeBackendOptions` before the first native operation to supply custom backend paths. `NativeLibraryLoader.Configure(path, "metal")` also supports an explicit library and backend identity. Configuration is process-wide; later automatic initialization preserves the initial selection. See the [Requirements](#-requirements) section for hardware requirements.
 
 ## 🐳 Running in Docker
 

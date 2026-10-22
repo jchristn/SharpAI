@@ -70,14 +70,14 @@ Install-Package SharpAI.Sdk
 using SharpAI.Sdk;
 
 // Initialize the SDK
-var sdk = new SharpAISdk("http://localhost:8000");
+SharpAISdk sdk = new SharpAISdk("http://localhost:8000");
 
 // List available models
-var models = await sdk.Ollama.ListLocalModels();
+List<OllamaLocalModel>? models = await sdk.Ollama.ListLocalModels();
 Console.WriteLine($"Found {models?.Count ?? 0} models");
 
 // Generate a completion
-var request = new OllamaGenerateCompletionRequest
+OllamaGenerateCompletionRequest request = new OllamaGenerateCompletionRequest
 {
     Model = "llama2",
     Prompt = "The meaning of life is",
@@ -88,14 +88,14 @@ var request = new OllamaGenerateCompletionRequest
     }
 };
 
-var result = await sdk.Ollama.GenerateCompletion(request);
+OllamaGenerateCompletionResult? result = await sdk.Ollama.GenerateCompletion(request);
 Console.WriteLine($"Completion: {result?.Response}");
 ```
 
 ### With Logging
 
 ```csharp
-var sdk = new SharpAISdk("http://localhost:8000");
+SharpAISdk sdk = new SharpAISdk("http://localhost:8000");
 sdk.LogRequests = true;
 sdk.LogResponses = true;
 sdk.Logger = (level, message) => Console.WriteLine($"[{level}] {message}");
@@ -134,22 +134,22 @@ public SharpAISdk(string endpoint)
 
 ```csharp
 // List local models
-var models = await sdk.Ollama.ListLocalModels();
+List<OllamaLocalModel>? models = await sdk.Ollama.ListLocalModels();
 
 // Pull a model with streaming progress
-var pullRequest = new OllamaPullModelRequest
+OllamaPullModelRequest pullRequest = new OllamaPullModelRequest
 {
     Model = "llama2"
 };
 
-await foreach (var progress in sdk.Ollama.PullModel(pullRequest))
+await foreach (SharpAIPullModelResponse progress in sdk.Ollama.PullModel(pullRequest))
 {
     Console.WriteLine($"Status: {progress.Status}");
     if (progress.IsComplete()) break;
 }
 
 // Delete a model
-var deleteRequest = new OllamaDeleteModelRequest
+OllamaDeleteModelRequest deleteRequest = new OllamaDeleteModelRequest
 {
     Model = "llama2"
 };
@@ -160,7 +160,7 @@ await sdk.Ollama.DeleteModel(deleteRequest);
 
 ```csharp
 // Non-streaming completion
-var request = new OllamaGenerateCompletionRequest
+OllamaGenerateCompletionRequest request = new OllamaGenerateCompletionRequest
 {
     Model = "llama2",
     Prompt = "The future of AI is",
@@ -171,11 +171,11 @@ var request = new OllamaGenerateCompletionRequest
     }
 };
 
-var result = await sdk.Ollama.GenerateCompletion(request);
+OllamaGenerateCompletionResult? result = await sdk.Ollama.GenerateCompletion(request);
 Console.WriteLine($"Completion: {result?.Response}");
 
 // Streaming completion
-await foreach (var chunk in sdk.Ollama.GenerateCompletionStream(request))
+await foreach (OllamaStreamingCompletionResult chunk in sdk.Ollama.GenerateCompletionStream(request))
 {
     Console.Write(chunk.Response);
 }
@@ -185,12 +185,12 @@ await foreach (var chunk in sdk.Ollama.GenerateCompletionStream(request))
 
 ```csharp
 // Non-streaming chat
-var messages = new List<OllamaChatMessage>
+List<OllamaChatMessage> messages = new List<OllamaChatMessage>
 {
     new OllamaChatMessage { Role = "user", Content = "Hello, how are you?" }
 };
 
-var chatRequest = new OllamaGenerateChatCompletionRequest
+OllamaGenerateChatCompletionRequest chatRequest = new OllamaGenerateChatCompletionRequest
 {
     Model = "llama2",
     Messages = messages,
@@ -201,11 +201,11 @@ var chatRequest = new OllamaGenerateChatCompletionRequest
     }
 };
 
-var chatResult = await sdk.Ollama.GenerateChatCompletion(chatRequest);
+OllamaGenerateCompletionResult? chatResult = await sdk.Ollama.GenerateChatCompletion(chatRequest);
 Console.WriteLine($"Assistant: {chatResult?.Response}");
 
 // Streaming chat
-await foreach (var chunk in sdk.Ollama.GenerateChatCompletionStream(chatRequest))
+await foreach (OllamaGenerateChatCompletionChunk chunk in sdk.Ollama.GenerateChatCompletionStream(chatRequest))
 {
     Console.Write(chunk.Message?.Content);
 }
@@ -215,23 +215,23 @@ await foreach (var chunk in sdk.Ollama.GenerateChatCompletionStream(chatRequest)
 
 ```csharp
 // Single text embedding
-var embeddingRequest = new OllamaGenerateEmbeddingsRequest
+OllamaGenerateEmbeddingsRequest embeddingRequest = new OllamaGenerateEmbeddingsRequest
 {
     Model = "llama2",
     Input = "This is a test sentence"
 };
 
-var embeddingResult = await sdk.Ollama.GenerateEmbeddings(embeddingRequest);
+OllamaGenerateEmbeddingsResult? embeddingResult = await sdk.Ollama.GenerateEmbeddings(embeddingRequest);
 Console.WriteLine($"Embedding dimensions: {embeddingResult?.Embedding?.Length}");
 
 // Multiple text embeddings
-var multipleRequest = new OllamaGenerateEmbeddingsRequest
+OllamaGenerateEmbeddingsRequest multipleRequest = new OllamaGenerateEmbeddingsRequest
 {
     Model = "llama2"
 };
 multipleRequest.SetInputs(new[] { "First text", "Second text", "Third text" });
 
-var multipleResult = await sdk.Ollama.GenerateMultipleEmbeddings(multipleRequest);
+OllamaGenerateEmbeddingsResult? multipleResult = await sdk.Ollama.GenerateMultipleEmbeddings(multipleRequest);
 Console.WriteLine($"Generated {multipleResult?.Embeddings?.Count} embeddings");
 ```
 
@@ -241,7 +241,7 @@ Console.WriteLine($"Generated {multipleResult?.Embeddings?.Count} embeddings");
 
 ```csharp
 // Non-streaming completion
-var request = new OpenAIGenerateCompletionRequest
+OpenAIGenerateCompletionRequest request = new OpenAIGenerateCompletionRequest
 {
     Model = "llama2",
     Prompt = "The future of AI is",
@@ -249,11 +249,11 @@ var request = new OpenAIGenerateCompletionRequest
     Temperature = 0.7f
 };
 
-var result = await sdk.OpenAI.GenerateCompletionAsync(request);
+OpenAIGenerateCompletionResult? result = await sdk.OpenAI.GenerateCompletionAsync(request);
 Console.WriteLine($"Completion: {result?.Choices?[0]?.Text}");
 
 // Streaming completion
-await foreach (var chunk in sdk.OpenAI.GenerateCompletionStreamAsync(request))
+await foreach (OpenAIStreamingCompletionResult chunk in sdk.OpenAI.GenerateCompletionStreamAsync(request))
 {
     Console.Write(chunk?.Choices?[0]?.Text);
 }
@@ -263,12 +263,12 @@ await foreach (var chunk in sdk.OpenAI.GenerateCompletionStreamAsync(request))
 
 ```csharp
 // Non-streaming chat
-var messages = new List<OpenAIChatMessage>
+List<OpenAIChatMessage> messages = new List<OpenAIChatMessage>
 {
     new OpenAIChatMessage { Role = "user", Content = "Hello, how are you?" }
 };
 
-var chatRequest = new OpenAIGenerateChatCompletionRequest
+OpenAIGenerateChatCompletionRequest chatRequest = new OpenAIGenerateChatCompletionRequest
 {
     Model = "llama2",
     Messages = messages,
@@ -276,11 +276,11 @@ var chatRequest = new OpenAIGenerateChatCompletionRequest
     Temperature = 0.7f
 };
 
-var result = await sdk.OpenAI.GenerateChatCompletionAsync(chatRequest);
+OpenAIGenerateChatCompletionResult? result = await sdk.OpenAI.GenerateChatCompletionAsync(chatRequest);
 Console.WriteLine($"Assistant: {result?.Choices?[0]?.Message?.Content}");
 
 // Streaming chat
-await foreach (var chunk in sdk.OpenAI.GenerateChatCompletionStreamAsync(chatRequest))
+await foreach (OpenAIStreamingCompletionResult chunk in sdk.OpenAI.GenerateChatCompletionStreamAsync(chatRequest))
 {
     Console.Write(chunk?.Choices?[0]?.Text);
 }
@@ -290,23 +290,23 @@ await foreach (var chunk in sdk.OpenAI.GenerateChatCompletionStreamAsync(chatReq
 
 ```csharp
 // Single text embedding
-var embeddingRequest = new OpenAIGenerateEmbeddingsRequest
+OpenAIGenerateEmbeddingsRequest embeddingRequest = new OpenAIGenerateEmbeddingsRequest
 {
     Model = "llama2",
     Input = "This is a test sentence"
 };
 
-var embeddingResult = await sdk.OpenAI.GenerateEmbeddingsAsync(embeddingRequest);
+OpenAIGenerateEmbeddingsResult? embeddingResult = await sdk.OpenAI.GenerateEmbeddingsAsync(embeddingRequest);
 Console.WriteLine($"Embedding dimensions: {embeddingResult?.Data?[0]?.Embedding?.Length}");
 
 // Multiple text embeddings
-var multipleRequest = new OpenAIGenerateEmbeddingsRequest
+OpenAIGenerateEmbeddingsRequest multipleRequest = new OpenAIGenerateEmbeddingsRequest
 {
     Model = "llama2"
 };
 multipleRequest.SetInputs(new[] { "First text", "Second text", "Third text" });
 
-var multipleResult = await sdk.OpenAI.GenerateMultipleEmbeddingsAsync(multipleRequest);
+OpenAIGenerateEmbeddingsResult? multipleResult = await sdk.OpenAI.GenerateMultipleEmbeddingsAsync(multipleRequest);
 Console.WriteLine($"Generated {multipleResult?.Data?.Count} embeddings");
 ```
 
@@ -317,13 +317,13 @@ SharpAI.Sdk provides comprehensive model management capabilities:
 ### Pulling Models
 
 ```csharp
-var pullRequest = new OllamaPullModelRequest
+OllamaPullModelRequest pullRequest = new OllamaPullModelRequest
 {
     Model = "TheBloke/Llama-2-7B-Chat-GGUF"
 };
 
 Console.WriteLine("Downloading model with progress updates...");
-await foreach (var progress in sdk.Ollama.PullModel(pullRequest))
+await foreach (SharpAIPullModelResponse progress in sdk.Ollama.PullModel(pullRequest))
 {
     if (!string.IsNullOrEmpty(progress.Status))
     {
@@ -331,8 +331,8 @@ await foreach (var progress in sdk.Ollama.PullModel(pullRequest))
         
         if (progress.Downloaded.HasValue && progress.Percent.HasValue)
         {
-            var percentage = progress.GetProgressPercentage();
-            var progressStr = progress.GetFormattedProgress();
+            double? percentage = progress.GetProgressPercentage();
+            string progressStr = progress.GetFormattedProgress();
             Console.Write($" - {progressStr}");
         }
     }
@@ -354,11 +354,11 @@ await foreach (var progress in sdk.Ollama.PullModel(pullRequest))
 ### Listing Models
 
 ```csharp
-var models = await sdk.Ollama.ListLocalModels();
+List<OllamaLocalModel>? models = await sdk.Ollama.ListLocalModels();
 if (models != null && models.Count > 0)
 {
     Console.WriteLine($"Found {models.Count} models:");
-    foreach (var model in models)
+    foreach (OllamaLocalModel model in models)
     {
         Console.WriteLine($"  - {model.Name} (Size: {model.Size} bytes)");
         if (model.Details != null)
@@ -379,7 +379,7 @@ Both Ollama and OpenAI APIs support streaming for real-time token generation:
 
 ```csharp
 // Streaming text completion
-var request = new OllamaGenerateCompletionRequest
+OllamaGenerateCompletionRequest request = new OllamaGenerateCompletionRequest
 {
     Model = "llama2",
     Prompt = "Write a story about",
@@ -391,13 +391,13 @@ var request = new OllamaGenerateCompletionRequest
 };
 
 Console.WriteLine("Streaming completion:");
-await foreach (var chunk in sdk.Ollama.GenerateCompletionStream(request))
+await foreach (OllamaStreamingCompletionResult chunk in sdk.Ollama.GenerateCompletionStream(request))
 {
     Console.Write(chunk.Response);
 }
 
 // Streaming chat completion
-var chatRequest = new OllamaGenerateChatCompletionRequest
+OllamaGenerateChatCompletionRequest chatRequest = new OllamaGenerateChatCompletionRequest
 {
     Model = "llama2",
     Messages = new List<OllamaChatMessage>
@@ -412,7 +412,7 @@ var chatRequest = new OllamaGenerateChatCompletionRequest
 };
 
 Console.WriteLine("Streaming chat:");
-await foreach (var chunk in sdk.Ollama.GenerateChatCompletionStream(chatRequest))
+await foreach (OllamaGenerateChatCompletionChunk chunk in sdk.Ollama.GenerateChatCompletionStream(chatRequest))
 {
     Console.Write(chunk.Message?.Content);
 }
@@ -422,7 +422,7 @@ await foreach (var chunk in sdk.Ollama.GenerateChatCompletionStream(chatRequest)
 
 ```csharp
 // Streaming text completion
-var request = new OpenAIGenerateCompletionRequest
+OpenAIGenerateCompletionRequest request = new OpenAIGenerateCompletionRequest
 {
     Model = "llama2",
     Prompt = "Write a story about",
@@ -431,13 +431,13 @@ var request = new OpenAIGenerateCompletionRequest
 };
 
 Console.WriteLine("Streaming completion:");
-await foreach (var chunk in sdk.OpenAI.GenerateCompletionStreamAsync(request))
+await foreach (OpenAIStreamingCompletionResult chunk in sdk.OpenAI.GenerateCompletionStreamAsync(request))
 {
     Console.Write(chunk?.Choices?[0]?.Text);
 }
 
 // Streaming chat completion
-var chatRequest = new OpenAIGenerateChatCompletionRequest
+OpenAIGenerateChatCompletionRequest chatRequest = new OpenAIGenerateChatCompletionRequest
 {
     Model = "llama2",
     Messages = new List<OpenAIChatMessage>
@@ -449,7 +449,7 @@ var chatRequest = new OpenAIGenerateChatCompletionRequest
 };
 
 Console.WriteLine("Streaming chat:");
-await foreach (var chunk in sdk.OpenAI.GenerateChatCompletionStreamAsync(chatRequest))
+await foreach (OpenAIStreamingCompletionResult chunk in sdk.OpenAI.GenerateChatCompletionStreamAsync(chatRequest))
 {
     Console.Write(chunk?.Choices?[0]?.Text);
 }
@@ -462,7 +462,7 @@ The SDK handles errors gracefully and returns null for failed operations:
 ```csharp
 try
 {
-    var result = await sdk.Ollama.GenerateCompletion(request);
+    OllamaGenerateCompletionResult? result = await sdk.Ollama.GenerateCompletion(request);
     
     if (result == null)
     {
@@ -484,14 +484,14 @@ catch (Exception ex)
 ### Timeout Configuration
 
 ```csharp
-var sdk = new SharpAISdk("http://localhost:8000");
+SharpAISdk sdk = new SharpAISdk("http://localhost:8000");
 sdk.TimeoutMs = 120000; // 2 minutes
 ```
 
 ### Logging Configuration
 
 ```csharp
-var sdk = new SharpAISdk("http://localhost:8000");
+SharpAISdk sdk = new SharpAISdk("http://localhost:8000");
 sdk.LogRequests = true;
 sdk.LogResponses = true;
 sdk.Logger = (level, message) => 

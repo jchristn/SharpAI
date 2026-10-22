@@ -32,10 +32,10 @@ namespace Test.Shared
                     (path, bytes, fraction) => { if (checkpoint == "partial" && bytes >= 131072) Pause(); });
                 return 0;
             }
-            using var db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(root, "registry.db") }, new LoggingModule());
-            var registry = new ModelFileService(new LoggingModule(), new CheckpointRegistry(db.Models, () => { if (checkpoint == "registering") Pause(); }, model => { if (checkpoint == "registered") { File.WriteAllText(Path.Combine(root, "result"), model.GUID.ToString()); Pause(); } }), root);
-            var upstream = new HuggingFaceClient(new LoggingModule(), null!, url);
-            var model = await ModelPullService.PullAsync(upstream, registry, root, "org/split", progress:
+            using DatabaseDriverBase? db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(root, "registry.db") }, new LoggingModule());
+            ModelFileService? registry = new ModelFileService(new LoggingModule(), new CheckpointRegistry(db.Models, () => { if (checkpoint == "registering") Pause(); }, model => { if (checkpoint == "registered") { File.WriteAllText(Path.Combine(root, "result"), model.GUID.ToString()); Pause(); } }), root);
+            HuggingFaceClient? upstream = new HuggingFaceClient(new LoggingModule(), null!, url);
+            SharpAI.Models.ModelFile? model = await ModelPullService.PullAsync(upstream, registry, root, "org/split", progress:
                 (path, bytes, fraction) => { if (checkpoint == "verified" && File.Exists(path)) Pause(); });
             File.WriteAllText(Path.Combine(root, "result"), model.GUID.ToString());
             if (checkpoint == "registered") Pause();
@@ -52,7 +52,7 @@ namespace Test.Shared
             public SharpAI.Models.ModelFile GetByName(string name) => _Inner.GetByName(name);
             public System.Collections.Generic.List<SharpAI.Models.ModelFile> GetMany(System.Collections.Generic.List<Guid> guids) => _Inner.GetMany(guids);
             public bool ExistsByGuid(Guid guid) => _Inner.ExistsByGuid(guid);
-            public SharpAI.Models.ModelFile Add(SharpAI.Models.ModelFile model) { _Checkpoint(); var result = _Inner.Add(model); _After(result); return result; }
+            public SharpAI.Models.ModelFile Add(SharpAI.Models.ModelFile model) { _Checkpoint(); SharpAI.Models.ModelFile? result = _Inner.Add(model); _After(result); return result; }
             public SharpAI.Models.ModelFile Update(SharpAI.Models.ModelFile model) => _Inner.Update(model);
             public void Delete(Guid guid) => _Inner.Delete(guid);
         }

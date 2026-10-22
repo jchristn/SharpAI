@@ -161,7 +161,9 @@ namespace SharpAI
             if (string.IsNullOrWhiteSpace(prompt))
                 return prompt;
 
-            (string docExtractRaw, string vectorHitsRaw) = ExtractSourcesFromPrompt(prompt);
+            PromptSources sources = ExtractSourcesFromPrompt(prompt);
+            string docExtractRaw = sources.DocumentExtract;
+            string vectorHitsRaw = sources.VectorHits;
             if (string.IsNullOrWhiteSpace(docExtractRaw) && string.IsNullOrWhiteSpace(vectorHitsRaw))
                 return prompt;
 
@@ -199,11 +201,11 @@ namespace SharpAI
             return processed;
         }
 
-        private (string docExtract, string vectorHits) ExtractSourcesFromPrompt(string prompt)
+        private PromptSources ExtractSourcesFromPrompt(string prompt)
         {
             string doc = ExtractByTag(prompt, "DOC_EXTRACT");
             string vec = ExtractByTag(prompt, "VECTOR_HITS");
-            return (doc, vec);
+            return new PromptSources(doc, vec);
         }
 
         private string ExtractByTag(string prompt, string tagName)
@@ -412,7 +414,7 @@ namespace SharpAI
             if (queryWords.Length == 0)
                 return chunks.Take(5).ToList();
 
-            List<(int score, string chunk)> scored = new List<(int score, string chunk)>(chunks.Count);
+            List<ScoredTextChunk> scored = new List<ScoredTextChunk>(chunks.Count);
             foreach (string chunk in chunks)
             {
                 int s = 0;
@@ -421,16 +423,16 @@ namespace SharpAI
                     if (chunk.AsSpan().IndexOf(qw, StringComparison.OrdinalIgnoreCase) >= 0)
                         s++;
                 }
-                if (s > 0) scored.Add((s, chunk));
+                if (s > 0) scored.Add(new ScoredTextChunk(s, chunk));
             }
 
             List<string> result;
             if (scored.Count > 0)
             {
                 result = scored
-                    .OrderByDescending(t => t.score)
+                    .OrderByDescending(t => t.Score)
                     .Take(5)
-                    .Select(t => t.chunk)
+                    .Select(t => t.Chunk)
                     .ToList();
             }
             else

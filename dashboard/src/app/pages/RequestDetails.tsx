@@ -43,13 +43,25 @@ export function RequestDetails({row,inference}:{row:Record<string,unknown>;infer
   const {t,i18n}=useTranslation();
   const get=(key:string):unknown=>row[key]??row[key[0].toLowerCase()+key.slice(1)];
   const duration=Number(get('DurationMs')??0);
-  const timing=[['TtftMs','chat.ttft'],['StreamDurationMs','chat.streaming'],['QueueMs','details.queue'],['LoadMs','details.load'],['PromptMs','details.prompt'],['GenerationMs','details.generation'],['EngineTotalMs','details.engineTotal']] as const;
-  const counts=[['InputTokens','chat.inputTokens'],['OutputTokens','chat.outputTokens'],['CachedTokens','details.cached']] as const;
+  const timing=[
+  {key:'TtftMs',label:'chat.ttft'},
+  {key:'StreamDurationMs',label:'chat.streaming'},
+  {key:'QueueMs',label:'details.queue'},
+  {key:'LoadMs',label:'details.load'},
+  {key:'PromptMs',label:'details.prompt'},
+  {key:'GenerationMs',label:'details.generation'},
+  {key:'EngineTotalMs',label:'details.engineTotal'},
+];
+  const counts=[
+  {key:'InputTokens',label:'chat.inputTokens'},
+  {key:'OutputTokens',label:'chat.outputTokens'},
+  {key:'CachedTokens',label:'details.cached'},
+];
   return <div className="sa-request-detail">
     {get('DetailUnavailable')===true && <p role="alert">{t('details.loadFailed')}</p>}
     <header className="sa-request-detail-summary"><strong>{String(get('Method')??'')} {String(get('Path')??'')}</strong><span>{t('requestHistory.colStatus')}: {String(get('StatusCode')??'')}</span><span>{formatDurationMs(duration,i18n.language)}</span><CopyableId value={String(get('Id')??'')}/></header>
     <dl className="sa-detail-metadata">{['CreatedUtc','CompletedUtc','Url','SourceIp','TenantId','UserId','PrincipalName','ModelName','IsStreaming','TraceId','SpanId','Cancelled','PhaseTimingsApproximate'].map(key=><div key={key}><dt>{t(`details.${key}`)}</dt><dd>{get(key)==null?t('details.unavailable'):key.endsWith('Utc')?formatDateTime(String(get(key)),i18n.language,'UTC'):typeof get(key)==='boolean'?t(get(key)?'admin.yes':'admin.no'):String(get(key))}</dd></div>)}</dl>
-    {(inference || get('InputTokens')!=null) && <section><h2>{t('chat.telemetry')}</h2><div className="sa-detail-timings">{timing.map(([key,label])=><div key={key}><span>{t(label)}</span><strong>{get(key)==null?t('details.unavailable'):formatDurationMs(Number(get(key)),i18n.language)}</strong><meter aria-label={t(label)} min={0} max={Math.max(duration,...timing.map(([name])=>Number(get(name)??0)),1)} value={Number(get(key)??0)}/></div>)}</div><div className="sa-detail-tokens">{counts.map(([key,label])=><div key={key}><span>{t(label)}</span><strong>{get(key)==null?t('details.unavailable'):formatNumber(Number(get(key)),i18n.language)}</strong></div>)}<div><span>{t('chat.totalTokens')}</span><strong>{get('InputTokens')==null || get('OutputTokens')==null?t('details.unavailable'):formatNumber(Number(get('InputTokens'))+Number(get('OutputTokens')),i18n.language)}</strong></div></div><p className="sa-page-description">{t('details.measurementNote')}</p></section>}
-    <div className="sa-detail-exchange">{(['Request','Response'] as const).map(side=><section key={side}><h2>{t(`details.${side}`)}</h2><header className="sa-payload-heading"><h3>{t('details.headers')}</h3><CopyButton value={JSON.stringify(get(`${side}Headers`)??{},null,2)}/></header><Headers value={get(`${side}Headers`)}/><header className="sa-payload-heading"><h3>{t('details.body')}</h3>{get(`${side}Body`)!=null && <CopyButton value={String(get(`${side}Body`))}/>}</header><p className="sa-page-description">{formatNumber(Number(get(`${side}BodyBytes`)??0),i18n.language)} {t('details.bytes')} · {t(get(`${side}BodyTruncated`)?'details.truncated':'details.complete')}</p><Payload value={get(`${side}Body`)} raw={side==='Request'}/></section>)}</div>
+    {(inference || get('InputTokens')!=null) && <section><h2>{t('chat.telemetry')}</h2><div className="sa-detail-timings">{timing.map(({key,label})=><div key={key}><span>{t(label)}</span><strong>{get(key)==null?t('details.unavailable'):formatDurationMs(Number(get(key)),i18n.language)}</strong><meter aria-label={t(label)} min={0} max={Math.max(duration,...timing.map(({key:name})=>Number(get(name)??0)),1)} value={Number(get(key)??0)}/></div>)}</div><div className="sa-detail-tokens">{counts.map(({key,label})=><div key={key}><span>{t(label)}</span><strong>{get(key)==null?t('details.unavailable'):formatNumber(Number(get(key)),i18n.language)}</strong></div>)}<div><span>{t('chat.totalTokens')}</span><strong>{get('InputTokens')==null || get('OutputTokens')==null?t('details.unavailable'):formatNumber(Number(get('InputTokens'))+Number(get('OutputTokens')),i18n.language)}</strong></div></div><p className="sa-page-description">{t('details.measurementNote')}</p></section>}
+    <div className="sa-detail-exchange">{(['Request','Response']).map(side=><section key={side}><h2>{t(`details.${side}`)}</h2><header className="sa-payload-heading"><h3>{t('details.headers')}</h3><CopyButton value={JSON.stringify(get(`${side}Headers`)??{},null,2)}/></header><Headers value={get(`${side}Headers`)}/><header className="sa-payload-heading"><h3>{t('details.body')}</h3>{get(`${side}Body`)!=null && <CopyButton value={String(get(`${side}Body`))}/>}</header><p className="sa-page-description">{formatNumber(Number(get(`${side}BodyBytes`)??0),i18n.language)} {t('details.bytes')} · {t(get(`${side}BodyTruncated`)?'details.truncated':'details.complete')}</p><Payload value={get(`${side}Body`)} raw={side==='Request'}/></section>)}</div>
   </div>;
 }

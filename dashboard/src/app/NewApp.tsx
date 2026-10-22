@@ -1,3 +1,4 @@
+import type { AdministrationSection } from '../api/administration';
 import '../theme/tokens.css';
 import { ControlHelp } from './ControlHelp';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
@@ -57,9 +58,9 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
             <Route path="/inference-history" element={<InferenceHistoryView />} />
             <Route path="/api-explorer" element={<ApiExplorerView />} />
             <Route path="/observability" element={<ObservabilityView />} />
-            {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] as const).map(section=><Route key={section} path={`/${section}`} element={<AccessView section={section}/>}/>)}
+            {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] satisfies AdministrationSection[]).map(section=><Route key={section} path={`/${section}`} element={<AccessView section={section}/>}/>)}
             <Route path="/access" element={<AccessView/>}/>
-            {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] as const).map(section=><Route key={section} path={`/access/${section}`} element={<AccessView section={section}/>}/>)}
+            {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] satisfies AdministrationSection[]).map(section=><Route key={section} path={`/access/${section}`} element={<AccessView section={section}/>}/>)}
             <Route path="/settings" element={<SettingsView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

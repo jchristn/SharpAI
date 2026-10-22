@@ -84,7 +84,7 @@ namespace Test.Xunit
         public async Task CancellationAndEarlyDisposalReleaseSlot(bool cancel)
         {
             long cancellations = 0;
-            using var listener = new System.Diagnostics.Metrics.MeterListener();
+            using System.Diagnostics.Metrics.MeterListener? listener = new System.Diagnostics.Metrics.MeterListener();
             listener.InstrumentPublished = (instrument, owner) => { if (instrument.Name == "sharpai.inference.cancellations") owner.EnableMeasurementEvents(instrument); };
             listener.SetMeasurementEventCallback<long>((instrument, value, tags, state) => Interlocked.Add(ref cancellations, value));
             listener.Start();

@@ -10,7 +10,14 @@ function u64(n) { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); retu
 function u32(n) { const b = Buffer.alloc(4); b.writeUInt32LE(n); return b; }
 function str(s) { const b = Buffer.from(s); return Buffer.concat([u64(b.length), b]); }
 function gguf(arch = 'llama') {
-  const entries = [['general.architecture', arch], ['llama.block_count', 4], ['llama.context_length', 2048], ['llama.attention.head_count', 8], ['llama.attention.head_count_kv', 2], ['llama.embedding_length', 256]];
+  const entries = [
+  {key:'general.architecture',value:arch},
+  {key:'llama.block_count',value:4},
+  {key:'llama.context_length',value:2048},
+  {key:'llama.attention.head_count',value:8},
+  {key:'llama.attention.head_count_kv',value:2},
+  {key:'llama.embedding_length',value:256},
+];
   return Buffer.concat([Buffer.from('GGUF'), u32(3), u64(0), u64(entries.length), ...entries.map(([key, value]) => Buffer.concat([str(key), typeof value === 'string' ? Buffer.concat([u32(8), str(value)]) : Buffer.concat([u32(4), u32(value)])]))]);
 }
 const hash = b => crypto.createHash('sha256').update(b).digest('hex');

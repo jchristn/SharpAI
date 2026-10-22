@@ -28,13 +28,13 @@ namespace Test.Automated.Tests
             ApiDetails pullEmbeddingsModel = CreateApiDetails("Pull Embeddings Model");
             try
             {
-                var embeddingsModelName = TestEnvironment.EmbeddingsModel;
+                string? embeddingsModelName = TestEnvironment.EmbeddingsModel;
 
-                var pullRequest = new OllamaPullModelRequest { Model = embeddingsModelName };
-                var pullStream = SharpAISdk.Ollama.PullModel(pullRequest);
+                OllamaPullModelRequest? pullRequest = new OllamaPullModelRequest { Model = embeddingsModelName };
+                IAsyncEnumerable<SharpAI.Sdk.Models.SharpAIPullModelResponse>? pullStream = SharpAISdk.Ollama.PullModel(pullRequest);
 
                 bool pullSuccess = false;
-                await foreach (var progress in pullStream)
+                await foreach (SharpAI.Sdk.Models.SharpAIPullModelResponse? progress in pullStream)
                 {
                     if (progress.HasError())
                     {
@@ -73,13 +73,13 @@ namespace Test.Automated.Tests
             ApiDetails pullCompletionsModel = CreateApiDetails("Pull Completions Model");
             try
             {
-                var completionsModelName = TestEnvironment.CompletionsModel;
+                string? completionsModelName = TestEnvironment.CompletionsModel;
 
-                var pullRequest = new OllamaPullModelRequest { Model = completionsModelName };
-                var pullStream = SharpAISdk.Ollama.PullModel(pullRequest);
+                OllamaPullModelRequest? pullRequest = new OllamaPullModelRequest { Model = completionsModelName };
+                IAsyncEnumerable<SharpAI.Sdk.Models.SharpAIPullModelResponse>? pullStream = SharpAISdk.Ollama.PullModel(pullRequest);
 
                 bool pullSuccess = false;
-                await foreach (var progress in pullStream)
+                await foreach (SharpAI.Sdk.Models.SharpAIPullModelResponse? progress in pullStream)
                 {
                     if (progress.HasError())
                     {
@@ -120,13 +120,13 @@ namespace Test.Automated.Tests
                 ApiDetails pullChatCompletionsModel = CreateApiDetails("Pull Chat Completions Model");
                 try
                 {
-                    var chatCompletionsModelName = TestEnvironment.ChatCompletionsModel;
+                    string? chatCompletionsModelName = TestEnvironment.ChatCompletionsModel;
 
-                    var pullRequest = new OllamaPullModelRequest { Model = chatCompletionsModelName };
-                    var pullStream = SharpAISdk.Ollama.PullModel(pullRequest);
+                    OllamaPullModelRequest? pullRequest = new OllamaPullModelRequest { Model = chatCompletionsModelName };
+                    IAsyncEnumerable<SharpAI.Sdk.Models.SharpAIPullModelResponse>? pullStream = SharpAISdk.Ollama.PullModel(pullRequest);
 
                     bool pullSuccess = false;
-                    await foreach (var progress in pullStream)
+                    await foreach (SharpAI.Sdk.Models.SharpAIPullModelResponse? progress in pullStream)
                     {
                         if (progress.HasError())
                         {

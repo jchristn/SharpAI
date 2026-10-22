@@ -1,5 +1,6 @@
 namespace SharpAI.Sdk.Implementations
 {
+    using System.Collections.Generic;
     using System.Text;
     using System.Text.Json;
     using RestWrapper;
@@ -69,9 +70,9 @@ namespace SharpAI.Sdk.Implementations
                                     {
                                         string chunkText = Encoding.UTF8.GetString(chunk.Data);
 
-                                        var lines = chunkText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                        string[]? lines = chunkText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-                                        foreach (var line in lines)
+                                        foreach (string? line in lines)
                                         {
                                             if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -230,13 +231,13 @@ namespace SharpAI.Sdk.Implementations
                 throw new ArgumentNullException(nameof(request));
             string url = _Sdk.Endpoint + "/api/embed";
             string json;
-            var inputs = request.GetInputs();
+            string[]? inputs = request.GetInputs();
             if (inputs != null && inputs.Length > 1)
             {
-                var customRequest = new
+                Dictionary<string, object> customRequest = new Dictionary<string, object>
                 {
-                    model = request.Model,
-                    input = inputs
+                    { "model", request.Model },
+                    { "input", inputs }
                 };
                 json = JsonSerializer.Serialize(customRequest, _Sdk._JsonOptions);
             }
@@ -313,12 +314,12 @@ namespace SharpAI.Sdk.Implementations
 
             string url = _Sdk.Endpoint + "/api/chat";
 
-            await foreach (var streamingResult in _Sdk.PostStreamAsync<OllamaStreamingCompletionResult>(
+            await foreach (OllamaStreamingCompletionResult? streamingResult in _Sdk.PostStreamAsync<OllamaStreamingCompletionResult>(
                 url,
                 request,
                 cancellationToken))
             {
-                var result = new OllamaGenerateChatCompletionChunk
+                OllamaGenerateChatCompletionChunk? result = new OllamaGenerateChatCompletionChunk
                 {
                     Model = streamingResult.Model,
                     CreatedAt = streamingResult.CreatedAt,
@@ -342,7 +343,7 @@ namespace SharpAI.Sdk.Implementations
 
             string url = _Sdk.Endpoint + "/api/generate";
 
-            await foreach (var result in _Sdk.PostStreamAsync<OllamaStreamingCompletionResult>(
+            await foreach (OllamaStreamingCompletionResult? result in _Sdk.PostStreamAsync<OllamaStreamingCompletionResult>(
                 url,
                 request,
                 cancellationToken))

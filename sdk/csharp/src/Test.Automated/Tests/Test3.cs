@@ -27,8 +27,8 @@ namespace Test.Automated.Tests
             ApiDetails singleEmbeddings = CreateApiDetails("Single Embeddings");
             try
             {
-                var request = Helpers.CreateOllamaSingleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, "test");
-                var embeddingsResult = await SharpAISdk.Ollama.GenerateEmbeddings(request);
+                SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest? request = Helpers.CreateOllamaSingleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, "test");
+                SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult? embeddingsResult = await SharpAISdk.Ollama.GenerateEmbeddings(request);
 
                 if (embeddingsResult == null)
                 {
@@ -63,8 +63,8 @@ namespace Test.Automated.Tests
             ApiDetails multiEmbeddings = CreateApiDetails("Multiple Embeddings");
             try
             {
-                var request = Helpers.CreateOllamaMultipleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, new List<string> { "hello", "world" });
-                var embeddingsResult = await SharpAISdk.Ollama.GenerateMultipleEmbeddings(request);
+                SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest? request = Helpers.CreateOllamaMultipleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, new List<string> { "hello", "world" });
+                SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult? embeddingsResult = await SharpAISdk.Ollama.GenerateMultipleEmbeddings(request);
 
                 if (embeddingsResult == null)
                 {
@@ -101,8 +101,8 @@ namespace Test.Automated.Tests
             ApiDetails completions = CreateApiDetails("Completions");
             try
             {
-                var request = Helpers.CreateOllamaCompletionRequest(TestEnvironment.CompletionsModel, "What is the capital of France?", false);
-                var completionResult = await SharpAISdk.Ollama.GenerateCompletion(request);
+                SharpAI.Models.Ollama.OllamaGenerateCompletionRequest? request = Helpers.CreateOllamaCompletionRequest(TestEnvironment.CompletionsModel, "What is the capital of France?", false);
+                SharpAI.Models.Ollama.OllamaGenerateCompletionResult? completionResult = await SharpAISdk.Ollama.GenerateCompletion(request);
 
                 if (completionResult == null)
                 {
@@ -137,9 +137,9 @@ namespace Test.Automated.Tests
             ApiDetails chatCompletions = CreateApiDetails("Chat Completions");
             try
             {
-                var messages = Helpers.CreateOllamaChatMessages("Hello, how are you?");
-                var request = Helpers.CreateOllamaChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, false);
-                var chatResult = await SharpAISdk.Ollama.GenerateChatCompletion(request);
+                List<SharpAI.Models.Ollama.OllamaChatMessage>? messages = Helpers.CreateOllamaChatMessages("Hello, how are you?");
+                SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest? request = Helpers.CreateOllamaChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, false);
+                SharpAI.Models.Ollama.OllamaGenerateCompletionResult? chatResult = await SharpAISdk.Ollama.GenerateChatCompletion(request);
 
                 if (chatResult == null)
                 {

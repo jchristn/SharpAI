@@ -145,11 +145,11 @@
                 Console.WriteLine("");
 
                 // Check for existing models
-                var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
+                List<SharpAI.Models.ModelFile>? models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
                 if (models.Count > 0)
                 {
                     Console.WriteLine($"Found {models.Count} existing model(s):");
-                    foreach (var model in models)
+                    foreach (SharpAI.Models.ModelFile? model in models)
                     {
                         Console.WriteLine($"  - {model.Name} ({model.ContentLength / 1024 / 1024} MB)");
                     }
@@ -229,7 +229,7 @@
 
         static void SetCurrentModel()
         {
-            var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
+            List<SharpAI.Models.ModelFile>? models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
             if (models.Count == 0)
             {
                 Console.WriteLine("No models available. Use 'models add' to download a model.");
@@ -278,7 +278,7 @@
                     }
                 };
 
-                var model = await _AIDriver.Models.Add(modelName, new Dictionary<string, int>(), progressCallback);
+                SharpAI.Models.ModelFile? model = await _AIDriver.Models.Add(modelName, new Dictionary<string, int>(), progressCallback);
                 Console.WriteLine($"Successfully added model: {model.Name}");
                 Console.WriteLine($"  GUID: {model.GUID}");
                 Console.WriteLine($"  Size: {model.ContentLength / 1024 / 1024} MB");
@@ -299,7 +299,7 @@
 
         static void ListModels()
         {
-            var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
+            List<SharpAI.Models.ModelFile>? models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
             if (models.Count == 0)
             {
                 Console.WriteLine("No models found.");
@@ -308,7 +308,7 @@
 
             Console.WriteLine($"Found {models.Count} model(s):");
             Console.WriteLine("");
-            foreach (var model in models)
+            foreach (SharpAI.Models.ModelFile? model in models)
             {
                 Console.WriteLine($"Name: {model.Name}");
                 Console.WriteLine($"  GUID: {model.GUID}");
@@ -325,7 +325,7 @@
 
         static void DeleteModel()
         {
-            var models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
+            List<SharpAI.Models.ModelFile>? models = _AIDriver.Models.Enumerate(new SharpAI.Models.EnumerationQuery { PageSize = 1000 }).Objects;
             if (models.Count == 0)
             {
                 Console.WriteLine("No models available to delete.");
@@ -341,7 +341,7 @@
             int selection = Inputty.GetInteger("Select model number to delete:", 1, true, true);
             if (selection > 0)
             {
-                var modelToDelete = models[selection - 1];
+                SharpAI.Models.ModelFile? modelToDelete = models[selection - 1];
                 bool confirm = Inputty.GetBoolean($"Are you sure you want to delete '{modelToDelete.Name}'?", false);
 
                 if (confirm)
@@ -375,7 +375,7 @@
 
             try
             {
-                var model = _AIDriver.Models.GetByName(modelName);
+                SharpAI.Models.ModelFile? model = _AIDriver.Models.GetByName(modelName);
                 if (model == null)
                 {
                     Console.WriteLine($"Model '{modelName}' not found.");
@@ -417,7 +417,7 @@
 
             try
             {
-                var embeddings = await _AIDriver.Embeddings.Generate(_CurrentModel, input);
+                float[]? embeddings = await _AIDriver.Embeddings.Generate(_CurrentModel, input);
 
                 Console.WriteLine($"Generated {embeddings.Length} dimensional embeddings:");
                 Console.WriteLine("");
@@ -452,7 +452,7 @@
             if (!EnsureModelSelected()) return;
 
             Console.WriteLine("Enter texts to generate embeddings for (empty line to finish):");
-            var inputs = new List<string>();
+            List<string>? inputs = new List<string>();
 
             while (true)
             {
@@ -471,7 +471,7 @@
 
             try
             {
-                var embeddingsBatch = await _AIDriver.Embeddings.Generate(_CurrentModel, inputs.ToArray());
+                float[][]? embeddingsBatch = await _AIDriver.Embeddings.Generate(_CurrentModel, inputs.ToArray());
 
                 Console.WriteLine($"Generated embeddings for {embeddingsBatch.Length} texts:");
                 Console.WriteLine("");
@@ -507,7 +507,7 @@
 
             try
             {
-                var completion = await _AIDriver.Completion.GenerateCompletion(
+                string? completion = await _AIDriver.Completion.GenerateCompletion(
                     _CurrentModel,
                     prompt,
                     maxTokens,
@@ -541,7 +541,7 @@
             try
             {
                 int charCount = 0;
-                await foreach (var chunk in _AIDriver.Completion.GenerateCompletionStreaming(
+                await foreach (string? chunk in _AIDriver.Completion.GenerateCompletionStreaming(
                     _CurrentModel,
                     prompt,
                     maxTokens,
@@ -582,7 +582,7 @@
 
             try
             {
-                var completion = await _AIDriver.Chat.GenerateCompletion(
+                string? completion = await _AIDriver.Chat.GenerateCompletion(
                     _CurrentModel,
                     prompt,
                     maxTokens,
@@ -620,7 +620,7 @@
             try
             {
                 int charCount = 0;
-                await foreach (var chunk in _AIDriver.Chat.GenerateCompletionStreaming(
+                await foreach (string? chunk in _AIDriver.Chat.GenerateCompletionStreaming(
                     _CurrentModel,
                     prompt,
                     maxTokens,
@@ -662,19 +662,19 @@
             {
                 // Test single embedding
                 Console.WriteLine("Test 1: Single text embedding");
-                var embedding = await _AIDriver.Embeddings.Generate(_CurrentModel, "Hello, world!");
+                float[]? embedding = await _AIDriver.Embeddings.Generate(_CurrentModel, "Hello, world!");
                 Console.WriteLine($"✓ Generated embedding with {embedding.Length} dimensions");
 
                 // Test batch embeddings
                 Console.WriteLine("\nTest 2: Batch embeddings");
-                var batch = await _AIDriver.Embeddings.Generate(_CurrentModel, new[] { "First text", "Second text", "Third text" });
+                float[][]? batch = await _AIDriver.Embeddings.Generate(_CurrentModel, new[] { "First text", "Second text", "Third text" });
                 Console.WriteLine($"✓ Generated {batch.Length} embeddings");
 
                 // Test similarity
                 Console.WriteLine("\nTest 3: Semantic similarity");
-                var similar1 = await _AIDriver.Embeddings.Generate(_CurrentModel, "The cat sat on the mat");
-                var similar2 = await _AIDriver.Embeddings.Generate(_CurrentModel, "A feline rested on the rug");
-                var different = await _AIDriver.Embeddings.Generate(_CurrentModel, "The stock market crashed today");
+                float[]? similar1 = await _AIDriver.Embeddings.Generate(_CurrentModel, "The cat sat on the mat");
+                float[]? similar2 = await _AIDriver.Embeddings.Generate(_CurrentModel, "A feline rested on the rug");
+                float[]? different = await _AIDriver.Embeddings.Generate(_CurrentModel, "The stock market crashed today");
 
                 double sim1 = CosineSimilarity(similar1, similar2);
                 double sim2 = CosineSimilarity(similar1, different);
@@ -700,7 +700,7 @@
             {
                 // Test non-streaming
                 Console.WriteLine("Test 1: Non-streaming completion");
-                var completion = await _AIDriver.Completion.GenerateCompletion(
+                string? completion = await _AIDriver.Completion.GenerateCompletion(
                     _CurrentModel,
                     "The capital of France is",
                     100,
@@ -710,7 +710,7 @@
                 // Test streaming
                 Console.WriteLine("\nTest 2: Streaming completion");
                 Console.Write("✓ Streaming response: ");
-                await foreach (var chunk in _AIDriver.Completion.GenerateCompletionStreaming(
+                await foreach (string? chunk in _AIDriver.Completion.GenerateCompletionStreaming(
                     _CurrentModel,
                     "List three colors:",
                     100,
@@ -744,7 +744,7 @@
 
                 // Test non-streaming
                 Console.WriteLine("Test 1: Non-streaming chat");
-                var response = await _AIDriver.Chat.GenerateCompletion(
+                string? response = await _AIDriver.Chat.GenerateCompletion(
                     _CurrentModel,
                     prompt,
                     100,
@@ -762,7 +762,7 @@
                     """;
 
                 Console.Write("✓ Streaming response: ");
-                await foreach (var chunk in _AIDriver.Chat.GenerateCompletionStreaming(
+                await foreach (string? chunk in _AIDriver.Chat.GenerateCompletionStreaming(
                     _CurrentModel,
                     prompt,
                     200,
@@ -805,7 +805,7 @@
         {
             try
             {
-                var texts = new string[500];
+                string[]? texts = new string[500];
                 List<string> textList = new List<string>
     {
         @"8/23/24, 8:59 PM Botulinum toxin - Wikipedia",
@@ -991,21 +991,21 @@
         @"https://en.wikipedia.org/wiki/Botulinum_toxin 33/33"
     };
 
-                var tasks = new List<Task<float[][]>>();
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                List<Task<float[][]>>? tasks = new List<Task<float[][]>>();
+                System.Diagnostics.Stopwatch? stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 
                
                 for (int i = 0; i < 5; i++)
                 {
-                    var taskTexts = textList.ToArray();
-                    var task = _AIDriver.Embeddings.Generate(_CurrentModel, taskTexts);
+                    string[]? taskTexts = textList.ToArray();
+                    Task<float[][]>? task = _AIDriver.Embeddings.Generate(_CurrentModel, taskTexts);
                     tasks.Add(task);
                     
                     Console.WriteLine($"Started parallel task {i + 1}/5");
                 }
 
                 Console.WriteLine("Waiting for all parallel tasks to complete...");
-                var results = await Task.WhenAll(tasks);
+                float[][][]? results = await Task.WhenAll(tasks);
                 stopwatch.Stop();
 
                 Console.WriteLine($"✓ Generated {results.Length * results[0].Length} embeddings in {stopwatch.ElapsedMilliseconds}ms");
@@ -1028,7 +1028,7 @@
                 throw new Exception($"{testName} test returned null or empty results");
             }
 
-            foreach (var embedding in results)
+            foreach (float[]? embedding in results)
             {
                 if (embedding == null || embedding.Length == 0)
                 {
@@ -1041,7 +1041,7 @@
 
         static void AssertResultsValid(IEnumerable<float[][]> results, string testName)
         {
-            foreach (var result in results)
+            foreach (float[][]? result in results)
             {
                 AssertResultsValid(result, testName);
             }

@@ -219,11 +219,42 @@ The deprecated mmap/mlock booleans are mapped to the new `LLamaLoadMode`, includ
 Metadata preflight reads the trained/effective context without constructing native `ModelParams`.
 
 LLamaSharp 0.30 ships .NET 10 and .NET Standard bindings. SharpAI supplies lazy native-library resolution
-for .NET 8 embedded callers; server backend selection uses `NativeLibraryLoader.Configure` before the
-first native call. .NET 10 retains LLamaSharp's own native loader. Native generation, real shards,
+for .NET 8 embedded callers. `NativeBackendInitializer` now lives in the library and runs before
+`GetOptimalGpuLayers` chooses offload settings. The server delegates its runtime settings to that same
+initializer. Standalone Apple Silicon consumers select Metal automatically; CPU forcing, custom paths,
+and GPU-layer overrides remain available. .NET 10 retains LLamaSharp's own native loader. Native generation, real shards,
 cancellation, queue/reload behavior and all mmap/mlock combinations are exercised on both frameworks.
 
 The C# SDK now reads OpenAI SSE through RestWrapper's event reader, while retaining Ollama NDJSON
 chunk handling. The operations harness builds the SDK and runs seven live consumer contracts on each
 framework against its isolated local server; it does not download additional models. SqlClient's
 transitive PKCS dependency is explicitly pinned to the patched 10.0.13 in both library and SDK.
+
+
+### Standalone Metal regression probe
+
+Build the solution, then run the library-only worker on native Apple Silicon with a local GGUF file:
+
+```bash
+SHARPAI_ENABLE_NATIVE_LOGGING=true SHARPAI_CONTEXT_SIZE=128 \
+  dotnet src/Test.Automated/bin/Debug/net8.0/Test.Automated.dll \
+  --native-backend-probe metal 999 /path/to/model.gguf
+```
+
+Repeat with `net10.0`. The worker asserts the selected backend and GPU-layer request, performs real
+inference, and rejects a loaded `SharpAI.Server` assembly. Native logs should show layers offloaded to
+the GPU. `999` is the engine's request for all layers, clamped by llama.cpp to the model's layer count.
+To verify CPU forcing, set `SHARPAI_FORCE_BACKEND=cpu` and use `--native-backend-probe cpu 0`.
+To verify layer overrides, use `SHARPAI_GPU_LAYERS=0` with `--native-backend-probe metal 0`, or a
+positive layer count with the matching expected value. Run each scenario in a new process because
+native backend initialization is process-wide.
+
+The complete regression matrix checks automatic selection, forced CPU, zero/limited/all-layer
+overrides, explicit host configuration, missing-Metal CPU fallback, and required-backend failures:
+
+```bash
+python3 scripts/test-metal-library.py --model /path/to/model.gguf --output /tmp/sharpai-metal-evidence
+```
+
+Each successful model case validates native offload counts as well as generated output. Both .NET
+frameworks run by default; use `--framework net8.0` or `--framework net10.0` to select one.

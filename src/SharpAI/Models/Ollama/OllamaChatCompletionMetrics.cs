@@ -64,7 +64,7 @@
             if (result == null)
                 return null;
 
-            var metrics = new OllamaChatCompletionMetrics();
+            OllamaChatCompletionMetrics metrics = new OllamaChatCompletionMetrics();
 
             if (result.PromptEvalCount.HasValue)
                 metrics.PromptTokens = result.PromptEvalCount.Value;
@@ -72,19 +72,19 @@
             if (result.EvalCount.HasValue)
                 metrics.CompletionTokens = result.EvalCount.Value;
 
-            var promptTps = result.GetPromptTokensPerSecond();
+            double? promptTps = result.GetPromptTokensPerSecond();
             if (promptTps.HasValue)
                 metrics.PromptTokensPerSecond = promptTps.Value;
 
-            var genTps = result.GetGenerationTokensPerSecond();
+            double? genTps = result.GetGenerationTokensPerSecond();
             if (genTps.HasValue)
                 metrics.GenerationTokensPerSecond = genTps.Value;
 
-            var totalMs = result.GetTotalDurationMilliseconds();
+            double? totalMs = result.GetTotalDurationMilliseconds();
             if (totalMs.HasValue)
                 metrics.TotalDurationMs = totalMs.Value;
 
-            var loadMs = result.GetLoadDurationMilliseconds();
+            double? loadMs = result.GetLoadDurationMilliseconds();
             if (loadMs.HasValue)
                 metrics.LoadDurationMs = loadMs.Value;
 

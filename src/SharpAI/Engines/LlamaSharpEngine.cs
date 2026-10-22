@@ -399,12 +399,14 @@ namespace SharpAI.Engines
         /// <summary>
         /// Determines the optimal number of GPU layers to use based on available hardware.
         /// </summary>
-        /// <returns>The number of GPU layers to use, or 0 if GPU acceleration is not available. Returns -1 to use all available GPU layers.</returns>
+        /// <returns>Zero for CPU, a configured positive layer count, or 999 to request all model layers. Native loading clamps this request to the model's layer count.</returns>
+        /// <remarks>Initializes the library backend once per process before choosing layers. Initialization failures propagate to the caller.</remarks>
         public override int GetOptimalGpuLayers()
         {
+            NativeBackendInitializer.Initialize(_Logging);
             try
             {
-                // Check which backend was selected by NativeLibraryBootstrapper
+                // Initialization belongs to the library and preserves any explicit host selection.
                 string selectedBackend = SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend;
 
                 if (selectedBackend.Equals("cuda", StringComparison.OrdinalIgnoreCase)
@@ -855,8 +857,9 @@ namespace SharpAI.Engines
                 List<string> chunks = SplitTextIntoChunks(text, charLimit);
                 List<float[]> embeddings = new List<float[]>();
 
-                foreach ((string chunk, int index) in chunks.Select((c, i) => (c, i)))
+                for (int index = 0; index < chunks.Count; index++)
                 {
+                    string chunk = chunks[index];
                     try
                     {
                         embeddings.Add(await TryEmbed(chunk).ConfigureAwait(false));

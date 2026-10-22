@@ -30,7 +30,7 @@
         /// <returns>JsonConverter.</returns>
         public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
-            var converterType = typeof(StrictEnumConverter<>).MakeGenericType(typeToConvert);
+            Type converterType = typeof(StrictEnumConverter<>).MakeGenericType(typeToConvert);
             return (JsonConverter)Activator.CreateInstance(converterType);
         }
 

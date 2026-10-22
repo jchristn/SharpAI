@@ -723,8 +723,8 @@ namespace SharpAI.Server.API.REST.OpenAI
 
         private long ToUnixTimestamp(DateTime dateTime)
         {
-            var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            var unixTime = (dateTime.ToUniversalTime() - epoch).TotalSeconds;
+            DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            double unixTime = (dateTime.ToUniversalTime() - epoch).TotalSeconds;
             return (long)unixTime;
         }
 

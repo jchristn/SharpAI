@@ -53,22 +53,22 @@
         public static string BuildWithExamples(
             TextGenerationFormatEnum format,
             string input,
-            List<(string input, string output)> examples,
+            List<PromptExample> examples,
             Dictionary<string, string> context = null)
         {
             if (examples == null || examples.Count == 0)
                 return Build(format, input, context);
 
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
             // Add examples first
             sb.AppendLine("Examples:");
             sb.AppendLine();
 
-            foreach (var (exampleInput, exampleOutput) in examples)
+            foreach (PromptExample example in examples)
             {
-                sb.AppendLine(Build(format, exampleInput, context));
-                sb.AppendLine(exampleOutput);
+                sb.AppendLine(Build(format, example.Input, context));
+                sb.AppendLine(example.Output);
                 sb.AppendLine();
                 sb.AppendLine("---");
                 sb.AppendLine();
@@ -90,7 +90,7 @@
 
         private static string BuildInstruction(string input)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine("### Instruction:");
             sb.AppendLine(input);
             sb.AppendLine();
@@ -100,7 +100,7 @@
 
         private static string BuildQuestionAnswer(string input)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Question: {input}");
             sb.AppendLine();
             sb.Append("Answer:");
@@ -109,17 +109,17 @@
 
         private static string BuildCreativeWriting(string input, Dictionary<string, string> context)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
             if (context != null)
             {
-                if (context.TryGetValue("genre", out var genre))
+                if (context.TryGetValue("genre", out string genre))
                     sb.AppendLine($"Genre: {genre}");
 
-                if (context.TryGetValue("style", out var style))
+                if (context.TryGetValue("style", out string style))
                     sb.AppendLine($"Style: {style}");
 
-                if (context.TryGetValue("length", out var length))
+                if (context.TryGetValue("length", out string length))
                     sb.AppendLine($"Length: {length}");
             }
 
@@ -131,19 +131,19 @@
 
         private static string BuildCodeGeneration(string input, Dictionary<string, string> context)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            var language = context?.GetValueOrDefault("language", "python") ?? "python";
+            string language = context?.GetValueOrDefault("language", "python") ?? "python";
 
             sb.AppendLine($"Language: {language}");
             sb.AppendLine($"Task: {input}");
 
             if (context != null)
             {
-                if (context.TryGetValue("requirements", out var requirements))
+                if (context.TryGetValue("requirements", out string requirements))
                     sb.AppendLine($"Requirements: {requirements}");
 
-                if (context.TryGetValue("constraints", out var constraints))
+                if (context.TryGetValue("constraints", out string constraints))
                     sb.AppendLine($"Constraints: {constraints}");
             }
 
@@ -154,25 +154,25 @@
 
         private static string BuildAcademic(string input, Dictionary<string, string> context)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
             sb.AppendLine($"Title: {input}");
 
             if (context != null)
             {
-                if (context.TryGetValue("type", out var type))
+                if (context.TryGetValue("type", out string type))
                     sb.AppendLine($"Type: {type}");
 
-                if (context.TryGetValue("field", out var field))
+                if (context.TryGetValue("field", out string field))
                     sb.AppendLine($"Field: {field}");
 
-                if (context.TryGetValue("audience", out var audience))
+                if (context.TryGetValue("audience", out string audience))
                     sb.AppendLine($"Audience: {audience}");
             }
 
             sb.AppendLine();
 
-            var section = context?.GetValueOrDefault("section", "Abstract") ?? "Abstract";
+            string section = context?.GetValueOrDefault("section", "Abstract") ?? "Abstract";
             sb.Append($"{section}:");
 
             return sb.ToString();
@@ -180,10 +180,10 @@
 
         private static string BuildListGeneration(string input, Dictionary<string, string> context)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            var count = context?.GetValueOrDefault("count", "10") ?? "10";
-            var format = context?.GetValueOrDefault("format", "numbered") ?? "numbered";
+            string count = context?.GetValueOrDefault("count", "10") ?? "10";
+            string format = context?.GetValueOrDefault("format", "numbered") ?? "numbered";
 
             sb.AppendLine($"Create a list of {count} {input}:");
             sb.AppendLine();
@@ -206,7 +206,7 @@
 
         private static string BuildTemplateFilling(string input)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine("Complete the following template:");
             sb.AppendLine();
             sb.Append(input);
@@ -215,24 +215,24 @@
 
         private static string BuildDialogue(string input, Dictionary<string, string> context)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
             if (context != null)
             {
-                if (context.TryGetValue("characters", out var characters))
+                if (context.TryGetValue("characters", out string characters))
                     sb.AppendLine($"Characters: {characters}");
 
-                if (context.TryGetValue("setting", out var setting))
+                if (context.TryGetValue("setting", out string setting))
                     sb.AppendLine($"Setting: {setting}");
 
-                if (context.TryGetValue("tone", out var tone))
+                if (context.TryGetValue("tone", out string tone))
                     sb.AppendLine($"Tone: {tone}");
             }
 
             sb.AppendLine($"Topic: {input}");
             sb.AppendLine();
 
-            var firstCharacter = context?.GetValueOrDefault("firstCharacter", "Character 1") ?? "Character 1";
+            string firstCharacter = context?.GetValueOrDefault("firstCharacter", "Character 1") ?? "Character 1";
             sb.Append($"{firstCharacter}:");
 
             return sb.ToString();
@@ -259,7 +259,7 @@
             if (string.IsNullOrWhiteSpace(systemContext))
                 return Build(TextGenerationFormatEnum.Instruction, instruction);
 
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.AppendLine($"Context: {systemContext}");
             sb.AppendLine();
             sb.Append(Build(TextGenerationFormatEnum.Instruction, instruction));

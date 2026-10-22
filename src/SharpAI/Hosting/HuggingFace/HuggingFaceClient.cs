@@ -114,7 +114,7 @@ namespace SharpAI.Hosting
 
                 string jsonContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
-                var options = new JsonSerializerOptions
+                JsonSerializerOptions options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -456,26 +456,26 @@ namespace SharpAI.Hosting
                 // First, get the metadata to find the actual download URL for LFS files
                 downloadUrl = await GetActualDownloadUrlAsync(sourceUrl, token).ConfigureAwait(false);
 
-                using (var httpClient = new HttpClient())
+                using (HttpClient httpClient = new HttpClient())
                 {
                     // Get response with headers first to check content length
-                    using (var response = await httpClient
+                    using (HttpResponseMessage response = await httpClient
                                .GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, token)
                                .ConfigureAwait(false))
                     {
                         response.EnsureSuccessStatusCode();
 
-                        var contentLength = response.Content.Headers.ContentLength;
-                        var isChunked = response.Headers.TransferEncodingChunked ?? false;
+                        long? contentLength = response.Content.Headers.ContentLength;
+                        bool isChunked = response.Headers.TransferEncodingChunked ?? false;
 
                         SharpAI.Logging.JsonLog.Debug(_Logging, _Header +
                                        $"content length {contentLength?.ToString() ?? "unknown"} bytes (chunked transfer: {isChunked})");
 
-                        using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                        using (var fileStream = new FileStream(destinationFilename, FileMode.Create, FileAccess.Write,
+                        using (Stream contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
+                        using (FileStream fileStream = new FileStream(destinationFilename, FileMode.Create, FileAccess.Write,
                                    FileShare.None, bufferSize: 65536, useAsync: true))
                         {
-                            var buffer = new byte[65536]; // 64KB buffer
+                            byte[] buffer = new byte[65536]; // 64KB buffer
                             long totalBytesRead = 0;
                             int bytesRead;
                             DateTime lastProgressUpdate = DateTime.UtcNow;
@@ -489,7 +489,7 @@ namespace SharpAI.Hosting
                                 // Report progress
                                 if (progressCallback != null)
                                 {
-                                    var now = DateTime.UtcNow;
+                                    DateTime now = DateTime.UtcNow;
                                     // Update progress at most every 100ms to avoid overwhelming the callback
                                     if ((now - lastProgressUpdate).TotalMilliseconds >= 100)
                                     {
@@ -517,7 +517,7 @@ namespace SharpAI.Hosting
                             progressCallback?.Invoke(sourceUrl, totalBytesRead, 1.0m);
                         }
 
-                        var fileInfo = new FileInfo(destinationFilename);
+                        FileInfo fileInfo = new FileInfo(destinationFilename);
                         SharpAI.Logging.JsonLog.Info(_Logging, _Header +
                                       $"successfully downloaded {fileInfo.Length} bytes to {destinationFilename}");
                     }
@@ -604,7 +604,7 @@ namespace SharpAI.Hosting
 
             int successCount = 0;
 
-            foreach (var file in files)
+            foreach (HuggingFaceModelFile file in files)
             {
                 try
                 {
@@ -724,7 +724,7 @@ namespace SharpAI.Hosting
             // Check pipeline tag
             if (!string.IsNullOrEmpty(md.PipelineTag))
             {
-                var tag = md.PipelineTag.ToLowerInvariant();
+                string tag = md.PipelineTag.ToLowerInvariant();
                 if (tag == "sentence-similarity" ||
                     tag == "feature-extraction" ||
                     tag == "text-embedding" ||
@@ -743,10 +743,10 @@ namespace SharpAI.Hosting
             // Check tags array
             if (md.Tags != null)
             {
-                foreach (var tag in md.Tags)
+                foreach (string tag in md.Tags)
                 {
                     if (tag == null) continue;
-                    var lowerTag = tag.ToLowerInvariant();
+                    string lowerTag = tag.ToLowerInvariant();
                     if (lowerTag == "sentence-transformers" ||
                         lowerTag == "feature-extraction" ||
                         lowerTag == "sentence-similarity" ||
@@ -771,7 +771,7 @@ namespace SharpAI.Hosting
             // Check pipeline tag
             if (!string.IsNullOrEmpty(md.PipelineTag))
             {
-                var tag = md.PipelineTag.ToLowerInvariant();
+                string tag = md.PipelineTag.ToLowerInvariant();
                 if (tag == "text-generation" ||
                     tag == "text2text-generation" ||
                     tag == "conversational")
@@ -781,7 +781,7 @@ namespace SharpAI.Hosting
             // Check architectures
             if (md.Config?.Architectures != null)
             {
-                foreach (var arch in md.Config.Architectures)
+                foreach (string arch in md.Config.Architectures)
                 {
                     if (arch == null) continue;
                     if (arch.EndsWith("ForCausalLM", StringComparison.OrdinalIgnoreCase) ||
@@ -793,7 +793,7 @@ namespace SharpAI.Hosting
             // Check transformers info auto model
             if (md.TransformersInfo?.AutoModel != null)
             {
-                var autoModel = md.TransformersInfo.AutoModel;
+                string autoModel = md.TransformersInfo.AutoModel;
                 if (autoModel.Equals("AutoModelForCausalLM", StringComparison.OrdinalIgnoreCase) ||
                     autoModel.Equals("AutoModelForSeq2SeqLM", StringComparison.OrdinalIgnoreCase))
                     return true;
@@ -802,10 +802,10 @@ namespace SharpAI.Hosting
             // Check tags array
             if (md.Tags != null)
             {
-                foreach (var tag in md.Tags)
+                foreach (string tag in md.Tags)
                 {
                     if (tag == null) continue;
-                    var lowerTag = tag.ToLowerInvariant();
+                    string lowerTag = tag.ToLowerInvariant();
                     if (lowerTag == "text-generation" ||
                         lowerTag == "text-generation-inference" ||
                         lowerTag == "conversational" ||

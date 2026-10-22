@@ -43,8 +43,8 @@
 
         private static string BuildSimple(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            foreach (var message in messages)
+            StringBuilder sb = new StringBuilder();
+            foreach (ChatMessage message in messages)
             {
                 sb.AppendLine($"{message.Role}: {message.Content}");
             }
@@ -54,8 +54,8 @@
 
         private static string BuildChatML(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            foreach (var message in messages)
+            StringBuilder sb = new StringBuilder();
+            foreach (ChatMessage message in messages)
             {
                 sb.AppendLine($"<|im_start|>{message.Role}");
                 sb.Append(message.Content);
@@ -67,9 +67,9 @@
 
         private static string BuildLlama2(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
-            var conversationMessages = messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
+            StringBuilder sb = new StringBuilder();
+            ChatMessage systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            List<ChatMessage> conversationMessages = messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
 
             sb.Append("<s>[INST] ");
 
@@ -83,7 +83,7 @@
 
             for (int i = 0; i < conversationMessages.Count; i++)
             {
-                var message = conversationMessages[i];
+                ChatMessage message = conversationMessages[i];
 
                 if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 {
@@ -107,10 +107,10 @@
 
         private static string BuildLlama3(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.Append("<|begin_of_text|>");
 
-            foreach (var message in messages)
+            foreach (ChatMessage message in messages)
             {
                 sb.Append($"<|start_header_id|>{message.Role}<|end_header_id|>");
                 sb.AppendLine();
@@ -128,8 +128,8 @@
 
         private static string BuildAlpaca(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            StringBuilder sb = new StringBuilder();
+            ChatMessage systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
 
             if (systemMessage != null)
             {
@@ -138,7 +138,7 @@
                 sb.AppendLine();
             }
 
-            foreach (var message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
+            foreach (ChatMessage message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
             {
                 if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 {
@@ -160,15 +160,15 @@
 
         private static string BuildMistral(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            var conversationMessages = messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
+            StringBuilder sb = new StringBuilder();
+            List<ChatMessage> conversationMessages = messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)).ToList();
 
             // Mistral typically includes system message as part of first user message
-            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            ChatMessage systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
 
             for (int i = 0; i < conversationMessages.Count; i++)
             {
-                var message = conversationMessages[i];
+                ChatMessage message = conversationMessages[i];
 
                 if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 {
@@ -200,9 +200,9 @@
 
         private static string BuildHumanAssistant(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var message in messages)
+            foreach (ChatMessage message in messages)
             {
                 if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
                 {
@@ -227,9 +227,9 @@
 
         private static string BuildZephyr(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var message in messages)
+            foreach (ChatMessage message in messages)
             {
                 sb.AppendLine($"<|{message.Role}|>");
                 sb.Append(message.Content);
@@ -242,8 +242,8 @@
 
         private static string BuildPhi(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            StringBuilder sb = new StringBuilder();
+            ChatMessage systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
 
             if (systemMessage != null)
             {
@@ -251,7 +251,7 @@
                 sb.AppendLine();
             }
 
-            foreach (var message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
+            foreach (ChatMessage message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
             {
                 if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 {
@@ -269,9 +269,9 @@
 
         private static string BuildDeepSeek(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var message in messages)
+            foreach (ChatMessage message in messages)
             {
                 if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
                 {
@@ -296,9 +296,9 @@
 
         private static string BuildGemma(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var message in messages)
+            foreach (ChatMessage message in messages)
             {
                 if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
                 {
@@ -330,8 +330,8 @@
 
         private static string BuildCommandR(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            StringBuilder sb = new StringBuilder();
+            ChatMessage systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
 
             sb.Append("<BOS_TOKEN>");
 
@@ -342,7 +342,7 @@
                 sb.Append("<|END_OF_TURN_TOKEN|>");
             }
 
-            foreach (var message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
+            foreach (ChatMessage message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
             {
                 if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 {
@@ -364,8 +364,8 @@
 
         private static string BuildVicuna(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
-            var systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
+            StringBuilder sb = new StringBuilder();
+            ChatMessage systemMessage = messages.FirstOrDefault(m => m.Role.Equals("system", StringComparison.OrdinalIgnoreCase));
 
             // Vicuna v1.1 format starts with a preamble
             if (systemMessage != null)
@@ -378,7 +378,7 @@
             }
             sb.AppendLine();
 
-            foreach (var message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
+            foreach (ChatMessage message in messages.Where(m => !m.Role.Equals("system", StringComparison.OrdinalIgnoreCase)))
             {
                 if (message.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
                 {
@@ -396,9 +396,9 @@
 
         private static string BuildStableLM(List<ChatMessage> messages)
         {
-            var sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-            foreach (var message in messages)
+            foreach (ChatMessage message in messages)
             {
                 if (message.Role.Equals("system", StringComparison.OrdinalIgnoreCase))
                 {

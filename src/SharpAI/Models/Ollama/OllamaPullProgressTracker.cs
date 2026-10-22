@@ -82,10 +82,10 @@
                     // Calculate rate if we have previous data
                     if (_lastCompleted > 0 && message.Completed.Value > _lastCompleted)
                     {
-                        var timeDiff = (DateTime.UtcNow - _lastUpdate).TotalSeconds;
+                        double timeDiff = (DateTime.UtcNow - _lastUpdate).TotalSeconds;
                         if (timeDiff > 0)
                         {
-                            var bytesDiff = message.Completed.Value - _lastCompleted;
+                            long bytesDiff = message.Completed.Value - _lastCompleted;
                             _downloadRate = bytesDiff / timeDiff;
                         }
                     }
@@ -117,7 +117,7 @@
             if (_downloadRate <= 0)
                 return null;
 
-            var remaining = TotalBytes - CompletedBytes;
+            long remaining = TotalBytes - CompletedBytes;
             if (remaining <= 0)
                 return null;
 
@@ -130,11 +130,11 @@
         /// <returns>Summary string.</returns>
         public string GetSummary()
         {
-            var progressStr = $"{OverallProgress:F1}%";
-            var rateStr = _downloadRate > 0 ? $" at {FormatBytes((long)_downloadRate)}/s" : "";
-            var timeStr = "";
+            string progressStr = $"{OverallProgress:F1}%";
+            string rateStr = _downloadRate > 0 ? $" at {FormatBytes((long)_downloadRate)}/s" : "";
+            string timeStr = "";
 
-            var remaining = EstimateTimeRemaining();
+            TimeSpan? remaining = EstimateTimeRemaining();
             if (remaining.HasValue)
             {
                 timeStr = $" - {FormatTimeSpan(remaining.Value)} remaining";

@@ -56,14 +56,14 @@
                 return null;
 
             // Remove 'B' suffix and try to parse
-            var sizeStr = ParameterSize.TrimEnd('B', 'b').Trim();
+            string sizeStr = ParameterSize.TrimEnd('B', 'b').Trim();
 
-            if (double.TryParse(sizeStr, out var size))
+            if (double.TryParse(sizeStr, out double size))
                 return size;
 
             // Handle cases like "7.1" or "6.7"
             if (sizeStr.Contains('.') && double.TryParse(sizeStr, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var floatSize))
+                System.Globalization.CultureInfo.InvariantCulture, out double floatSize))
                 return floatSize;
 
             return null;
@@ -81,13 +81,13 @@
             // Extract number from patterns like Q4_0, Q8_0, Q5_K_M
             if (QuantizationLevel.StartsWith("Q", StringComparison.OrdinalIgnoreCase))
             {
-                var numberPart = QuantizationLevel.Substring(1);
-                var underscoreIndex = numberPart.IndexOf('_');
+                string numberPart = QuantizationLevel.Substring(1);
+                int underscoreIndex = numberPart.IndexOf('_');
 
                 if (underscoreIndex > 0)
                     numberPart = numberPart.Substring(0, underscoreIndex);
 
-                if (int.TryParse(numberPart, out var bits))
+                if (int.TryParse(numberPart, out int bits))
                     return bits;
             }
 

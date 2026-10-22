@@ -32,7 +32,7 @@
                     Console.WriteLine();
                     Console.Write("Choice: ");
 
-                    var choice = Console.ReadLine();
+                    string choice = Console.ReadLine();
 
                     switch (choice)
                     {
@@ -85,7 +85,7 @@
         private static async Task<EngineBase> InitializeProvider()
         {
             Console.Write("Enter model filename (GGUF): ");
-            var modelFile = Console.ReadLine();
+            string modelFile = Console.ReadLine();
 
             if (string.IsNullOrWhiteSpace(modelFile))
             {
@@ -93,7 +93,7 @@
                 return null;
             }
 
-            var modelPath = Path.Combine("Models", modelFile);
+            string modelPath = Path.Combine("Models", modelFile);
             if (!File.Exists(modelPath))
             {
                 Console.WriteLine($"Model file not found: {modelPath}");
@@ -140,7 +140,7 @@
             }
 
             Console.Write("Enter text to embed: ");
-            var text = Console.ReadLine();
+            string text = Console.ReadLine();
 
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -150,7 +150,7 @@
 
             try
             {
-                var embeddings = await provider.GenerateEmbeddingsAsync(text);
+                float[] embeddings = await provider.GenerateEmbeddingsAsync(text);
 
                 Console.WriteLine($"\nEmbedding generated successfully!");
                 Console.WriteLine($"Dimensions: {embeddings.Length}");
@@ -188,17 +188,17 @@
             }
 
             Console.Write("Max tokens (default 512): ");
-            var maxTokensStr = Console.ReadLine();
-            var maxTokens = int.TryParse(maxTokensStr, out var tokens) ? tokens : 512;
+            string maxTokensStr = Console.ReadLine();
+            int maxTokens = int.TryParse(maxTokensStr, out int tokens) ? tokens : 512;
 
             Console.Write("Temperature (default 0.7): ");
-            var tempStr = Console.ReadLine();
-            var temperature = float.TryParse(tempStr, out var temp) ? temp : 0.7f;
+            string tempStr = Console.ReadLine();
+            float temperature = float.TryParse(tempStr, out float temp) ? temp : 0.7f;
 
             try
             {
                 Console.WriteLine("\nGenerating text...");
-                var result = await provider.GenerateTextAsync(prompt, maxTokens, temperature);
+                string result = await provider.GenerateTextAsync(prompt, maxTokens, temperature);
 
                 Console.WriteLine($"\nGenerated text:");
                 Console.WriteLine($"================");
@@ -231,7 +231,7 @@
             try
             {
                 Console.WriteLine("\nGenerating chat completion...");
-                var result = await provider.GenerateChatCompletionAsync(prompt);
+                string result = await provider.GenerateChatCompletionAsync(prompt);
 
                 Console.WriteLine();
                 Console.WriteLine(result);
@@ -264,7 +264,7 @@
             {
                 Console.WriteLine();
 
-                await foreach (var token in provider.GenerateChatCompletionStreamAsync(prompt))
+                await foreach (string token in provider.GenerateChatCompletionStreamAsync(prompt))
                 {
                     Console.Write(token);
                 }

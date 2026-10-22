@@ -220,8 +220,8 @@
         /// Compute MD5, SHA1, and SHA256 hashes in a single pass.
         /// </summary>
         /// <param name="stream">Stream.</param>
-        /// <returns>Tuple containing MD5, SHA1, and SHA256 hashes.</returns>
-        public static (byte[] md5, byte[] sha1, byte[] sha256) ComputeAllHashes(Stream stream)
+        /// <returns>Named MD5, SHA1, and SHA256 hash results.</returns>
+        public static HashResults ComputeAllHashes(Stream stream)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead) throw new ArgumentException("Unable to read from supplied stream.");
@@ -247,7 +247,7 @@
                 sha1.TransformFinalBlock(buffer, 0, 0);
                 sha256.TransformFinalBlock(buffer, 0, 0);
 
-                return (md5.Hash, sha1.Hash, sha256.Hash);
+                return new HashResults(md5.Hash, sha1.Hash, sha256.Hash);
             }
         }
 
@@ -262,7 +262,7 @@
 
             foreach (DataRow row in dt.Rows)
             {
-                foreach (var item in row.ItemArray)
+                foreach (object item in row.ItemArray)
                 {
                     // Convert to string, handling nulls
                     string value = item?.ToString() ?? "NULL";

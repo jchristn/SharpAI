@@ -120,13 +120,13 @@
             if (string.IsNullOrEmpty(Parameters))
                 return new Dictionary<string, string>();
 
-            var result = new Dictionary<string, string>();
-            var lines = Parameters.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            string[] lines = Parameters.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-            foreach (var line in lines)
+            foreach (string line in lines)
             {
-                var trimmedLine = line.Trim();
-                var parts = trimmedLine.Split(new[] { ' ', '\t' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                string trimmedLine = line.Trim();
+                string[] parts = trimmedLine.Split(new[] { ' ', '\t' }, 2, StringSplitOptions.RemoveEmptyEntries);
 
                 if (parts.Length == 2)
                 {

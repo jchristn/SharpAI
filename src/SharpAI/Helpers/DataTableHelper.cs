@@ -265,7 +265,7 @@
                 dynamic dyn = new ExpandoObject();
                 foreach (DataColumn col in dt.Columns)
                 {
-                    var dic = (IDictionary<string, object>)dyn;
+                    IDictionary<string, object> dic = (IDictionary<string, object>)dyn;
                     dic[col.ColumnName] = curr[col];
                 }
                 ret.Add(dyn);
@@ -288,7 +288,7 @@
             {
                 foreach (DataColumn col in dt.Columns)
                 {
-                    var dic = (IDictionary<string, object>)ret;
+                    IDictionary<string, object> dic = (IDictionary<string, object>)ret;
                     dic[col.ColumnName] = curr[col];
                 }
 
@@ -358,7 +358,7 @@
             foreach (PropertyInfo prop in obj.GetType().GetProperties())
             {
                 string propName = prop.Name;
-                var val = obj.GetType().GetProperty(propName).GetValue(obj, null);
+                object val = obj.GetType().GetProperty(propName).GetValue(obj, null);
                 if (val != null)
                 {
                     ret.Add(propName, val);
@@ -425,7 +425,7 @@
 
             foreach (DataRow row in dt.Rows)
             {
-                foreach (var item in row.ItemArray)
+                foreach (object item in row.ItemArray)
                 {
                     if (item != null)
                     {

@@ -184,6 +184,6 @@ SharpAI.Server provides Ollama-compatible endpoints:
 - Document what different values mean and their effects
 
 ### Prohibited Patterns
-- Do not use tuples unless absolutely necessary
+- Do not use tuples. Use named classes or objects with explicit properties.
 - Do not make assumptions about opaque class members/methods - ask for implementation
 - Proactively eliminate null exception possibilities

@@ -30,15 +30,15 @@ def summarize(paths):
                     number = int(line.get('number'))
                     hit = int(line.get('hits', '0')) > 0
                     match = re.search(r'\((\d+)/(\d+)\)', line.get('condition-coverage', ''))
-                    covered, total = map(int, match.groups()) if match else (0, 0)
-                    previous = lines.get(number, (False, 0, 0))
-                    lines[number] = (previous[0] or hit, max(previous[1], covered), max(previous[2], total))
+                    covered, total = map(int, match.groups()) if match else [0, 0]
+                    previous = lines.get(number, {'hit': False, 'covered': 0, 'total': 0})
+                    lines[number] = {'hit': previous['hit'] or hit, 'covered': max(previous['covered'], covered), 'total': max(previous['total'], total)}
 
     def counts(selected):
         values = [value for name, lines in files.items() if selected(name) for value in lines.values()]
-        hit = sum(value[0] for value in values)
-        branches = sum(value[2] for value in values)
-        covered = sum(value[1] for value in values)
+        hit = sum(value['hit'] for value in values)
+        branches = sum(value['total'] for value in values)
+        covered = sum(value['covered'] for value in values)
         return {'lines_covered': hit, 'lines_total': len(values),
                 'line_percent': round(100 * hit / len(values), 2) if values else 0,
                 'branches_covered_lower_bound': covered, 'branches_total': branches,

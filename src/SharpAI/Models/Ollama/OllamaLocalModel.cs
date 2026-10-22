@@ -49,7 +49,7 @@
             if (string.IsNullOrEmpty(Name))
                 return string.Empty;
 
-            var colonIndex = Name.IndexOf(':');
+            int colonIndex = Name.IndexOf(':');
             return colonIndex > 0 ? Name.Substring(0, colonIndex) : Name;
         }
 
@@ -62,7 +62,7 @@
             if (string.IsNullOrEmpty(Name))
                 return "latest";
 
-            var colonIndex = Name.IndexOf(':');
+            int colonIndex = Name.IndexOf(':');
             return colonIndex > 0 ? Name.Substring(colonIndex + 1) : "latest";
         }
 
@@ -88,8 +88,8 @@
                 return string.Empty;
 
             // Extract hash from "sha256:hash" format if present
-            var parts = Digest.Split(':');
-            var hash = parts.Length == 2 ? parts[1] : Digest;
+            string[] parts = Digest.Split(':');
+            string hash = parts.Length == 2 ? parts[1] : Digest;
 
             return hash.Length > 12 ? hash.Substring(0, 12) : hash;
         }
@@ -112,7 +112,7 @@
         /// <returns>Human-readable age string.</returns>
         public string GetFormattedAge()
         {
-            var age = GetAge();
+            TimeSpan? age = GetAge();
             if (!age.HasValue)
                 return "Unknown";
 
@@ -143,7 +143,7 @@
             // Simple wildcard support
             if (pattern.Contains("*"))
             {
-                var regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
+                string regexPattern = "^" + System.Text.RegularExpressions.Regex.Escape(pattern)
                     .Replace("\\*", ".*") + "$";
                 return System.Text.RegularExpressions.Regex.IsMatch(Name, regexPattern,
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);

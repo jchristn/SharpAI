@@ -27,7 +27,7 @@
                 throw new JsonException("Expected start of object");
             }
 
-            var collection = new NameValueCollection();
+            NameValueCollection collection = new NameValueCollection();
 
             while (reader.Read())
             {
@@ -96,7 +96,7 @@
             {
                 writer.WritePropertyName(options.PropertyNamingPolicy?.ConvertName(key) ?? key);
 
-                var values = value.GetValues(key);
+                string[] values = value.GetValues(key);
                 if (values == null || values.Length == 0)
                 {
                     writer.WriteNullValue();
@@ -108,7 +108,7 @@
                 else
                 {
                     writer.WriteStartArray();
-                    foreach (var v in values)
+                    foreach (string v in values)
                     {
                         writer.WriteStringValue(v);
                     }

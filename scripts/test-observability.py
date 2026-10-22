@@ -124,7 +124,7 @@ def main():
                         target.symlink_to(source, target_is_directory=True)
                     else:
                         shutil.copy2(source, target)
-                for assembly in ('SharpAI.Server.dll', 'SharpAI.dll'):
+                for assembly in ['SharpAI.Server.dll', 'SharpAI.dll']:
                     subprocess.run(coverage_tool + ['instrument', str(instrumented / assembly), '--session-id', coverage_session],
                         cwd=ROOT, check=True, timeout=30)
                 server_command = ['dotnet', str(instrumented / 'SharpAI.Server.dll')]
@@ -188,7 +188,7 @@ def main():
                     def panel_data():
                         series = request(f'http://127.0.0.1:{grafana}/api/datasources/proxy/uid/prometheus/api/v1/query?' +
                         urllib.parse.urlencode({'query': expression}))['data']['result']
-                        return series if series and all(item['value'][1] not in ('NaN', '+Inf', '-Inf') for item in series) else None
+                        return series if series and all(item['value'][1] not in ['NaN', '+Inf', '-Inf'] for item in series) else None
                     eventually(panel_data, panel['title'])
                 passed('provisioned Grafana engine panel queries return finite data')
                 query = '{service_name="sharpai"} |= "' + trace_id + '"'
@@ -197,7 +197,7 @@ def main():
                 passed('engine operation and trace ID ingested into Loki')
                 trace = eventually(lambda: request(f'http://127.0.0.1:{tempo}/api/traces/{trace_id}'), 'Tempo engine trace')
                 text = json.dumps(trace)
-                for attribute in ('sharpai.prompt_tokens', 'sharpai.completion_tokens', 'sharpai.ttft_ns', 'sharpai.queue_wait_ns', 'sharpai.timing_source'):
+                for attribute in ['sharpai.prompt_tokens', 'sharpai.completion_tokens', 'sharpai.ttft_ns', 'sharpai.queue_wait_ns', 'sharpai.timing_source']:
                     assert attribute in text, attribute
                 evidence['trace'] = trace
                 passed('Tempo stores inference span with measured phase attributes')

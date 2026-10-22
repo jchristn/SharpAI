@@ -21,7 +21,8 @@ class CoverageSummaryTests(unittest.TestCase):
 
     def test_union_hits_without_inventing_branch_coverage(self):
         with tempfile.TemporaryDirectory() as directory:
-            a, b = Path(directory) / 'a.xml', Path(directory) / 'b.xml'
+            a = Path(directory) / 'a.xml'
+            b = Path(directory) / 'b.xml'
             self.report(a, 'SharpAI/Operations/Transfer.cs', 0)
             self.report(b, '/workspace/src/SharpAI/Operations/Transfer.cs', 1)
             result = module.summarize([a, b])
@@ -37,7 +38,8 @@ class CoverageSummaryTests(unittest.TestCase):
 
     def test_branch_count_uses_best_observed_bound(self):
         with tempfile.TemporaryDirectory() as directory:
-            a, b = Path(directory) / 'a.xml', Path(directory) / 'b.xml'
+            a = Path(directory) / 'a.xml'
+            b = Path(directory) / 'b.xml'
             self.report(a, 'SharpAI/Operations/Transfer.cs', 1)
             self.report(b, 'SharpAI/Operations/Transfer.cs', 1, '100% (2/2)')
             self.assertEqual(100, module.summarize([a, b])['operations']['branch_percent_lower_bound'])

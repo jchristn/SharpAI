@@ -365,10 +365,10 @@ namespace Test.Shared
                 "TextGen", "WithExamples", "Few-shot builder embeds the examples",
                 ct =>
                 {
-                    List<(string, string)> examples = new List<(string, string)>
+                    List<PromptExample> examples = new List<PromptExample>
                     {
-                        ("2+2", "4"),
-                        ("5*3", "15")
+                        new PromptExample("2+2", "4"),
+                        new PromptExample("5*3", "15")
                     };
                     string prompt = TextGenerationPromptBuilder.BuildWithExamples(TextGenerationFormatEnum.QuestionAnswer, "7-3", examples);
                     TestAssert.Contains(prompt, "2+2");

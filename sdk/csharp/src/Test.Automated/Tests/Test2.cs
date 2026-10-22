@@ -27,7 +27,7 @@ namespace Test.Automated.Tests
             ApiDetails listModels = CreateApiDetails("List Local Models");
             try
             {
-                var models = await SharpAISdk.Ollama.ListLocalModels();
+                List<SharpAI.Models.Ollama.OllamaLocalModel>? models = await SharpAISdk.Ollama.ListLocalModels();
 
                 if (models == null)
                 {

@@ -154,15 +154,15 @@ test.beforeEach(async ({ page }) => {
     return route.continue();
   });
 });
-for (const [path, title] of [
-  ["tenants", "Tenants"],
-  ["users", "Users"],
-  ["credentials", "Credentials"],
-  ["roles", "Roles"],
-  ["permissions", "Permissions"],
-  ["assignments", "Assignments"],
-  ["sessions", "Sessions"],
-  ["audit", "Security audit"],
+for (const {path, title} of [
+  {path:"tenants",title:"Tenants"},
+  {path:"users",title:"Users"},
+  {path:"credentials",title:"Credentials"},
+  {path:"roles",title:"Roles"},
+  {path:"permissions",title:"Permissions"},
+  {path:"assignments",title:"Assignments"},
+  {path:"sessions",title:"Sessions"},
+  {path:"audit",title:"Security audit"},
 ]) {
   test(`${title} administration renders and remains accessible`, async ({
     page,

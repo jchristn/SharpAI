@@ -26,7 +26,7 @@
                 // Validate model name format if it contains a tag
                 if (value.Contains(':'))
                 {
-                    var parts = value.Split(':');
+                    string[] parts = value.Split(':');
                     if (parts.Length != 2)
                         throw new ArgumentException("Model name format should be 'name' or 'name:tag'", nameof(Model));
 

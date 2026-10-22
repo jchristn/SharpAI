@@ -23,6 +23,8 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
+      "no-var": "error",
+      "no-restricted-syntax": ["error", { selector: "TSTupleType", message: "Use a named interface or object instead of a tuple." }],
       ...reactHooks.configs.recommended.rules,
       // TypeScript's own type-checker handles undefined identifiers and unused symbols; the base rules
       // produce false positives on browser globals and type-only imports, so defer to the TS-aware rule.

@@ -26,7 +26,7 @@
             }
 
             // Peek at the first element to determine structure
-            var readerCopy = reader;
+            Utf8JsonReader readerCopy = reader;
             readerCopy.Read();
 
             if (readerCopy.TokenType == JsonTokenType.Number)
@@ -53,7 +53,7 @@
 
         private List<float> ReadSingleEmbedding(ref Utf8JsonReader reader)
         {
-            var embedding = new List<float>();
+            List<float> embedding = new List<float>();
 
             while (reader.Read())
             {
@@ -74,7 +74,7 @@
 
         private List<List<float>> ReadMultipleEmbeddings(ref Utf8JsonReader reader)
         {
-            var embeddings = new List<List<float>>();
+            List<List<float>> embeddings = new List<List<float>>();
 
             while (reader.Read())
             {
@@ -84,7 +84,7 @@
                 if (reader.TokenType != JsonTokenType.StartArray)
                     throw new JsonException($"Expected array in embeddings array, got {reader.TokenType}");
 
-                var embedding = new List<float>();
+                List<float> embedding = new List<float>();
                 while (reader.Read())
                 {
                     if (reader.TokenType == JsonTokenType.EndArray)
@@ -106,7 +106,7 @@
                 throw new JsonException("Embeddings array cannot be empty");
 
             // Validate all embeddings have the same dimension
-            var firstDimension = embeddings[0].Count;
+            int firstDimension = embeddings[0].Count;
             for (int i = 1; i < embeddings.Count; i++)
             {
                 if (embeddings[i].Count != firstDimension)
@@ -183,7 +183,7 @@
         private void WriteSingleEmbedding(Utf8JsonWriter writer, IEnumerable<float> embedding)
         {
             writer.WriteStartArray();
-            foreach (var val in embedding)
+            foreach (float val in embedding)
             {
                 writer.WriteNumberValue(val);
             }
@@ -193,10 +193,10 @@
         private void WriteMultipleEmbeddings(Utf8JsonWriter writer, IEnumerable<IEnumerable<float>> embeddings)
         {
             writer.WriteStartArray();
-            foreach (var embedding in embeddings)
+            foreach (IEnumerable<float> embedding in embeddings)
             {
                 writer.WriteStartArray();
-                foreach (var val in embedding)
+                foreach (float val in embedding)
                 {
                     writer.WriteNumberValue(val);
                 }

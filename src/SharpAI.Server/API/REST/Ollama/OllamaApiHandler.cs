@@ -241,10 +241,10 @@ namespace SharpAI.Server.API.REST.Ollama
 
                 using (FileStream fs = new FileStream(destination, FileMode.Open, FileAccess.Read))
                 {
-                    (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
-                    modelFile.MD5Hash = Convert.ToHexString(md5);
-                    modelFile.SHA1Hash = Convert.ToHexString(sha1);
-                    modelFile.SHA256Hash = Convert.ToHexString(sha256);
+                    HashResults hashResults = HashHelper.ComputeAllHashes(fs);
+                    modelFile.MD5Hash = Convert.ToHexString(hashResults.MD5);
+                    modelFile.SHA1Hash = Convert.ToHexString(hashResults.SHA1);
+                    modelFile.SHA256Hash = Convert.ToHexString(hashResults.SHA256);
                 }
 
                 if (sourceFiles.Count > 1)

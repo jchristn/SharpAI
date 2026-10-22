@@ -177,18 +177,18 @@ namespace Test.Xunit
         public async Task ClientDisconnectDoesNotStrandGenerationCapacity(string endpoint)
         {
             using HttpClient client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
-            using (var request = new HttpRequestMessage(HttpMethod.Post, Root + endpoint) { Content = JsonContent.Create(Payload(endpoint, true, maxTokens: 128)) })
-            using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpRequestMessage? request = new HttpRequestMessage(HttpMethod.Post, Root + endpoint) { Content = JsonContent.Create(Payload(endpoint, true, maxTokens: 128)) })
+            using (HttpResponseMessage? response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
             {
                 response.EnsureSuccessStatusCode();
-                using var stream = await response.Content.ReadAsStreamAsync();
-                using var reader = new StreamReader(stream);
+                using Stream? stream = await response.Content.ReadAsStreamAsync();
+                using StreamReader? reader = new StreamReader(stream);
                 Assert.NotNull(await reader.ReadLineAsync());
                 // Dispose a live response before its terminal event, closing the client connection.
             }
-            using var followup = await client.PostAsJsonAsync(Root + "/v1/completions", Payload("/v1/completions", false, maxTokens: 2));
+            using HttpResponseMessage? followup = await client.PostAsJsonAsync(Root + "/v1/completions", Payload("/v1/completions", false, maxTokens: 2));
             Assert.Equal(200, (int)followup.StatusCode);
-            using var document = JsonDocument.Parse(await followup.Content.ReadAsStringAsync());
+            using JsonDocument? document = JsonDocument.Parse(await followup.Content.ReadAsStringAsync());
             Usage(document.RootElement.GetProperty("usage"), 2);
         }
 

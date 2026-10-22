@@ -111,7 +111,7 @@
             if (!ExpiresAt.HasValue)
                 return null;
 
-            var remaining = ExpiresAt.Value - DateTime.UtcNow;
+            TimeSpan remaining = ExpiresAt.Value - DateTime.UtcNow;
             return remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
         }
 
@@ -121,7 +121,7 @@
         /// <returns>Human-readable time remaining.</returns>
         public string GetFormattedTimeUntilExpiration()
         {
-            var remaining = GetTimeUntilExpiration();
+            TimeSpan? remaining = GetTimeUntilExpiration();
             if (!remaining.HasValue)
                 return "No expiration";
 
@@ -165,7 +165,7 @@
             if (string.IsNullOrEmpty(Name))
                 return string.Empty;
 
-            var colonIndex = Name.IndexOf(':');
+            int colonIndex = Name.IndexOf(':');
             return colonIndex > 0 ? Name.Substring(0, colonIndex) : Name;
         }
 
@@ -178,7 +178,7 @@
             if (string.IsNullOrEmpty(Name))
                 return "latest";
 
-            var colonIndex = Name.IndexOf(':');
+            int colonIndex = Name.IndexOf(':');
             return colonIndex > 0 ? Name.Substring(colonIndex + 1) : "latest";
         }
 
@@ -188,7 +188,7 @@
         /// <returns>Summary string of memory usage.</returns>
         public string GetMemoryUsageSummary()
         {
-            var parts = new List<string>();
+            List<string> parts = new List<string>();
 
             if (Size.HasValue)
                 parts.Add($"Total: {GetFormattedSize()}");
@@ -197,12 +197,12 @@
             {
                 parts.Add($"VRAM: {GetFormattedVRAMSize()}");
 
-                var vramPct = GetVRAMPercentage();
+                double? vramPct = GetVRAMPercentage();
                 if (vramPct.HasValue)
                     parts.Add($"({vramPct.Value:F1}%)");
             }
 
-            var ramUsage = GetRAMUsage();
+            long ramUsage = GetRAMUsage();
             if (ramUsage > 0)
                 parts.Add($"RAM: {GetFormattedRAMSize()}");
 

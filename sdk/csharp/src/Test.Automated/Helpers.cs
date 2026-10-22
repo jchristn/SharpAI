@@ -23,7 +23,7 @@ namespace Test.Automated
         /// <returns>Ollama embeddings request.</returns>
         internal static OllamaGenerateEmbeddingsRequest CreateOllamaSingleEmbeddingsRequest(string model, string input)
         {
-            var request = new OllamaGenerateEmbeddingsRequest
+            OllamaGenerateEmbeddingsRequest? request = new OllamaGenerateEmbeddingsRequest
             {
                 Model = model
             };
@@ -39,7 +39,7 @@ namespace Test.Automated
         /// <returns>Ollama embeddings request.</returns>
         internal static OllamaGenerateEmbeddingsRequest CreateOllamaMultipleEmbeddingsRequest(string model, List<string> inputs)
         {
-            var request = new OllamaGenerateEmbeddingsRequest
+            OllamaGenerateEmbeddingsRequest? request = new OllamaGenerateEmbeddingsRequest
             {
                 Model = model
             };
@@ -59,7 +59,7 @@ namespace Test.Automated
         /// <returns>OpenAI embeddings request.</returns>
         internal static OpenAIGenerateEmbeddingsRequest CreateOpenAISingleEmbeddingsRequest(string model, string input)
         {
-            var request = new OpenAIGenerateEmbeddingsRequest
+            OpenAIGenerateEmbeddingsRequest? request = new OpenAIGenerateEmbeddingsRequest
             {
                 Model = model
             };
@@ -75,7 +75,7 @@ namespace Test.Automated
         /// <returns>OpenAI embeddings request.</returns>
         internal static OpenAIGenerateEmbeddingsRequest CreateOpenAIMultipleEmbeddingsRequest(string model, List<string> inputs)
         {
-            var request = new OpenAIGenerateEmbeddingsRequest
+            OpenAIGenerateEmbeddingsRequest? request = new OpenAIGenerateEmbeddingsRequest
             {
                 Model = model
             };
@@ -189,7 +189,7 @@ namespace Test.Automated
         /// <returns>OpenAI completion request.</returns>
         internal static OpenAIGenerateCompletionRequest CreateOpenAICompletionRequest(string model, string prompt, bool stream = false)
         {
-            var request = new OpenAIGenerateCompletionRequest
+            OpenAIGenerateCompletionRequest? request = new OpenAIGenerateCompletionRequest
             {
                 Model = model,
                 Stream = stream
@@ -287,7 +287,7 @@ namespace Test.Automated
                 try
                 {
                     // Try to list models as a health check
-                    var models = await sdk.Ollama.ListLocalModels();
+                    List<OllamaLocalModel>? models = await sdk.Ollama.ListLocalModels();
                     if (models != null)
                     {
                         Console.WriteLine("SharpAI server is available");

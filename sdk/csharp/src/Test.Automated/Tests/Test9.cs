@@ -27,8 +27,8 @@ namespace Test.Automated.Tests
             ApiDetails invalidEmbeddings = CreateApiDetails("Invalid Embeddings Model");
             try
             {
-                var request = Helpers.CreateOllamaSingleEmbeddingsRequest("invalid-model-name", "test");
-                var embeddingsResult = await SharpAISdk.Ollama.GenerateEmbeddings(request);
+                SharpAI.Models.Ollama.OllamaGenerateEmbeddingsRequest? request = Helpers.CreateOllamaSingleEmbeddingsRequest("invalid-model-name", "test");
+                SharpAI.Models.Ollama.OllamaGenerateEmbeddingsResult? embeddingsResult = await SharpAISdk.Ollama.GenerateEmbeddings(request);
                 
                 if (embeddingsResult == null)
                 {
@@ -55,8 +55,8 @@ namespace Test.Automated.Tests
             ApiDetails invalidCompletions = CreateApiDetails("Invalid Completions Model");
             try
             {
-                var request = Helpers.CreateOllamaCompletionRequest("invalid-model-name", "What is the capital of France?", false);
-                var completionResult = await SharpAISdk.Ollama.GenerateCompletion(request);
+                SharpAI.Models.Ollama.OllamaGenerateCompletionRequest? request = Helpers.CreateOllamaCompletionRequest("invalid-model-name", "What is the capital of France?", false);
+                SharpAI.Models.Ollama.OllamaGenerateCompletionResult? completionResult = await SharpAISdk.Ollama.GenerateCompletion(request);
                 
                 if (completionResult == null)
                 {
@@ -83,8 +83,8 @@ namespace Test.Automated.Tests
             ApiDetails invalidOpenAI = CreateApiDetails("Invalid OpenAI Model");
             try
             {
-                var request = Helpers.CreateOpenAICompletionRequest("invalid-model-name", "What is the capital of France?", false);
-                var completionResult = await SharpAISdk.OpenAI.GenerateCompletionAsync(request);
+                SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest? request = Helpers.CreateOpenAICompletionRequest("invalid-model-name", "What is the capital of France?", false);
+                SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult? completionResult = await SharpAISdk.OpenAI.GenerateCompletionAsync(request);
                 
                 if (completionResult == null)
                 {

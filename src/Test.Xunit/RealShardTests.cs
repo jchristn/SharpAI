@@ -31,16 +31,16 @@ namespace Test.Xunit
             Directory.CreateDirectory(directory);
             try
             {
-                using var db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(directory, "registry.db") }, new LoggingModule());
-                var registry = new ModelFileService(new LoggingModule(), db.Models, directory);
-                var upstream = new HuggingFaceClient(new LoggingModule(), null!, Environment.GetEnvironmentVariable("SHARPAI_TEST_HF_URL"));
-                var model = await ModelPullService.PullAsync(upstream, registry, directory, name);
+                using DatabaseDriverBase? db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(directory, "registry.db") }, new LoggingModule());
+                ModelFileService? registry = new ModelFileService(new LoggingModule(), db.Models, directory);
+                HuggingFaceClient? upstream = new HuggingFaceClient(new LoggingModule(), null!, Environment.GetEnvironmentVariable("SHARPAI_TEST_HF_URL"));
+                SharpAI.Models.ModelFile? model = await ModelPullService.PullAsync(upstream, registry, directory, name);
                 string entry = registry.GetFilename(name);
                 Assert.Equal(2, GgufShards.Files(entry).Count);
                 Assert.True(ModelInspector.Inspect(entry).ParameterCount > 1000000);
-                using (var service = new ModelEngineService(new LoggingModule()))
+                using (ModelEngineService? service = new ModelEngineService(new LoggingModule()))
                 {
-                    var engine = await service.GetByModelFileAsync(entry);
+                    SharpAI.Engines.LlamaSharpEngine? engine = await service.GetByModelFileAsync(entry);
                     Assert.NotEmpty(await engine.GenerateTextAsync("Once upon a time", 4));
                     Assert.True(service.UnloadModel(entry)); Assert.True(engine.IsDisposed);
                 }

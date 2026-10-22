@@ -114,7 +114,7 @@
         /// <returns>The appropriate ChatFormatEnum or the fallback</returns>
         public static ChatFormatEnum ModelFamilyToChatFormat(string modelFamily, ChatFormatEnum fallback)
         {
-            var format = ModelFamilyToChatFormat(modelFamily);
+            ChatFormatEnum format = ModelFamilyToChatFormat(modelFamily);
 
             // If we got Simple as a result and it wasn't explicitly mapped, use the fallback
             if (format == ChatFormatEnum.Simple && !IsExplicitlySimpleFormat(modelFamily))

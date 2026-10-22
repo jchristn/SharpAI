@@ -27,7 +27,9 @@ def main():
     output = pathlib.Path(args.output).resolve()
     output.mkdir(parents=True, exist_ok=True)
     evidence = []
-    for context, slots in [(128, 1), (256, 1), (128, 3), (256, 3)]:
+    for configuration in [{'context': 128, 'slots': 1}, {'context': 256, 'slots': 1}, {'context': 128, 'slots': 3}, {'context': 256, 'slots': 3}]:
+        context = configuration['context']
+        slots = configuration['slots']
         with tempfile.TemporaryDirectory(prefix='sharpai-memory-') as temp:
             runtime = pathlib.Path(temp)
             with socket.socket() as sock:
@@ -84,7 +86,7 @@ def main():
                     assert estimate['EffectiveContext'] == context and estimate['Slots'] == slots
                     peak = max(observed + [memory['working_set_bytes']])
                     delta = max(0, peak - baseline)
-                    assert delta <= estimate['HostBytes'] + args.allowance_mb * 1024 * 1024, (delta, estimate)
+                    assert delta <= estimate['HostBytes'] + args.allowance_mb * 1024 * 1024, {'delta': delta, 'estimate': estimate}
                     item = {'backend':args.backend, 'context':context, 'slots':slots, 'baseline_working_set':baseline,
                         'sampled_peak_working_set':peak, 'observed_process_delta':delta, 'estimate':estimate,
                         'allowance_mb':args.allowance_mb, 'sample_count':len(observed),

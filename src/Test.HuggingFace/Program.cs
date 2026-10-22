@@ -405,7 +405,7 @@
 
             // Show download plan and test URLs
             Console.WriteLine("Download Plan:");
-            foreach (var file in files)
+            foreach (HuggingFaceModelFile file in files)
             {
                 List<string> urls = _HuggingFaceClient.GetDownloadUrls(modelName, file);
                 Console.WriteLine($"   - {Path.GetFileName(file.Path)} ← {file.Path}");

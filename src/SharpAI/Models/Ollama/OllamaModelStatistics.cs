@@ -143,7 +143,7 @@
         /// <returns>Summary string.</returns>
         public string GetSummary()
         {
-            var lines = new List<string>
+            List<string> lines = new List<string>
             {
                 $"Total Models: {TotalModels}",
                 $"Total Size: {TotalSizeFormatted}",
@@ -152,7 +152,7 @@
 
             if (ModelsByFamily.Count > 0)
             {
-                var topFamily = ModelsByFamily.OrderByDescending(kvp => kvp.Value).First();
+                KeyValuePair<string, int> topFamily = ModelsByFamily.OrderByDescending(kvp => kvp.Value).First();
                 lines.Add($"Most Common Family: {topFamily.Key} ({topFamily.Value} models)");
             }
 

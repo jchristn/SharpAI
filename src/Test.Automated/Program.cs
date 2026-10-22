@@ -8,6 +8,8 @@ using Test.Shared;
 
 using Touchstone.Cli;
 
+if (args.Length > 0 && args[0] == "--native-backend-probe") return await NativeBackendProbe.RunAsync(args);
+
 if (args.Length > 0 && args[0] == "--recovery-probe") return await RecoveryProbe.RunAsync(args);
 
 string? resultsPath = null;

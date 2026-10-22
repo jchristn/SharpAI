@@ -69,7 +69,7 @@
             if (result == null)
                 return null;
 
-            var metrics = new OllamaCompletionMetrics();
+            OllamaCompletionMetrics metrics = new OllamaCompletionMetrics();
 
             if (result.PromptEvalCount.HasValue)
                 metrics.PromptTokens = result.PromptEvalCount.Value;
@@ -79,27 +79,27 @@
 
             metrics.ContextSize = result.GetContextSize();
 
-            var promptTps = result.GetPromptTokensPerSecond();
+            double? promptTps = result.GetPromptTokensPerSecond();
             if (promptTps.HasValue)
                 metrics.PromptTokensPerSecond = promptTps.Value;
 
-            var genTps = result.GetGenerationTokensPerSecond();
+            double? genTps = result.GetGenerationTokensPerSecond();
             if (genTps.HasValue)
                 metrics.GenerationTokensPerSecond = genTps.Value;
 
-            var totalMs = result.GetTotalDurationMilliseconds();
+            double? totalMs = result.GetTotalDurationMilliseconds();
             if (totalMs.HasValue)
                 metrics.TotalDurationMs = totalMs.Value;
 
-            var loadMs = result.GetLoadDurationMilliseconds();
+            double? loadMs = result.GetLoadDurationMilliseconds();
             if (loadMs.HasValue)
                 metrics.LoadDurationMs = loadMs.Value;
 
-            var promptMs = result.GetPromptEvalDurationMilliseconds();
+            double? promptMs = result.GetPromptEvalDurationMilliseconds();
             if (promptMs.HasValue)
                 metrics.PromptEvalDurationMs = promptMs.Value;
 
-            var evalMs = result.GetEvalDurationMilliseconds();
+            double? evalMs = result.GetEvalDurationMilliseconds();
             if (evalMs.HasValue)
                 metrics.GenerationDurationMs = evalMs.Value;
 

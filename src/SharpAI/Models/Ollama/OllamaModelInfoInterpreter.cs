@@ -27,8 +27,8 @@
         /// <returns>Estimated VRAM in GB, or null if cannot estimate.</returns>
         public double? EstimateVRAMRequirement()
         {
-            var paramSize = _result.Details?.GetParameterSizeInBillions();
-            var quantBits = _result.Details?.GetQuantizationBits();
+            double? paramSize = _result.Details?.GetParameterSizeInBillions();
+            int? quantBits = _result.Details?.GetQuantizationBits();
 
             if (!paramSize.HasValue)
                 return null;
@@ -44,7 +44,7 @@
             }
 
             // Parameters in billions * bytes per param * 1.2 (overhead)
-            var vramGB = (paramSize.Value * 1_000_000_000 * bytesPerParam * 1.2) / (1024.0 * 1024.0 * 1024.0);
+            double vramGB = (paramSize.Value * 1_000_000_000 * bytesPerParam * 1.2) / (1024.0 * 1024.0 * 1024.0);
 
             return Math.Round(vramGB, 1);
         }
@@ -55,24 +55,24 @@
         /// <returns>Context length or null if not found.</returns>
         public int? GetContextLength()
         {
-            var parameters = _result.ParseParameters();
+            Dictionary<string, string> parameters = _result.ParseParameters();
 
-            if (parameters.TryGetValue("num_ctx", out var ctxStr))
+            if (parameters.TryGetValue("num_ctx", out string ctxStr))
             {
-                if (int.TryParse(ctxStr, out var ctx))
+                if (int.TryParse(ctxStr, out int ctx))
                     return ctx;
             }
 
             // Check model_info for context length
             if (_result.ModelInfo != null)
             {
-                if (_result.ModelInfo.TryGetValue("context_length", out var ctxObj))
+                if (_result.ModelInfo.TryGetValue("context_length", out object ctxObj))
                 {
                     if (ctxObj is long ctxLong)
                         return (int)ctxLong;
                     if (ctxObj is int ctxInt)
                         return ctxInt;
-                    if (ctxObj is string ctxString && int.TryParse(ctxString, out var parsed))
+                    if (ctxObj is string ctxString && int.TryParse(ctxString, out int parsed))
                         return parsed;
                 }
             }
@@ -86,12 +86,12 @@
         /// <returns>Temperature value or null if not found.</returns>
         public float? GetTemperature()
         {
-            var parameters = _result.ParseParameters();
+            Dictionary<string, string> parameters = _result.ParseParameters();
 
-            if (parameters.TryGetValue("temperature", out var tempStr))
+            if (parameters.TryGetValue("temperature", out string tempStr))
             {
                 if (float.TryParse(tempStr, System.Globalization.NumberStyles.Float,
-                    System.Globalization.CultureInfo.InvariantCulture, out var temp))
+                    System.Globalization.CultureInfo.InvariantCulture, out float temp))
                     return temp;
             }
 
@@ -108,14 +108,14 @@
         {
             if (requiredVRAM.HasValue)
             {
-                var estimatedVRAM = EstimateVRAMRequirement();
+                double? estimatedVRAM = EstimateVRAMRequirement();
                 if (!estimatedVRAM.HasValue || estimatedVRAM.Value > requiredVRAM.Value)
                     return false;
             }
 
             if (requiredContext.HasValue)
             {
-                var contextLength = GetContextLength();
+                int? contextLength = GetContextLength();
                 if (!contextLength.HasValue || contextLength.Value < requiredContext.Value)
                     return false;
             }
@@ -129,7 +129,7 @@
         /// <returns>Summary string.</returns>
         public string GetSummary()
         {
-            var parts = new List<string>();
+            List<string> parts = new List<string>();
 
             if (_result.Details != null)
             {
@@ -143,11 +143,11 @@
                     parts.Add($"Quantization: {_result.Details.QuantizationLevel}");
             }
 
-            var vram = EstimateVRAMRequirement();
+            double? vram = EstimateVRAMRequirement();
             if (vram.HasValue)
                 parts.Add($"Est. VRAM: {vram.Value:F1} GB");
 
-            var ctx = GetContextLength();
+            int? ctx = GetContextLength();
             if (ctx.HasValue)
                 parts.Add($"Context: {ctx.Value:N0} tokens");
 

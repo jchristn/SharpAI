@@ -568,28 +568,20 @@
             <summary>Whether a request targets a managed library collection or item.</summary>
         </member>
         <member name="T:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper">
-            <summary>
-            Native library bootstrapper for LlamaSharp.
-            Detects GPU availability and configures the appropriate native library before LlamaSharp static initialization.
-            </summary>
+            <summary>Adapts server settings to the native initializer shared with standalone library consumers.</summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper.IsInitialized">
-            <summary>
-            Gets a value indicating whether the bootstrapper has been initialized.
-            </summary>
+            <summary>Whether the shared native initializer has completed.</summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper.SelectedBackend">
-            <summary>
-            Gets the backend that was selected during initialization.
-            </summary>
+            <summary>The backend selected by the shared native initializer.</summary>
         </member>
         <member name="M:SharpAI.Server.Classes.Runtime.NativeLibraryBootstrapper.Initialize(SharpAI.Server.Classes.Settings.Settings,SyslogLogging.LoggingModule)">
-            <summary>
-            Initialize the native library configuration.
-            This MUST be called before any LlamaSharp types are referenced.
-            </summary>
-            <param name="settings">Server settings containing backend configuration.</param>
-            <param name="logging">Logging module.</param>
+            <summary>Initialize native loading before the first native operation.</summary>
+            <param name="settings">Non-null server settings.</param>
+            <param name="logging">Non-null logging module.</param>
+            <exception cref="T:System.ArgumentNullException">Settings or logging is null.</exception>
+            <remarks>Thread-safe. The first initialization, from either the server or library, owns the process-wide selection.</remarks>
         </member>
         <member name="T:SharpAI.Server.Classes.Runtime.RequestDiagnostics">
             <summary>Request-scoped diagnostics. Weak keys release buffers after the HTTP context is collected.</summary>

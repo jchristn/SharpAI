@@ -45,6 +45,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Inputty" Version="1.0.14" />
+		<InternalsVisibleTo Include="Test.Xunit" />
 		<AssemblyMetadata Include="LlamaSharpVersion" Value="$(LlamaSharpVersion)" />
 		<PackageReference Include="LLamaSharp" Version="$(LlamaSharpVersion)" />
 		<PackageReference Include="LLamaSharp.Backend.Cpu" Version="$(LlamaSharpVersion)" />

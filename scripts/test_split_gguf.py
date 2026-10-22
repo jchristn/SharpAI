@@ -29,7 +29,7 @@ class SplitFixtureTests(unittest.TestCase):
             self.assertEqual(2, len(files))
             for index, path in enumerate(files):
                 data = path.read_bytes()
-                self.assertEqual((1, 4), struct.unpack_from('<QQ', data, 8))
+                self.assertEqual([1, 4], list(struct.unpack_from('<QQ', data, 8)))
                 self.assertIn(string('split.no') + struct.pack('<IH', 2, index), data)
                 self.assertIn(string('split.tensors.count') + struct.pack('<Ii', 5, 2), data)
                 self.assertTrue(data.endswith(bytes([65 + index]) * 32))

@@ -26,7 +26,7 @@ def request(path, payload=None):
         response = urllib.request.urlopen(req, timeout=15)
     except urllib.error.HTTPError as error:
         response = error
-    return response.status, response.headers, response.read().decode(errors='replace')
+    return {'status': response.status, 'headers': response.headers, 'body': response.read().decode(errors='replace')}
 
 
 def verify(condition, message):
@@ -37,7 +37,10 @@ def verify(condition, message):
 
 
 for path in ['/health', '/ready', '/api/tags', '/api/ps', '/api/settings', '/v1/models', '/v1.0/api/request-history?pageSize=1', '/openapi.json']:
-    status, headers, body = request(path)
+    response = request(path)
+    status = response['status']
+    headers = response['headers']
+    body = response['body']
     verify(status == 200 and 'application/json' in headers.get('Content-Type', ''), path + ' returns real JSON through nginx')
     value = json.loads(body)
     verify(isinstance(value, dict), path + ' is an object, not HTML')
@@ -49,21 +52,33 @@ for path in ['/health', '/ready', '/api/tags', '/api/ps', '/api/settings', '/v1/
 now = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=2)
 values = {'fromUtc': (now - datetime.timedelta(minutes=2)).isoformat(), 'toUtc': now.isoformat(), 'pathContains': '/health', 'pageSize': 1}
 encoded = urllib.parse.urlencode(values)
-summary = json.loads(request('/v1.0/api/request-history/summary?' + encoded)[2])
-page = json.loads(request('/v1.0/api/request-history?' + encoded)[2])
+summary = json.loads(request('/v1.0/api/request-history/summary?' + encoded)['body'])
+page = json.loads(request('/v1.0/api/request-history?' + encoded)['body'])
 verify(len(summary['Buckets']) == 1, 'encoded timestamps constrain the summary to two minutes')
 verify(summary['TotalCount'] == page['TotalRecords'], 'summary and table honor identical encoded filters')
 verify(all('/health' in item['Path'] for item in page['Objects']), 'encoded path filter matches request paths')
-status, headers, body = request('/api/pull', b'{}')
+response = request('/api/pull', b'{}')
+status = response['status']
+headers = response['headers']
+body = response['body']
 verify(status == 400 and 'application/json' in headers.get('Content-Type', ''), 'pull POST reaches server validation; no nginx 405')
 for route in ['/settings', '/models', '/api-explorer', '/observability']:
-    status, headers, body = request(route)
+    response = request(route)
+    status = response['status']
+    headers = response['headers']
+    body = response['body']
     verify(status == 200 and '<div id="root">' in body, route + ' remains an SPA route')
-status, headers, body = request('/')
+response = request('/')
+status = response['status']
+headers = response['headers']
+body = response['body']
 for asset in re.findall(r'(?:src|href)="([^"]+)"', body):
     if asset.startswith('/'):
-        verify(request(asset)[0] == 200, asset + ' loads')
+        verify(request(asset)['status'] == 200, asset + ' loads')
 if args.engine_metrics:
-    status, headers, body = request('/engine-metrics')
+    response = request('/engine-metrics')
+    status = response['status']
+    headers = response['headers']
+    body = response['body']
     verify(status == 200 and 'sharpai_models_resident' in body, 'engine metrics reach the dashboard from the OTLP collector')
 print(f'{checks} deployment assertions passed')

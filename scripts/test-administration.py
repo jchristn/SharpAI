@@ -32,7 +32,7 @@ def main():
                     'Telemetry': {'Enable': False}, 'RequestHistory': {'Enabled': True}, 'Runtime': {'ForceBackend': 'cpu'},
                     'Logging': {'LogDirectory': './logs/', 'ConsoleLogging': True}}
         (runtime / 'sharpai.json').write_text(json.dumps(settings))
-        for name in ('models', 'temp', 'logs'):
+        for name in ['models', 'temp', 'logs']:
             (runtime / name).mkdir()
         log = open(runtime / 'server.log', 'w')
         process = subprocess.Popen(['dotnet', args.server_dll], cwd=runtime, stdout=log, stderr=subprocess.STDOUT)
@@ -52,15 +52,17 @@ def main():
                                          headers={'Content-Type': 'application/json', **(admin if headers is None else headers)})
             try:
                 with urllib.request.urlopen(req, timeout=20) as response:
-                    status, data = response.status, json.load(response)
+                    status = response.status
+                    data = json.load(response)
             except urllib.error.HTTPError as error:
-                status, data = error.code, json.loads(error.read())
+                status = error.code
+                data = json.loads(error.read())
             check(status == expected, f'{method} {path.split("?")[0]} returns {expected} (actual {status}; {data.get("Message","") if isinstance(data,dict) and status != expected else ""})')
             return data
 
         def login(tenant, email, password):
             data = request('POST', '/v1.0/token', headers={'x-tenant-guid': tenant, 'x-email': email, 'x-password': password})
-            return {'Authorization': 'Bearer ' + data['token']}, data['token']
+            return {'headers': {'Authorization': 'Bearer ' + data['token']}, 'token': data['token']}
 
         try:
             for _ in range(300):
@@ -75,7 +77,8 @@ def main():
             request('GET', '/v1.0/system-prompts', headers={}, expected=401)
             context = request('GET', '/v1.0/auth/context')
             check(context['isAdmin'], 'API key receives platform administration context')
-            seeded, _ = login('default', 'admin@sharpai.local', 'password')
+            login_session = login('default', 'admin@sharpai.local', 'password')
+            seeded = login_session['headers']
             seeded_context = request('GET', '/v1.0/auth/context', headers=seeded)
             check(seeded_context['isAdmin'], 'initial password signs in to the default tenant as platform administrator')
             default_tenant = request('GET', '/v1.0/tenants/default')
@@ -88,11 +91,16 @@ def main():
             ta = request('POST', base + '/users', {'Email': 'admin@example.test', 'Password': password, 'IsTenantAdmin': True})
             user = request('POST', base + '/users', {'Email': 'user@example.test', 'Password': password})
             foreign = request('POST', other + '/users', {'Email': 'user@example.test', 'Password': password})
-            tenant_admin, _ = login(a, ta['Email'], password)
-            user_auth, old_token = login(a, user['Email'], password)
+            login_session = login(a, ta['Email'], password)
+            tenant_admin = login_session['headers']
+            login_session = login(a, user['Email'], password)
+            user_auth = login_session['headers']
+            old_token = login_session['token']
             # Library ownership is intrinsic to human users, with explicit RBAC denies still honored.
             library_ids={}
-            for library, payload in [('system-prompts', {'Content': 'Shared starter instructions'}), ('model-configurations', {'Configuration': {'Temperature': .7, 'MaxTokens': 256, 'TopP': .8, 'TopK': 30, 'MinP': .1, 'RepeatPenalty': 1.1, 'RepeatLastN': 32, 'PresencePenalty': .2, 'FrequencyPenalty': -.1, 'Seed': 9, 'Stop': ['END'], 'StreamResponse': False, 'JsonOutput': True, 'DisplayThinking': True}})]:
+            for fixture in [{'library': 'system-prompts', 'payload': {'Content': 'Shared starter instructions'}}, {'library': 'model-configurations', 'payload': {'Configuration': {'Temperature': .7, 'MaxTokens': 256, 'TopP': .8, 'TopK': 30, 'MinP': .1, 'RepeatPenalty': 1.1, 'RepeatLastN': 32, 'PresencePenalty': .2, 'FrequencyPenalty': -.1, 'Seed': 9, 'Stop': ['END'], 'StreamResponse': False, 'JsonOutput': True, 'DisplayThinking': True}}}]:
+                library = fixture['library']
+                payload = fixture['payload']
                 endpoint='/v1.0/'+library
                 system=request('POST',endpoint,{'Name':'Shared system','Scope':'System',**payload})
                 tenant_item=request('POST',endpoint,{'Name':'Shared tenant','Scope':'Tenant','TenantId':a,**payload},tenant_admin)
@@ -192,12 +200,14 @@ def main():
             session = next(item for item in sessions if item['UserGuid'] == user['Guid'])
             request('DELETE', base + '/sessions/' + session['Guid'])
             request('GET', '/v1.0/auth/context', headers=user_auth, expected=401)
-            user_auth, _ = login(a, user['Email'], password)
+            login_session = login(a, user['Email'], password)
+            user_auth = login_session['headers']
             new_password = 'Replacement ' + secrets.token_hex(12)
             request('PUT', base + '/users/' + user['Guid'] + '/password', {'Password': new_password})
             request('GET', '/v1.0/auth/context', headers=user_auth, expected=401)
             login(a, user['Email'], new_password)
-            active_auth, _ = login(a, user['Email'], new_password)
+            login_session = login(a, user['Email'], new_password)
+            active_auth = login_session['headers']
             request('PUT', base + '/users/' + user['Guid'], {'Email': user['Email'], 'Active': False})
             request('GET', '/v1.0/auth/context', headers=active_auth, expected=401)
             request('POST', '/v1.0/token', headers={'x-tenant-guid': a, 'x-email': user['Email'], 'x-password': new_password}, expected=401)
@@ -230,7 +240,8 @@ def main():
             library_detail=request('GET','/v1.0/api/request-history/'+library_history['Id'])
             check(library_detail.get('RequestBody')=='[private library payload withheld]','Shared request history cannot expose private library payloads')
             # Open inference mode still resolves explicit identities for private libraries.
-            foreign_auth, _ = login(b, foreign['Email'], password)
+            login_session = login(b, foreign['Email'], password)
+            foreign_auth = login_session['headers']
             settings['Auth']['Enabled'] = False
             settings['Debug'] = {'RequestBody': True}
             (runtime / 'sharpai.json').write_text(json.dumps(settings))

@@ -1,5 +1,6 @@
 namespace SharpAI.Sdk
 {
+    using System.Collections.Generic;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using SharpAI.Sdk.Implementations;
@@ -246,14 +247,14 @@ namespace SharpAI.Sdk
             
             if (data is SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest embeddingsRequest)
             {
-                var inputs = embeddingsRequest.GetInputs();
+                string[]? inputs = embeddingsRequest.GetInputs();
                 if (inputs != null && inputs.Length > 1)
                 {
                     // Create a custom JSON structure for multiple inputs
-                    var customRequest = new
+                    Dictionary<string, object> customRequest = new Dictionary<string, object>
                     {
-                        model = embeddingsRequest.Model,
-                        input = inputs
+                        { "model", embeddingsRequest.Model },
+                        { "input", inputs }
                     };
                     json = JsonSerializer.Serialize(customRequest, _JsonOptions);
                 }
@@ -658,9 +659,9 @@ namespace SharpAI.Sdk
                                     if (chunk.Data != null && chunk.Data.Length > 0)
                                     {
                                         string chunkText = System.Text.Encoding.UTF8.GetString(chunk.Data);
-                                        var lines = chunkText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+                                        string[]? lines = chunkText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
-                                        foreach (var line in lines)
+                                        foreach (string? line in lines)
                                         {
                                             if (string.IsNullOrWhiteSpace(line)) continue;
 

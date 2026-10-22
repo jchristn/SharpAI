@@ -14,17 +14,17 @@ class LiveOperationsTests(unittest.TestCase):
         self.client = SharpAIClient(os.environ['SHARPAI_TEST_SERVER_URL'], timeout=15)
 
     def test_ollama_counts_and_nanosecond_timings_survive_sdk(self):
-        for chat in (False, True):
+        for chat in [False, True]:
             with self.subTest(chat=chat):
                 response = (self.client.chat('ops-story', [{'role':'user', 'content':'Once upon a time'}], options={'num_predict':4, 'temperature':0})
                     if chat else self.client.generate('ops-story', 'Once upon a time', options={'num_predict':4, 'temperature':0}))
                 self.assertTrue(response['done'])
                 self.assertEqual(4, response['eval_count'])
-                for key in ('prompt_eval_count', 'prompt_eval_duration', 'eval_duration', 'total_duration'):
+                for key in ['prompt_eval_count', 'prompt_eval_duration', 'eval_duration', 'total_duration']:
                     self.assertGreater(response[key], 0)
 
     def test_openai_usage_survives_sdk(self):
-        for chat in (False, True):
+        for chat in [False, True]:
             with self.subTest(chat=chat):
                 response = (self.client.openai_chat('ops-story', [{'role':'user', 'content':'Once upon a time'}], max_tokens=4, temperature=0)
                     if chat else self.client.openai_completions('ops-story', 'Once upon a time', max_tokens=4, temperature=0))

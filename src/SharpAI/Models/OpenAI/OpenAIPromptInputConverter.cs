@@ -19,7 +19,7 @@
             }
             else if (reader.TokenType == JsonTokenType.StartArray)
             {
-                var list = new List<string>();
+                List<string> list = new List<string>();
                 while (reader.Read())
                 {
                     if (reader.TokenType == JsonTokenType.EndArray)
@@ -51,7 +51,7 @@
             else if (value is List<string> listValue)
             {
                 writer.WriteStartArray();
-                foreach (var item in listValue)
+                foreach (string item in listValue)
                 {
                     writer.WriteStringValue(item);
                 }

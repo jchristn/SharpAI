@@ -1,6 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import type {LibraryItem} from '../src/api/library';
+import type {LibraryItem,LibraryKind} from '../src/api/library';
 
 async function install(page:Page,role:'User'|'Tenant'|'System'='User'){
  const config={Temperature:.7,MaxTokens:512,TopP:.8,TopK:20,MinP:.05,RepeatPenalty:1.1,RepeatLastN:64,PresencePenalty:0,FrequencyPenalty:0,Seed:0,Stop:['END'],StreamResponse:false,JsonOutput:true,DisplayThinking:true};
@@ -32,7 +32,7 @@ async function install(page:Page,role:'User'|'Tenant'|'System'='User'){
  });
  return {prompts,configurations};
 }
-for(const kind of ['system-prompts','model-configurations'] as const){
+for(const kind of ['system-prompts','model-configurations'] satisfies LibraryKind[]){
  test(`${kind} management fits and is accessible`,async({page})=>{
   await install(page);await page.goto('/'+kind);await expect(page.locator('main h1')).toHaveText(kind==='system-prompts'?'System prompts':'Model configurations');
   await expect(page.locator('tbody tr')).not.toHaveCount(0);
@@ -52,7 +52,7 @@ test('regular users inspect and duplicate shared prompts into private editable i
  await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);await expect(page.getByRole('cell',{name:'My customized prompt',exact:true})).toBeVisible();
  expect(prompts[0].Content).toBe('System instructions');expect(prompts.find(row=>row.Name==='My customized prompt')?.Scope).toBe('User');
 });
-for(const role of ['Tenant','System'] as const){
+for(const role of ['Tenant','System'] satisfies Array<'Tenant'|'System'>){
  test(`${role} administrators see only authorized publication scopes`,async({page})=>{
   await install(page,role);await page.goto('/model-configurations');await page.getByRole('button',{name:'Create',exact:true}).click();
   const scope=page.getByRole('dialog').getByRole('combobox',{name:'Visibility'});await expect(scope).toHaveValue('User');

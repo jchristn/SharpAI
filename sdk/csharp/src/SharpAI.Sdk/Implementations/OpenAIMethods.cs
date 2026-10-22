@@ -51,13 +51,13 @@ namespace SharpAI.Sdk.Implementations
                 throw new ArgumentNullException(nameof(request));
             string url = _Sdk.Endpoint + "/v1/embeddings";
             string json;
-            var inputs = request.GetInputs();
+            string[]? inputs = request.GetInputs();
             if (inputs != null && inputs.Length > 1)
             {
-                var customRequest = new
+                Dictionary<string, object> customRequest = new Dictionary<string, object>
                 {
-                    model = request.Model,
-                    input = inputs
+                    { "model", request.Model },
+                    { "input", inputs }
                 };
                 json = JsonSerializer.Serialize(customRequest, _Sdk._JsonOptions);
             }
@@ -136,7 +136,7 @@ namespace SharpAI.Sdk.Implementations
             request.Stream = true;
             string url = _Sdk.Endpoint + "/v1/completions";
 
-            await foreach (var result in _Sdk.PostStreamAsync<OpenAIStreamingCompletionResult>(
+            await foreach (OpenAIStreamingCompletionResult? result in _Sdk.PostStreamAsync<OpenAIStreamingCompletionResult>(
                 url, 
                 request, 
                 cancellationToken,
@@ -178,7 +178,7 @@ namespace SharpAI.Sdk.Implementations
 
             string url = _Sdk.Endpoint + "/v1/chat/completions";
 
-            await foreach (var result in _Sdk.PostStreamAsync<OpenAIStreamingCompletionResult>(
+            await foreach (OpenAIStreamingCompletionResult? result in _Sdk.PostStreamAsync<OpenAIStreamingCompletionResult>(
                 url, 
                 request, 
                 cancellationToken,

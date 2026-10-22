@@ -96,9 +96,9 @@ namespace SharpAI.Operations
                 if (shards.Count == 1)
                 {
                     using FileStream stream = File.OpenRead(entry);
-                    (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(stream);
-                    model.MD5Hash = Convert.ToHexString(md5);
-                    model.SHA1Hash = Convert.ToHexString(sha1);
+                    HashResults hashResults = HashHelper.ComputeAllHashes(stream);
+                    model.MD5Hash = Convert.ToHexString(hashResults.MD5);
+                    model.SHA1Hash = Convert.ToHexString(hashResults.SHA1);
                 }
                 await File.WriteAllTextAsync(Path.Combine(stage, "manifest.json"), JsonSerializer.Serialize(new { revision = metadata.Sha,
                     files = shards.Select((f, i) => new { path = Path.GetFileName(f.Path), size = f.Size, sha256 = hashes[i] }).ToArray() }), token).ConfigureAwait(false);

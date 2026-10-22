@@ -1,6 +1,7 @@
 ﻿namespace SharpAI.Serialization
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Text.Json.Serialization;
     using System.Text.Json;
@@ -43,17 +44,17 @@
         /// <param name="options">JSON serializer options.</param>
         public override void Write(Utf8JsonWriter writer, TExceptionType value, JsonSerializerOptions options)
         {
-            var serializableProperties = value.GetType()
+            IEnumerable<KeyValuePair<string, object>> serializableProperties = value.GetType()
                 .GetProperties()
-                .Select(uu => new { uu.Name, Value = uu.GetValue(value) })
-                .Where(uu => uu.Name != nameof(Exception.TargetSite));
+                .Select(uu => new KeyValuePair<string, object>(uu.Name, uu.GetValue(value)))
+                .Where(uu => uu.Key != nameof(Exception.TargetSite));
 
             if (options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull)
             {
                 serializableProperties = serializableProperties.Where(uu => uu.Value != null);
             }
 
-            var propList = serializableProperties.ToList();
+            List<KeyValuePair<string, object>> propList = serializableProperties.ToList();
 
             if (propList.Count == 0)
             {
@@ -63,9 +64,9 @@
 
             writer.WriteStartObject();
 
-            foreach (var prop in propList)
+            foreach (KeyValuePair<string, object> prop in propList)
             {
-                writer.WritePropertyName(prop.Name);
+                writer.WritePropertyName(prop.Key);
                 JsonSerializer.Serialize(writer, prop.Value, options);
             }
 

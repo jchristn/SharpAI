@@ -28,8 +28,8 @@ namespace Test.Automated.Tests
             ApiDetails singleEmbeddings = CreateApiDetails("OpenAI Single Embeddings");
             try
             {
-                var request = Helpers.CreateOpenAISingleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, "This is a test sentence for generating embeddings.");
-                var embeddingsResult = await SharpAISdk.OpenAI.GenerateEmbeddingsAsync(request);
+                SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest? request = Helpers.CreateOpenAISingleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, "This is a test sentence for generating embeddings.");
+                SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult? embeddingsResult = await SharpAISdk.OpenAI.GenerateEmbeddingsAsync(request);
                 
                 if (!Helpers.ValidateOpenAIEmbeddingsResult(embeddingsResult, 1))
                 {
@@ -56,9 +56,9 @@ namespace Test.Automated.Tests
             ApiDetails multiEmbeddings = CreateApiDetails("OpenAI Multiple Embeddings");
             try
             {
-                var inputs = new List<string> { "First test sentence", "Second test sentence" };
-                var request = Helpers.CreateOpenAIMultipleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, inputs);
-                var embeddingsResult = await SharpAISdk.OpenAI.GenerateEmbeddingsAsync(request);
+                List<string>? inputs = new List<string> { "First test sentence", "Second test sentence" };
+                SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsRequest? request = Helpers.CreateOpenAIMultipleEmbeddingsRequest(TestEnvironment.EmbeddingsModel, inputs);
+                SharpAI.Models.OpenAI.OpenAIGenerateEmbeddingsResult? embeddingsResult = await SharpAISdk.OpenAI.GenerateEmbeddingsAsync(request);
                 
                 if (!Helpers.ValidateOpenAIEmbeddingsResult(embeddingsResult, 2))
                 {

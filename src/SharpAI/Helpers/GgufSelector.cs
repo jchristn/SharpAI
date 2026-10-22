@@ -21,7 +21,7 @@
             if (files == null) return new List<GgufFileInfo>();
 
             // Define Ollama's quantization preference order (higher priority = lower index)
-            var quantizationPriority = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+            Dictionary<string, int> quantizationPriority = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
                 // Ollama's typical defaults - best balance of quality and performance
                 { "Q4_K_M", 1 },   // Most common Ollama default
@@ -86,7 +86,7 @@
                     if (quantizationPriority.TryGetValue(f.QuantizationType, out int priority)) return priority;
 
                     // Try to extract base quantization type (remove suffixes like _GGUF, etc.)
-                    var cleanedType = ExtractBaseQuantizationType(f.QuantizationType);
+                    string cleanedType = ExtractBaseQuantizationType(f.QuantizationType);
                     if (!string.IsNullOrEmpty(cleanedType) &&
                         quantizationPriority.TryGetValue(cleanedType, out int cleanedPriority))
                         return cleanedPriority;
@@ -123,7 +123,7 @@
                     if (quantizationPriority.TryGetValue(f.QuantizationType, out int priority)) return priority;
 
                     // Try to extract base quantization type (remove suffixes like _GGUF, etc.)
-                    var cleanedType = ExtractBaseQuantizationType(f.QuantizationType);
+                    string cleanedType = ExtractBaseQuantizationType(f.QuantizationType);
                     if (!string.IsNullOrEmpty(cleanedType) &&
                         quantizationPriority.TryGetValue(cleanedType, out int cleanedPriority))
                         return cleanedPriority;
@@ -145,7 +145,7 @@
 
             // Common patterns to extract base quantization
             // Examples: "Q4_K_M_GGUF" -> "Q4_K_M", "q5_k_s" -> "Q5_K_S"
-            var patterns = new[]
+            string[] patterns = new[]
             {
                 @"^(Q\d+_K_[A-Z]+)",  // Q4_K_M, Q5_K_S, etc.
                 @"^(Q\d+_K)",         // Q4_K, Q5_K, etc.
@@ -155,11 +155,11 @@
                 @"^(Q\d+)"            // Q8, Q4, etc.
             };
 
-            var upperType = quantizationType.ToUpperInvariant();
+            string upperType = quantizationType.ToUpperInvariant();
 
-            foreach (var pattern in patterns)
+            foreach (string pattern in patterns)
             {
-                var match = Regex.Match(upperType, pattern, RegexOptions.IgnoreCase);
+                Match match = Regex.Match(upperType, pattern, RegexOptions.IgnoreCase);
                 if (match.Success) return match.Groups[1].Value;
             }
 

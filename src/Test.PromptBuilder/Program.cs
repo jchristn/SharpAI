@@ -154,7 +154,7 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing Simple Chat Format ===");
 
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage { Role = "system", Content = "You are a helpful assistant." },
                 new ChatMessage { Role = "user", Content = "What is 2+2?" },
@@ -173,7 +173,7 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing ChatML Format ===");
 
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage { Role = "system", Content = "You are a helpful coding assistant." },
                 new ChatMessage { Role = "user", Content = "Write a hello world in Python" },
@@ -192,7 +192,7 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing Llama 2 Format ===");
 
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage { Role = "system", Content = "You are an expert in mathematics." },
                 new ChatMessage { Role = "user", Content = "Explain calculus" },
@@ -215,7 +215,7 @@
         static void Test1_4()
         {
             Console.WriteLine("");
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage { Role = "system", Content = "You are a creative writer." },
                 new ChatMessage { Role = "user", Content = "Write a haiku" }
@@ -279,7 +279,7 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing Creative Text Generation Formats ===");
 
-            var context = new Dictionary<string, string>();
+            Dictionary<string, string> context = new Dictionary<string, string>();
 
             Console.WriteLine("--- Creative Writing Format ---");
             context["genre"] = "Science Fiction";
@@ -310,11 +310,11 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing Text Generation with Examples ===");
 
-            var examples = new List<(string input, string output)>
+            List<PromptExample> examples = new List<PromptExample>
             {
-                ("cat", "cats"),
-                ("dog", "dogs"),
-                ("mouse", "mice")
+                new PromptExample("cat", "cats"),
+                new PromptExample("dog", "dogs"),
+                new PromptExample("mouse", "mice")
             };
 
             string prompt = TextGenerationPromptBuilder.BuildWithExamples(
@@ -357,7 +357,7 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing Chat with Multiple Roles ===");
 
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage { Role = "system", Content = "You are moderating a debate between two AI assistants." },
                 new ChatMessage { Role = "user", Content = "Let's discuss: Is AI consciousness possible?" },
@@ -380,7 +380,7 @@
             Console.WriteLine("");
             Console.WriteLine("=== Testing Complex Text Generation ===");
 
-            var context = new Dictionary<string, string>
+            Dictionary<string, string> context = new Dictionary<string, string>
             {
                 ["characters"] = "Alice (scientist), Bob (journalist)",
                 ["setting"] = "Research laboratory",
@@ -426,7 +426,7 @@ Best regards,
             Console.WriteLine("");
             Console.WriteLine("Building custom chat prompt...");
 
-            var messages = new List<ChatMessage>();
+            List<ChatMessage> messages = new List<ChatMessage>();
 
             string systemPrompt = Inputty.GetString("System prompt (optional):", null, true);
             if (!string.IsNullOrEmpty(systemPrompt))
@@ -466,7 +466,7 @@ Best regards,
             Console.WriteLine("Type 'exit' to end the session.");
             Console.WriteLine("");
 
-            var messages = new List<ChatMessage>();
+            List<ChatMessage> messages = new List<ChatMessage>();
 
             string systemPrompt = Inputty.GetString("System prompt (optional):", "You are a helpful assistant.", true);
             if (!string.IsNullOrEmpty(systemPrompt))
@@ -503,7 +503,7 @@ Best regards,
         static void ShowChatFormats()
         {
             Console.WriteLine("");
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage { Role = "system", Content = "You are a helpful assistant." },
                 new ChatMessage { Role = "user", Content = "Hello!" },
@@ -526,7 +526,7 @@ Best regards,
 
             string input = Inputty.GetString("Input text:", null, false);
 
-            var context = new Dictionary<string, string>();
+            Dictionary<string, string> context = new Dictionary<string, string>();
 
             Console.WriteLine("Add context parameters? (press Enter to skip)");
             while (true)
@@ -549,7 +549,7 @@ Best regards,
             Console.WriteLine("");
             Console.WriteLine("Building text prompt with examples...");
 
-            var examples = new List<(string input, string output)>();
+            List<PromptExample> examples = new List<PromptExample>();
 
             Console.WriteLine("Add examples (press Enter on input to skip):");
             while (true)
@@ -558,7 +558,7 @@ Best regards,
                 if (string.IsNullOrEmpty(exampleInput)) break;
 
                 string exampleOutput = Inputty.GetString("Example output:", null, false);
-                examples.Add((exampleInput, exampleOutput));
+                examples.Add(new PromptExample(exampleInput, exampleOutput));
             }
 
             string input = Inputty.GetString("Actual input:", null, false);
@@ -574,7 +574,7 @@ Best regards,
             Console.WriteLine("");
             string input = "Create a comprehensive guide";
 
-            var context = new Dictionary<string, string>
+            Dictionary<string, string> context = new Dictionary<string, string>
             {
                 ["language"] = "Python",
                 ["genre"] = "Technical",
@@ -601,7 +601,7 @@ Best regards,
             Console.WriteLine("This demo shows a multi-turn conversation formatted for different models");
             Console.WriteLine("");
 
-            var messages = new List<ChatMessage>
+            List<ChatMessage> messages = new List<ChatMessage>
             {
                 new ChatMessage
                 {
@@ -645,7 +645,7 @@ Best regards,
             if (_Debug)
             {
                 Console.WriteLine("Message Timeline:");
-                foreach (var msg in messages)
+                foreach (ChatMessage msg in messages)
                 {
                     Console.WriteLine($"  [{msg.Timestamp:HH:mm:ss}] {msg.Role}: {msg.Content.Substring(0, Math.Min(50, msg.Content.Length))}...");
                 }
@@ -687,18 +687,18 @@ Best regards,
             Console.WriteLine("1. Code Generation with Few-Shot Examples");
             Console.WriteLine("─────────────────────────────────────────");
 
-            var codeExamples = new List<(string input, string output)>
+            List<PromptExample> codeExamples = new List<PromptExample>
             {
-                ("reverse a string", @"def reverse_string(s):
+                new PromptExample("reverse a string", @"def reverse_string(s):
     return s[::-1]"),
-                ("check if palindrome", @"def is_palindrome(s):
+                new PromptExample("check if palindrome", @"def is_palindrome(s):
     s = s.lower().replace(' ', '')
     return s == s[::-1]"),
-                ("find maximum in list", @"def find_max(lst):
+                new PromptExample("find maximum in list", @"def find_max(lst):
     return max(lst) if lst else None")
             };
 
-            var codeContext = new Dictionary<string, string>
+            Dictionary<string, string> codeContext = new Dictionary<string, string>
             {
                 ["language"] = "Python",
                 ["requirements"] = "Include error handling and type hints",
@@ -720,7 +720,7 @@ Best regards,
             Console.WriteLine("\n2. Creative Writing with Rich Context");
             Console.WriteLine("─────────────────────────────────────");
 
-            var storyContext = new Dictionary<string, string>
+            Dictionary<string, string> storyContext = new Dictionary<string, string>
             {
                 ["genre"] = "Cyberpunk Mystery",
                 ["style"] = "First-person narrative, noir-influenced",
@@ -743,7 +743,7 @@ Best regards,
             Console.WriteLine("\n3. Academic Abstract Generation");
             Console.WriteLine("───────────────────────────────");
 
-            var academicContext = new Dictionary<string, string>
+            Dictionary<string, string> academicContext = new Dictionary<string, string>
             {
                 ["type"] = "Research Paper Abstract",
                 ["field"] = "Artificial Intelligence",
@@ -765,7 +765,7 @@ Best regards,
             Console.WriteLine("\n4. Multi-Character Dialogue");
             Console.WriteLine("──────────────────────────");
 
-            var dialogueContext = new Dictionary<string, string>
+            Dictionary<string, string> dialogueContext = new Dictionary<string, string>
             {
                 ["characters"] = "Dr. Sarah Chen (AI researcher), Marcus Webb (tech journalist), ARIA (AI system)",
                 ["setting"] = "Live interview at TechCon 2025",
@@ -787,7 +787,7 @@ Best regards,
             Console.WriteLine("\n5. Structured List Generation");
             Console.WriteLine("─────────────────────────────");
 
-            var listContext = new Dictionary<string, string>
+            Dictionary<string, string> listContext = new Dictionary<string, string>
             {
                 ["count"] = "7",
                 ["format"] = "numbered",

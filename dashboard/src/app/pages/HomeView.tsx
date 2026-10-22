@@ -77,13 +77,21 @@ export function HomeView(): JSX.Element {
 
       {error && <div className="sa-settings-note" role="alert">{t('text.someServerDataCouldNotBeLoaded')}</div>}
       <div className="sa-kpis sa-home-kpis">{[
-        ['home.modelsOnDisk','/models',show(onDisk),'violet'],['home.residentModels','/playground',show(resident),'green'],['home.requests','/request-history',show(summary?.total??null),'blue'],
-        ['library.promptsTitle','/system-prompts',show(promptCount),'amber'],['library.configurationsTitle','/model-configurations',show(configurationCount),'cyan'],
-      ].map(([label,icon,value,color])=><div className={`sa-kpi sa-kpi--${color}`} key={label}><div className="sa-kpi__label"><Icon name={icon}/>{t(label)}</div><div className="sa-kpi__value">{value}</div></div>)}</div>
+  {label:'home.modelsOnDisk',icon:'/models',value:show(onDisk),color:'violet'},
+  {label:'home.residentModels',icon:'/playground',value:show(resident),color:'green'},
+  {label:'home.requests',icon:'/request-history',value:show(summary?.total??null),color:'blue'},
+  {label:'library.promptsTitle',icon:'/system-prompts',value:show(promptCount),color:'amber'},
+  {label:'library.configurationsTitle',icon:'/model-configurations',value:show(configurationCount),color:'cyan'},
+].map(({label,icon,value,color})=><div className={`sa-kpi sa-kpi--${color}`} key={label}><div className="sa-kpi__label"><Icon name={icon}/>{t(label)}</div><div className="sa-kpi__value">{value}</div></div>)}</div>
 
       <div className="sa-quick-actions">{[
-        ['/system-prompts','library.managePrompts','library.promptsHelp'],['/model-configurations','library.manageConfigurations','library.configurationsHelp'],['/models','quick.models','quick.modelsHelp'],['/playground','quick.test','quick.testHelp'],['/observability','quick.observe','quick.observeHelp'],['/api-explorer','quick.api','quick.apiHelp'],
-      ].map(([path,label,help])=><Link className="sa-quick-card" to={path} key={path}><Icon name={path}/><strong>{t(label)}</strong><p>{t(help)}</p></Link>)}</div>
+  {path:'/system-prompts',label:'library.managePrompts',help:'library.promptsHelp'},
+  {path:'/model-configurations',label:'library.manageConfigurations',help:'library.configurationsHelp'},
+  {path:'/models',label:'quick.models',help:'quick.modelsHelp'},
+  {path:'/playground',label:'quick.test',help:'quick.testHelp'},
+  {path:'/observability',label:'quick.observe',help:'quick.observeHelp'},
+  {path:'/api-explorer',label:'quick.api',help:'quick.apiHelp'},
+].map(({path,label,help})=><Link className="sa-quick-card" to={path} key={path}><Icon name={path}/><strong>{t(label)}</strong><p>{t(help)}</p></Link>)}</div>
     </div>
   );
 }

@@ -122,7 +122,7 @@
             if (Models == null || Models.Count == 0)
                 return new List<OllamaRunningModel>();
 
-            var expirationTime = DateTime.UtcNow.Add(within);
+            DateTime expirationTime = DateTime.UtcNow.Add(within);
 
             return Models
                 .Where(m => m.GetEstimatedExpiration() != null &&

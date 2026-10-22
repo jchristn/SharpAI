@@ -2,12 +2,21 @@ export type TextDirection = 'ltr' | 'rtl';
 export interface LocaleMeta { code: string; english: string; native: string; dir: TextDirection; fallback: string; }
 export const DEFAULT_LOCALE = 'en';
 export const LOCALES: LocaleMeta[] = [
-  ['en','English','English'], ['es','Spanish','Español'], ['pt','Portuguese','Português'],
-  ['fr','French','Français'], ['it','Italian','Italiano'], ['de','German','Deutsch'],
-  ['zh','Chinese (Simplified)','简体中文'], ['ar','Arabic','العربية'], ['ru','Russian','Русский'],
-  ['ms','Malay','Bahasa Melayu'], ['hi','Hindi','हिन्दी'], ['ja','Japanese','日本語'],
-  ['en-XA','Pseudo (expansion)','[Expanded]'], ['ar-XB','Pseudo (RTL)','[RTL]'],
-].map(([code,english,native]) => ({code,english,native,dir:code === 'ar' || code === 'ar-XB' ? 'rtl' : 'ltr',fallback:'en'}));
+  {code:'en',english:'English',native:'English'},
+  {code:'es',english:'Spanish',native:'Español'},
+  {code:'pt',english:'Portuguese',native:'Português'},
+  {code:'fr',english:'French',native:'Français'},
+  {code:'it',english:'Italian',native:'Italiano'},
+  {code:'de',english:'German',native:'Deutsch'},
+  {code:'zh',english:'Chinese (Simplified)',native:'简体中文'},
+  {code:'ar',english:'Arabic',native:'العربية'},
+  {code:'ru',english:'Russian',native:'Русский'},
+  {code:'ms',english:'Malay',native:'Bahasa Melayu'},
+  {code:'hi',english:'Hindi',native:'हिन्दी'},
+  {code:'ja',english:'Japanese',native:'日本語'},
+  {code:'en-XA',english:'Pseudo (expansion)',native:'[Expanded]'},
+  {code:'ar-XB',english:'Pseudo (RTL)',native:'[RTL]'},
+].map(({code,english,native}) => ({code,english,native,dir:code === 'ar' || code === 'ar-XB' ? 'rtl' : 'ltr',fallback:'en'}));
 export function canonicalLocale(code: string): string {
   const normalized = code.replaceAll('_','-');
   return LOCALES.find(locale => locale.code.toLowerCase() === normalized.toLowerCase())?.code

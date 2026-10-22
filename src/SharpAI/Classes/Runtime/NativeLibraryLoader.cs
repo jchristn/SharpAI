@@ -12,7 +12,7 @@ namespace SharpAI.Classes.Runtime
     /// <summary>Configures LLamaSharp native loading consistently on .NET 8 and .NET 10.</summary>
     public static class NativeLibraryLoader
     {
-        /// <summary>Select an explicit llama library before the first native call. No native library is loaded here.</summary>
+        /// <summary>Select an explicit llama library before the first native call. No native library is loaded here. An existing backend identity is preserved; otherwise this overload selects CPU. Use the backend overload for explicit acceleration.</summary>
         /// <remarks>Concurrent configuration is serialized on .NET 8. Configure once during startup before other threads make native calls.</remarks>
         /// <param name="libraryPath">Non-null, nonempty path to the selected backend library, resolved against the current directory.</param>
         /// <exception cref="ArgumentException">The path is empty or whitespace.</exception>
@@ -20,23 +20,44 @@ namespace SharpAI.Classes.Runtime
         /// <exception cref="InvalidOperationException">The native backend has already loaded.</exception>
         public static void Configure(string libraryPath)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(libraryPath);
-            string fullPath = Path.GetFullPath(libraryPath);
-#if NET10_0_OR_GREATER
-            NativeLibraryConfig.LLama.WithLibrary(fullPath);
-#else
-            lock (_Lock)
-            {
-                if (_Handles.ContainsKey("llama")) throw new InvalidOperationException("The native backend has already loaded.");
-                _LibraryPath = fullPath;
-            }
-#endif
+            string backend = NativeBackendInfo.SelectedBackend;
+            Configure(libraryPath, backend == "metal" || backend == "cuda" ? backend : "cpu");
         }
 
-#if !NET10_0_OR_GREATER
+        /// <summary>Select an explicit native library and its backend before the first native call.</summary>
+        /// <param name="libraryPath">Non-null, nonempty library path resolved against the current directory.</param>
+        /// <param name="backend">Backend identity: cpu, cuda, or metal. Case-insensitive.</param>
+        /// <exception cref="ArgumentException">The path is blank or the backend is invalid.</exception>
+        /// <exception cref="ArgumentNullException">The path or backend is null.</exception>
+        /// <exception cref="InvalidOperationException">The native backend has already loaded.</exception>
+        /// <remarks>Thread-safe. Configure before starting native work. Automatic engine initialization preserves this selection.</remarks>
+        public static void Configure(string libraryPath, string backend)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(libraryPath);
+            ArgumentException.ThrowIfNullOrWhiteSpace(backend);
+            string normalized = backend.ToLowerInvariant();
+            if (normalized != "cpu" && normalized != "cuda" && normalized != "metal")
+                throw new ArgumentException("Backend must be cpu, cuda, or metal.", nameof(backend));
+            string fullPath = Path.GetFullPath(libraryPath);
+            lock (_Lock)
+            {
+#if NET10_0_OR_GREATER
+                NativeLibraryConfig.LLama.WithLibrary(fullPath);
+#else
+                if (_Handles.ContainsKey("llama")) throw new InvalidOperationException("The native backend has already loaded.");
+#endif
+                _LibraryPath = fullPath;
+                NativeBackendInfo.SelectedBackend = normalized;
+            }
+        }
+
+        /// <summary>Gets the explicit library path, or null before configuration. Access is synchronized.</summary>
+        public static string ConfiguredLibraryPath { get { lock (_Lock) { return _LibraryPath; } } }
+
         private static readonly object _Lock = new object();
-        private static readonly Dictionary<string, IntPtr> _Handles = new Dictionary<string, IntPtr>();
         private static string _LibraryPath;
+#if !NET10_0_OR_GREATER
+        private static readonly Dictionary<string, IntPtr> _Handles = new Dictionary<string, IntPtr>();
 
         // LLamaSharp 0.30 ships net10.0 and netstandard2.0 assemblies. The latter has no
         // custom native loader: runtime libraries are content files, not native NuGet assets.

@@ -20,7 +20,8 @@ def split(source, directory):
         if kind == 8:
             return string()
         if kind == 9:
-            element, count = read('I'), read('Q')
+            element = read('I')
+            count = read('Q')
             for _ in range(count):
                 value(element)
             return None
@@ -30,11 +31,14 @@ def split(source, directory):
         return struct.pack('<Q', len(b)) + b
     if stream.read(4) != b'GGUF' or read('I') != 3:
         raise ValueError('Expected GGUF v3')
-    tensors, metadata = read('Q'), read('Q')
-    entries, alignment = [], 32
+    tensors = read('Q')
+    metadata = read('Q')
+    entries = []
+    alignment = 32
     for _ in range(metadata):
         start = stream.tell()
-        key, kind = string(), read('I')
+        key = string()
+        kind = read('I')
         result = value(kind)
         if key.startswith('split.'):
             raise ValueError('Fixture must be unsharded')
@@ -50,21 +54,23 @@ def split(source, directory):
         read('I')
         prefix = data[start:stream.tell()]
         offset = read('Q')
-        descriptors.append((prefix, offset))
+        descriptors.append({'prefix': prefix, 'offset': offset})
     base = (stream.tell() + alignment - 1) // alignment * alignment
-    offsets = sorted({offset for _, offset in descriptors} | {len(data) - base})
+    offsets = sorted({descriptor['offset'] for descriptor in descriptors} | {len(data) - base})
     ends = dict(zip(offsets, offsets[1:]))
     directory = pathlib.Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     if tensors < 2:
         raise ValueError('Need at least two tensors')
-    for index, group in enumerate((descriptors[:tensors//2], descriptors[tensors//2:])):
+    for index, group in enumerate([descriptors[:tensors//2], descriptors[tensors//2:]]):
         extra = [encoded('split.no') + struct.pack('<IH', 2, index),
                  encoded('split.count') + struct.pack('<IH', 2, 2),
                  encoded('split.tensors.count') + struct.pack('<Ii', 5, tensors)]
         header = b'GGUF' + struct.pack('<IQQ', 3, len(group), len(entries) + 3) + b''.join(entries + extra)
         payload = bytearray()
-        for prefix, offset in group:
+        for descriptor in group:
+            prefix = descriptor['prefix']
+            offset = descriptor['offset']
             header += prefix + struct.pack('<Q', len(payload))
             payload.extend(data[base + offset:base + ends[offset]])
             payload.extend(b'\0' * (-len(payload) % alignment))

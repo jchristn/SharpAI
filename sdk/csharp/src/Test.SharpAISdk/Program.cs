@@ -169,7 +169,7 @@ namespace Test.SharpAISdk
 
             try
             {
-                var models = await _Sdk.Ollama.ListLocalModels();
+                List<OllamaLocalModel>? models = await _Sdk.Ollama.ListLocalModels();
                 if (models == null || models.Count == 0)
                 {
                     Console.WriteLine("No models available. Use 'pull' command to download a model.");
@@ -210,12 +210,12 @@ namespace Test.SharpAISdk
             try
             {
                 Console.WriteLine("Listing available models...");
-                var models = await _Sdk.Ollama.ListLocalModels();
+                List<OllamaLocalModel>? models = await _Sdk.Ollama.ListLocalModels();
 
                 if (models != null && models.Count > 0)
                 {
                     Console.WriteLine($"Found {models.Count} models:");
-                    foreach (var model in models)
+                    foreach (OllamaLocalModel? model in models)
                     {
                         Console.WriteLine($"  - {model.Name} (Size: {model.Size} bytes)");
                         if (model.Details != null)
@@ -262,14 +262,14 @@ namespace Test.SharpAISdk
                 }
 
                 Console.WriteLine($"Pulling model with streaming progress: {modelName}...");
-                var request = new OllamaPullModelRequest
+                OllamaPullModelRequest? request = new OllamaPullModelRequest
                 {
                     Model = modelName
                 };
 
                 Console.WriteLine("Download progress:");
 
-                await foreach (var progress in _Sdk.Ollama.PullModel(request))
+                await foreach (SharpAI.Sdk.Models.SharpAIPullModelResponse? progress in _Sdk.Ollama.PullModel(request))
                 {
                     if (!string.IsNullOrEmpty(progress.Status))
                     {
@@ -277,8 +277,8 @@ namespace Test.SharpAISdk
 
                         if (progress.Downloaded.HasValue && progress.Percent.HasValue)
                         {
-                            var percentage = progress.GetProgressPercentage();
-                            var progressStr = progress.GetFormattedProgress();
+                            double? percentage = progress.GetProgressPercentage();
+                            string? progressStr = progress.GetFormattedProgress();
                             Console.Write($" - {progressStr}");
                         }
                         Console.Write("                    ");
@@ -289,8 +289,8 @@ namespace Test.SharpAISdk
                         Console.WriteLine($"\nPull completed successfully with status: {progress.Status}");
                         if (progress.Downloaded.HasValue && progress.Percent.HasValue)
                         {
-                            var percentage = progress.GetProgressPercentage();
-                            var progressStr = progress.GetFormattedProgress();
+                            double? percentage = progress.GetProgressPercentage();
+                            string? progressStr = progress.GetFormattedProgress();
                             Console.WriteLine($"Final progress: {progressStr}");
                         }
 
@@ -340,7 +340,7 @@ namespace Test.SharpAISdk
                 }
 
                 Console.WriteLine($"Deleting model: {modelName}...");
-                var request = new OllamaDeleteModelRequest
+                OllamaDeleteModelRequest? request = new OllamaDeleteModelRequest
                 {
                     Model = modelName
                 };
@@ -401,7 +401,7 @@ namespace Test.SharpAISdk
                     }
 
                     Console.WriteLine($"Generating completion with model '{modelName}'...");
-                    var request = new OllamaGenerateCompletionRequest
+                    OllamaGenerateCompletionRequest? request = new OllamaGenerateCompletionRequest
                     {
                         Model = modelName,
                         Prompt = prompt,
@@ -412,7 +412,7 @@ namespace Test.SharpAISdk
                         }
                     };
 
-                    var result = await _Sdk.Ollama.GenerateCompletion(request);
+                    OllamaGenerateCompletionResult? result = await _Sdk.Ollama.GenerateCompletion(request);
                     if (result != null)
                     {
                         Console.WriteLine($"Completion: {result.Response}");
@@ -457,7 +457,7 @@ namespace Test.SharpAISdk
                 Console.WriteLine();
 
                 // Initialize conversation history
-                var conversationHistory = new List<OllamaChatMessage>();
+                List<OllamaChatMessage>? conversationHistory = new List<OllamaChatMessage>();
                 bool continueConversation = true;
 
                 while (continueConversation)
@@ -479,7 +479,7 @@ namespace Test.SharpAISdk
                     conversationHistory.Add(new OllamaChatMessage { Role = "user", Content = userMessage });
 
                     Console.WriteLine($"Generating chat completion with model '{modelName}'...");
-                    var request = new OllamaGenerateChatCompletionRequest
+                    OllamaGenerateChatCompletionRequest? request = new OllamaGenerateChatCompletionRequest
                     {
                         Model = modelName,
                         Messages = conversationHistory,
@@ -490,7 +490,7 @@ namespace Test.SharpAISdk
                         }
                     };
 
-                    var result = await _Sdk.Ollama.GenerateChatCompletion(request);
+                    OllamaGenerateCompletionResult? result = await _Sdk.Ollama.GenerateChatCompletion(request);
                     if (result?.Response != null)
                     {
                         Console.WriteLine($"Assistant: {result.Response}");
@@ -554,7 +554,7 @@ namespace Test.SharpAISdk
                     }
 
                     Console.WriteLine($"Generating streaming completion with model '{modelName}'...");
-                    var request = new OllamaGenerateCompletionRequest
+                    OllamaGenerateCompletionRequest? request = new OllamaGenerateCompletionRequest
                     {
                         Model = modelName,
                         Prompt = prompt,
@@ -568,7 +568,7 @@ namespace Test.SharpAISdk
                     Console.WriteLine("Streaming completion:");
                     Console.Write("Completion: ");
 
-                    await foreach (var chunk in _Sdk.Ollama.GenerateCompletionStream(request))
+                    await foreach (OllamaStreamingCompletionResult? chunk in _Sdk.Ollama.GenerateCompletionStream(request))
                     {
                         if (chunk.Response != null)
                         {
@@ -611,7 +611,7 @@ namespace Test.SharpAISdk
                 Console.WriteLine();
 
                 // Initialize conversation history
-                var conversationHistory = new List<OllamaChatMessage>();
+                List<OllamaChatMessage>? conversationHistory = new List<OllamaChatMessage>();
                 bool continueConversation = true;
 
                 while (continueConversation)
@@ -633,7 +633,7 @@ namespace Test.SharpAISdk
                     conversationHistory.Add(new OllamaChatMessage { Role = "user", Content = userMessage });
 
                     Console.WriteLine($"Generating streaming chat completion with model '{modelName}'...");
-                    var request = new OllamaGenerateChatCompletionRequest
+                    OllamaGenerateChatCompletionRequest? request = new OllamaGenerateChatCompletionRequest
                     {
                         Model = modelName,
                         Messages = conversationHistory,
@@ -648,7 +648,7 @@ namespace Test.SharpAISdk
                     Console.Write("Assistant: ");
 
                     string assistantResponse = "";
-                    await foreach (var chunk in _Sdk.Ollama.GenerateChatCompletionStream(request))
+                    await foreach (OllamaGenerateChatCompletionChunk? chunk in _Sdk.Ollama.GenerateChatCompletionStream(request))
                     {
                         if (chunk.Message?.Content != null)
                         {
@@ -694,13 +694,13 @@ namespace Test.SharpAISdk
                 string input = Inputty.GetString("Input text for embeddings:", "This is a test sentence for generating embeddings.", false);
 
                 Console.WriteLine($"Generating embeddings with model '{modelName}'...");
-                var request = new OllamaGenerateEmbeddingsRequest
+                OllamaGenerateEmbeddingsRequest? request = new OllamaGenerateEmbeddingsRequest
                 {
                     Model = modelName,
                     Input = input
                 };
 
-                var result = await _Sdk.Ollama.GenerateEmbeddings(request);
+                OllamaGenerateEmbeddingsResult? result = await _Sdk.Ollama.GenerateEmbeddings(request);
                 if (result != null)
                 {
                     Console.WriteLine("=== Complete JSON Response ===");
@@ -739,7 +739,7 @@ namespace Test.SharpAISdk
             try
             {
                 Console.WriteLine("Enter multiple texts for embeddings (press ENTER on empty line to finish):");
-                var inputs = new List<string>();
+                List<string>? inputs = new List<string>();
 
                 while (true)
                 {
@@ -756,13 +756,13 @@ namespace Test.SharpAISdk
                 }
 
                 Console.WriteLine($"Generating Ollama embeddings for {inputs.Count} texts with model '{_CurrentModel}'...");
-                var request = new OllamaGenerateEmbeddingsRequest
+                OllamaGenerateEmbeddingsRequest? request = new OllamaGenerateEmbeddingsRequest
                 {
                     Model = _CurrentModel
                 };
                 request.SetInputs(inputs.ToList());
 
-                var result = await _Sdk.Ollama.GenerateMultipleEmbeddings(request);
+                OllamaGenerateEmbeddingsResult? result = await _Sdk.Ollama.GenerateMultipleEmbeddings(request);
                 if (result != null)
                 {
                     Console.WriteLine("=== Complete JSON Response ===");
@@ -811,7 +811,7 @@ namespace Test.SharpAISdk
                 float temperature = (float)Inputty.GetDecimal("Temperature (0.0-2.0):", 0.7m, true, true);
 
                 Console.WriteLine($"Generating OpenAI completion with model '{_CurrentModel}'...");
-                var request = new OpenAIGenerateCompletionRequest
+                OpenAIGenerateCompletionRequest? request = new OpenAIGenerateCompletionRequest
                 {
                     Model = _CurrentModel,
                     Prompt = prompt,
@@ -819,7 +819,7 @@ namespace Test.SharpAISdk
                     Temperature = temperature
                 };
 
-                var result = await _Sdk.OpenAI.GenerateCompletionAsync(request);
+                OpenAIGenerateCompletionResult? result = await _Sdk.OpenAI.GenerateCompletionAsync(request);
                 if (result?.Choices != null && result.Choices.Count > 0)
                 {
                     Console.WriteLine($"Completion: {result.Choices[0].Text}");
@@ -862,7 +862,7 @@ namespace Test.SharpAISdk
                 float temperature = (float)Inputty.GetDecimal("Temperature (0.0-2.0):", 0.7m, true, true);
 
                 Console.WriteLine($"Generating OpenAI chat completion with model '{_CurrentModel}'...");
-                var request = new OpenAIGenerateChatCompletionRequest
+                OpenAIGenerateChatCompletionRequest? request = new OpenAIGenerateChatCompletionRequest
                 {
                     Model = _CurrentModel,
                     Messages = new List<OpenAIChatMessage>
@@ -877,7 +877,7 @@ namespace Test.SharpAISdk
                     Temperature = temperature
                 };
 
-                var result = await _Sdk.OpenAI.GenerateChatCompletionAsync(request);
+                OpenAIGenerateChatCompletionResult? result = await _Sdk.OpenAI.GenerateChatCompletionAsync(request);
                 if (result?.Choices != null && result.Choices.Count > 0)
                 {
                     Console.WriteLine($"Assistant: {result.Choices[0].Message?.Content}");
@@ -933,7 +933,7 @@ namespace Test.SharpAISdk
                     }
 
                     Console.WriteLine($"Generating OpenAI streaming completion with model '{_CurrentModel}'...");
-                    var request = new OpenAIGenerateCompletionRequest
+                    OpenAIGenerateCompletionRequest? request = new OpenAIGenerateCompletionRequest
                     {
                         Model = _CurrentModel,
                         Prompt = prompt,
@@ -944,7 +944,7 @@ namespace Test.SharpAISdk
                     Console.WriteLine("Streaming completion:");
                     Console.Write("Completion: ");
 
-                    await foreach (var chunk in _Sdk.OpenAI.GenerateCompletionStreamAsync(request))
+                    await foreach (OpenAIStreamingCompletionResult? chunk in _Sdk.OpenAI.GenerateCompletionStreamAsync(request))
                     {
                         if (chunk?.Choices != null && chunk.Choices.Count > 0)
                         {
@@ -985,7 +985,7 @@ namespace Test.SharpAISdk
                 Console.WriteLine();
 
                 // Initialize conversation history
-                var conversationHistory = new List<OpenAIChatMessage>();
+                List<OpenAIChatMessage>? conversationHistory = new List<OpenAIChatMessage>();
                 bool continueConversation = true;
 
                 while (continueConversation)
@@ -1007,7 +1007,7 @@ namespace Test.SharpAISdk
                     conversationHistory.Add(new OpenAIChatMessage { Role = "user", Content = userMessage });
 
                     Console.WriteLine($"Generating OpenAI streaming chat completion with model '{_CurrentModel}'...");
-                    var request = new OpenAIGenerateChatCompletionRequest
+                    OpenAIGenerateChatCompletionRequest? request = new OpenAIGenerateChatCompletionRequest
                     {
                         Model = _CurrentModel,
                         Messages = conversationHistory,
@@ -1019,7 +1019,7 @@ namespace Test.SharpAISdk
                     Console.Write("Assistant: ");
 
                     string assistantResponse = "";
-                    await foreach (var chunk in _Sdk.OpenAI.GenerateChatCompletionStreamAsync(request))
+                    await foreach (OpenAIStreamingCompletionResult? chunk in _Sdk.OpenAI.GenerateChatCompletionStreamAsync(request))
                     {
                         if (chunk?.Choices != null && chunk.Choices.Count > 0)
                         {
@@ -1067,13 +1067,13 @@ namespace Test.SharpAISdk
                 string input = Inputty.GetString("Input text for embeddings:", "This is a test sentence for generating embeddings.", false);
 
                 Console.WriteLine($"Generating OpenAI embeddings for single text with model '{_CurrentModel}'...");
-                var request = new OpenAIGenerateEmbeddingsRequest
+                OpenAIGenerateEmbeddingsRequest? request = new OpenAIGenerateEmbeddingsRequest
                 {
                     Model = _CurrentModel,
                     Input = input
                 };
 
-                var result = await _Sdk.OpenAI.GenerateEmbeddingsAsync(request);
+                OpenAIGenerateEmbeddingsResult? result = await _Sdk.OpenAI.GenerateEmbeddingsAsync(request);
                 if (result != null)
                 {
                     Console.WriteLine("=== Complete JSON Response ===");
@@ -1112,7 +1112,7 @@ namespace Test.SharpAISdk
             try
             {
                 Console.WriteLine("Enter multiple texts for embeddings (press ENTER on empty line to finish):");
-                var inputs = new List<string>();
+                List<string>? inputs = new List<string>();
 
                 while (true)
                 {
@@ -1129,13 +1129,13 @@ namespace Test.SharpAISdk
                 }
 
                 Console.WriteLine($"Generating OpenAI embeddings for {inputs.Count} texts with model '{_CurrentModel}'...");
-                var request = new OpenAIGenerateEmbeddingsRequest
+                OpenAIGenerateEmbeddingsRequest? request = new OpenAIGenerateEmbeddingsRequest
                 {
                     Model = _CurrentModel
                 };
                 request.SetInputs(inputs.ToArray());
 
-                var result = await _Sdk.OpenAI.GenerateMultipleEmbeddingsAsync(request);
+                OpenAIGenerateEmbeddingsResult? result = await _Sdk.OpenAI.GenerateMultipleEmbeddingsAsync(request);
                 if (result != null)
                 {
                     Console.WriteLine("=== Complete JSON Response ===");

@@ -29,7 +29,16 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-for (const [path, heading] of [['/', 'Overview'], ['/models', 'Models'], ['/playground', 'Playground'], ['/request-history', 'Request History'], ['/inference-history', 'Inference & Embeddings History'], ['/api-explorer', 'API Explorer'], ['/observability', 'Observability'], ['/settings', 'Settings']]) {
+for (const {path, heading} of [
+  {path:'/',heading:'Overview'},
+  {path:'/models',heading:'Models'},
+  {path:'/playground',heading:'Playground'},
+  {path:'/request-history',heading:'Request History'},
+  {path:'/inference-history',heading:'Inference & Embeddings History'},
+  {path:'/api-explorer',heading:'API Explorer'},
+  {path:'/observability',heading:'Observability'},
+  {path:'/settings',heading:'Settings'},
+]) {
   test(`${heading} fits and remains accessible`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
@@ -206,7 +215,12 @@ test('pull accepts a Hugging Face page URL and sends the repository ID', async (
 
 test('observability exposes all four configured service links', async ({page}) => {
   await page.goto('/observability');
-  for (const [name,port,path] of [['Grafana',9400,'/dashboards/f/sharpai'],['Prometheus',9090,'/graph'],['Tempo',3200,'/ready'],['Loki',3100,'/ready']] as const) {
+  for (const {name,port,path} of [
+  {name:'Grafana',port:9400,path:'/dashboards/f/sharpai'},
+  {name:'Prometheus',port:9090,path:'/graph'},
+  {name:'Tempo',port:3200,path:'/ready'},
+  {name:'Loki',port:3100,path:'/ready'},
+]) {
     await expect(page.getByRole('link',{name:'Open '+name,exact:true})).toHaveAttribute('href',`http://localhost:${port}${path}`);
   }
 });

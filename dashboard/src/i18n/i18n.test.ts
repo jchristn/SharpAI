@@ -4,7 +4,12 @@ import en from './en.json';
 import { canonicalLocale, LOCALES } from './locales';
 type Catalog = { [key:string]: string | Catalog };
 function flatten(node: Catalog, prefix=''): Record<string,string> {
-  return Object.fromEntries(Object.entries(node).flatMap(([key,value]) => typeof value === 'string' ? [[prefix+key,value]] : Object.entries(flatten(value,prefix+key+'.'))));
+  const result:Record<string,string>={};
+  for(const [key,value] of Object.entries(node)){
+    if(typeof value==='string')result[prefix+key]=value;
+    else Object.assign(result,flatten(value,prefix+key+'.'));
+  }
+  return result;
 }
 const catalogs = import.meta.glob('./*.json', { eager: true, import: 'default' }) as Record<string,Catalog>;
 const source = flatten(en);

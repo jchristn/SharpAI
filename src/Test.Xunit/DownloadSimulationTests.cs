@@ -193,18 +193,18 @@ namespace Test.Xunit
         [InlineData("split", false)] [InlineData("split", true)]
         public async Task PublicationJournalRecoversOrphanAndPreservesCommittedRegistry(string scenario, bool committed)
         {
-            using var db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(_Directory, "registry.db") }, new LoggingModule());
-            var registry = new ModelFileService(new LoggingModule(), db.Models, _Directory);
-            var client = new HuggingFaceClient(new LoggingModule(), null!, BaseUrl);
+            using DatabaseDriverBase? db = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(_Directory, "registry.db") }, new LoggingModule());
+            ModelFileService? registry = new ModelFileService(new LoggingModule(), db.Models, _Directory);
+            HuggingFaceClient? client = new HuggingFaceClient(new LoggingModule(), null!, BaseUrl);
             string name = "org/" + scenario;
-            var first = await ModelPullService.PullAsync(client, registry, _Directory, name);
+            ModelFile? first = await ModelPullService.PullAsync(client, registry, _Directory, name);
             string original = registry.GetFilename(name);
             if (!committed) registry.Delete(first.GUID);
             string journal = Path.Combine(_Directory, ".registration-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name.ToLowerInvariant()))) + ".json");
             File.WriteAllText(journal, first.GUID.ToString());
             // A killed journal writer can leave an incomplete temporary file; recovery only reads the atomic final name.
             if (!committed) File.WriteAllText(journal + ".partial", "incomplete");
-            var recovered = await ModelPullService.PullAsync(client, registry, _Directory, name);
+            ModelFile? recovered = await ModelPullService.PullAsync(client, registry, _Directory, name);
             Assert.Equal(committed, recovered.GUID == first.GUID);
             Assert.True(File.Exists(registry.GetFilename(name)));
             Assert.Equal(committed, File.Exists(original));

@@ -9,13 +9,13 @@ namespace Test.Automated.Tests
     {
         internal static async Task RunAsync(string endpoint)
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-            var token = timeout.Token;
-            using var sdk = new SharpAISdk(endpoint);
-            var models = await sdk.Ollama.ListLocalModels(token);
+            using CancellationTokenSource? timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            CancellationToken token = timeout.Token;
+            using SharpAISdk? sdk = new SharpAISdk(endpoint);
+            List<OllamaLocalModel>? models = await sdk.Ollama.ListLocalModels(token);
             Require(models != null && models.Any(model => model.Name == "ops-story"), "model listing");
 
-            var ollama = await sdk.Ollama.GenerateCompletion(new OllamaGenerateCompletionRequest
+            OllamaGenerateCompletionResult? ollama = await sdk.Ollama.GenerateCompletion(new OllamaGenerateCompletionRequest
             {
                 Model = "ops-story", Prompt = "Once upon a time", Stream = false,
                 Options = new OllamaCompletionOptions { NumPredict = 4, Temperature = 0 }
@@ -23,11 +23,11 @@ namespace Test.Automated.Tests
             Require(ollama != null && ollama.EvalCount == 4 && ollama.PromptEvalCount > 0 &&
                 ollama.EvalDuration > 0 && ollama.TotalDuration > 0, "Ollama counts and timings");
 
-            var completion = await sdk.OpenAI.GenerateCompletionAsync(new OpenAIGenerateCompletionRequest
+            OpenAIGenerateCompletionResult? completion = await sdk.OpenAI.GenerateCompletionAsync(new OpenAIGenerateCompletionRequest
                 { Model = "ops-story", Prompt = "Once upon a time", MaxTokens = 4, Temperature = 0, Stream = false }, token);
             Usage(completion?.Usage, "OpenAI completion usage");
 
-            var chat = await sdk.OpenAI.GenerateChatCompletionAsync(new OpenAIGenerateChatCompletionRequest
+            OpenAIGenerateChatCompletionResult? chat = await sdk.OpenAI.GenerateChatCompletionAsync(new OpenAIGenerateChatCompletionRequest
             {
                 Model = "ops-story", Messages = new List<OpenAIChatMessage> { new OpenAIChatMessage { Role = "user", Content = "Once upon a time" } },
                 MaxTokens = 4, Temperature = 0, Stream = false
@@ -35,7 +35,7 @@ namespace Test.Automated.Tests
             Usage(chat?.Usage, "OpenAI chat usage");
 
             int chunks = 0; bool finished = false;
-            await foreach (var chunk in sdk.OpenAI.GenerateCompletionStreamAsync(new OpenAIGenerateCompletionRequest
+            await foreach (OpenAIStreamingCompletionResult? chunk in sdk.OpenAI.GenerateCompletionStreamAsync(new OpenAIGenerateCompletionRequest
                 { Model = "ops-story", Prompt = "Once upon a time", MaxTokens = 4, Temperature = 0 }, token))
             {
                 chunks++;
@@ -44,14 +44,14 @@ namespace Test.Automated.Tests
             Require(chunks > 1 && finished, "OpenAI streaming terminal event");
 
             int ollamaChunks = 0; bool ollamaDone = false;
-            await foreach (var chunk in sdk.Ollama.GenerateCompletionStream(new OllamaGenerateCompletionRequest
+            await foreach (OllamaStreamingCompletionResult? chunk in sdk.Ollama.GenerateCompletionStream(new OllamaGenerateCompletionRequest
                 { Model = "ops-story", Prompt = "Once upon a time", Stream = true, Options = new OllamaCompletionOptions { NumPredict = 4, Temperature = 0 } }, token))
             {
                 ollamaChunks++; ollamaDone |= chunk.Done;
             }
             Require(ollamaChunks > 1 && ollamaDone, "Ollama NDJSON streaming terminal event");
 
-            var settings = await sdk.Admin.GetSettingsAsync(token);
+            System.Text.Json.JsonElement? settings = await sdk.Admin.GetSettingsAsync(token);
             Require(settings.HasValue && settings.Value.ValueKind == System.Text.Json.JsonValueKind.Object, "admin settings JSON");
         }
 

@@ -27,8 +27,8 @@ namespace Test.Automated.Tests
             ApiDetails completions = CreateApiDetails("OpenAI Completion");
             try
             {
-                var request = Helpers.CreateOpenAICompletionRequest(TestEnvironment.CompletionsModel, "What is the capital of France?", false);
-                var completionResult = await SharpAISdk.OpenAI.GenerateCompletionAsync(request);
+                SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest? request = Helpers.CreateOpenAICompletionRequest(TestEnvironment.CompletionsModel, "What is the capital of France?", false);
+                SharpAI.Models.OpenAI.OpenAIGenerateCompletionResult? completionResult = await SharpAISdk.OpenAI.GenerateCompletionAsync(request);
                 
                 if (!Helpers.ValidateOpenAICompletionResult(completionResult))
                 {
@@ -54,9 +54,9 @@ namespace Test.Automated.Tests
             ApiDetails chatCompletions = CreateApiDetails("OpenAI Chat Completion");
             try
             {
-                var messages = Helpers.CreateOpenAIChatMessages("Write a short poem about artificial intelligence.");
-                var request = Helpers.CreateOpenAIChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, false);
-                var chatResult = await SharpAISdk.OpenAI.GenerateChatCompletionAsync(request);
+                List<SharpAI.Models.OpenAI.OpenAIChatMessage>? messages = Helpers.CreateOpenAIChatMessages("Write a short poem about artificial intelligence.");
+                SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest? request = Helpers.CreateOpenAIChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, false);
+                SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionResult? chatResult = await SharpAISdk.OpenAI.GenerateChatCompletionAsync(request);
                 
                 if (!Helpers.ValidateOpenAIChatCompletionResult(chatResult))
                 {

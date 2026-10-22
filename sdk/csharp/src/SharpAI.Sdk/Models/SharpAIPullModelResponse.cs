@@ -53,8 +53,8 @@ namespace SharpAI.Sdk.Models
         {
             if (Downloaded.HasValue && Percent.HasValue)
             {
-                var downloadedStr = FormatBytes(Downloaded.Value);
-                var percentStr = GetProgressPercentage()?.ToString("F1") ?? "0.0";
+                string? downloadedStr = FormatBytes(Downloaded.Value);
+                string? percentStr = GetProgressPercentage()?.ToString("F1") ?? "0.0";
                 return $"{downloadedStr} ({percentStr}%)";
             }
             return Status ?? "Unknown";

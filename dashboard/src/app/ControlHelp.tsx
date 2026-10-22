@@ -2,17 +2,19 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import en from '../i18n/en.json';
 
-function entries(value:unknown,prefix=''):Array<[string,string]> {
-  if(typeof value==='string')return [[prefix,value]];
+interface HelpEntry {key:string;value:string;}
+function entries(value:unknown,prefix=''):HelpEntry[] {
+  if(typeof value==='string')return [{key:prefix,value}];
   if(!value || typeof value!=='object')return [];
   return Object.entries(value).flatMap(([key,item])=>entries(item,prefix?`${prefix}.${key}`:key));
 }
-const sources=entries(en).filter(([key])=>!key.startsWith('help.'));
+const sources=entries(en).filter(({key})=>!key.startsWith('help.'));
 /** Backfills meaningful localized help for dynamic forms, tables, modals and icon controls. */
 export function ControlHelp():null {
   const {t,i18n}=useTranslation();
   useEffect(()=>{
-    const labels=new Map(sources.map(([key,value])=>[t(key),`${key} ${value}`]));
+    const labels=new Map<string,string>();
+    for(const {key,value} of sources)labels.set(t(key),`${key} ${value}`);
     const identify=(element:HTMLElement):string=>{
       const label=element.closest('label');
       return element.getAttribute('aria-label') || (label?.querySelector('span')?.textContent || label?.textContent?.trim()) || (element.tagName==='LABEL'?element.querySelector('span')?.textContent:'') || element.textContent?.trim() || '';

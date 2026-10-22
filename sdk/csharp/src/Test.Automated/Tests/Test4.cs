@@ -26,8 +26,8 @@ namespace Test.Automated.Tests
             ApiDetails streamingCompletions = CreateApiDetails("Streaming Completions");
             try
             {
-                var request = Helpers.CreateOllamaCompletionRequest(TestEnvironment.CompletionsModel, "Tell me a short story about a robot.", true);
-                var streamResult = SharpAISdk.Ollama.GenerateCompletionStream(request);
+                SharpAI.Models.Ollama.OllamaGenerateCompletionRequest? request = Helpers.CreateOllamaCompletionRequest(TestEnvironment.CompletionsModel, "Tell me a short story about a robot.", true);
+                IAsyncEnumerable<SharpAI.Models.Ollama.OllamaStreamingCompletionResult>? streamResult = SharpAISdk.Ollama.GenerateCompletionStream(request);
 
                 if (streamResult == null)
                 {
@@ -39,7 +39,7 @@ namespace Test.Automated.Tests
                 }
 
                 // Consume the streaming response
-                await foreach (var chunk in streamResult)
+                await foreach (SharpAI.Models.Ollama.OllamaStreamingCompletionResult? chunk in streamResult)
                 {
                     // Just consume the stream without displaying content
                 }
@@ -59,9 +59,9 @@ namespace Test.Automated.Tests
             ApiDetails streamingChatCompletions = CreateApiDetails("Streaming Chat Completions");
             try
             {
-                var messages = Helpers.CreateOllamaChatMessages("Write a poem about artificial intelligence.");
-                var request = Helpers.CreateOllamaChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, true);
-                var streamResult = SharpAISdk.Ollama.GenerateChatCompletionStream(request);
+                List<SharpAI.Models.Ollama.OllamaChatMessage>? messages = Helpers.CreateOllamaChatMessages("Write a poem about artificial intelligence.");
+                SharpAI.Models.Ollama.OllamaGenerateChatCompletionRequest? request = Helpers.CreateOllamaChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, true);
+                IAsyncEnumerable<SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk>? streamResult = SharpAISdk.Ollama.GenerateChatCompletionStream(request);
 
                 if (streamResult == null)
                 {
@@ -73,7 +73,7 @@ namespace Test.Automated.Tests
                 }
 
                 // Consume the streaming response
-                await foreach (var chunk in streamResult)
+                await foreach (SharpAI.Models.Ollama.OllamaGenerateChatCompletionChunk? chunk in streamResult)
                 {
                     // Just consume the stream without displaying content
                 }

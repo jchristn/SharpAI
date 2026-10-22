@@ -77,7 +77,7 @@ namespace Test.Automated
 
                 if (!result.Success)
                 {
-                    var options = new JsonSerializerOptions
+                    JsonSerializerOptions? options = new JsonSerializerOptions
                     {
                         WriteIndented = true
                     };

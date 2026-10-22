@@ -117,7 +117,7 @@
 
                 ModelsUsingVRAM = result.Models.Count(m => m.SizeVRAM > 0);
 
-                var vramPercentages = result.Models
+                List<double> vramPercentages = result.Models
                     .Select(m => m.GetVRAMPercentage())
                     .Where(p => p.HasValue)
                     .Select(p => p.Value)
@@ -158,7 +158,7 @@
         /// <returns>Summary string.</returns>
         public string GetSummary()
         {
-            var lines = new List<string>
+            List<string> lines = new List<string>
             {
                 $"Running Models: {TotalRunningModels}",
                 $"Total Memory: {TotalMemoryFormatted}",

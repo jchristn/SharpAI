@@ -99,8 +99,8 @@
             if (!Total.HasValue || !Completed.HasValue)
                 return null;
 
-            var percentage = GetProgressPercentage();
-            var percentStr = percentage.HasValue ? $" ({percentage.Value:F1}%)" : "";
+            double? percentage = GetProgressPercentage();
+            string percentStr = percentage.HasValue ? $" ({percentage.Value:F1}%)" : "";
 
             return $"{GetFormattedCompletedSize()} / {GetFormattedTotalSize()}{percentStr}";
         }
@@ -151,7 +151,7 @@
                 return null;
 
             // Extract hash from "sha256:hash" format
-            var parts = Digest.Split(':');
+            string[] parts = Digest.Split(':');
             if (parts.Length == 2 && parts[1].Length >= 12)
             {
                 return parts[1].Substring(0, 12);
@@ -170,11 +170,11 @@
             if (bytesPerSecond <= 0)
                 return null;
 
-            var remaining = GetRemainingBytes();
+            long? remaining = GetRemainingBytes();
             if (!remaining.HasValue || remaining.Value <= 0)
                 return null;
 
-            var secondsRemaining = remaining.Value / bytesPerSecond;
+            double secondsRemaining = remaining.Value / bytesPerSecond;
             return TimeSpan.FromSeconds(secondsRemaining);
         }
 

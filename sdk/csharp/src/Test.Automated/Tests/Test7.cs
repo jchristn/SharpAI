@@ -27,9 +27,9 @@ namespace Test.Automated.Tests
             ApiDetails streamingChatCompletions = CreateApiDetails("OpenAI Streaming Chat Completions");
             try
             {
-                var messages = Helpers.CreateOpenAIChatMessages("Write a short poem about artificial intelligence.");
-                var request = Helpers.CreateOpenAIChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, true);
-                var streamResult = SharpAISdk.OpenAI.GenerateChatCompletionStreamAsync(request);
+                List<SharpAI.Models.OpenAI.OpenAIChatMessage>? messages = Helpers.CreateOpenAIChatMessages("Write a short poem about artificial intelligence.");
+                SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest? request = Helpers.CreateOpenAIChatCompletionRequest(TestEnvironment.ChatCompletionsModel, messages, true);
+                IAsyncEnumerable<SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult>? streamResult = SharpAISdk.OpenAI.GenerateChatCompletionStreamAsync(request);
                 
                 if (streamResult == null)
                 {
@@ -40,7 +40,7 @@ namespace Test.Automated.Tests
                 }
 
                 // Consume the streaming response
-                await foreach (var chunk in streamResult)
+                await foreach (SharpAI.Models.OpenAI.OpenAIStreamingCompletionResult? chunk in streamResult)
                 {
                     // Just consume the stream without displaying content
                 }
