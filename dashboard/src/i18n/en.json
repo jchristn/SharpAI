@@ -959,8 +959,8 @@
     "accessList": "IP-address rules used by the listener access-control mode. Permit and deny lists apply before route handling."
   },
   "library": {
-    "promptsTitle": "System prompts",
-    "configurationsTitle": "Model configurations",
+    "promptsTitle": "System Prompts",
+    "configurationsTitle": "Model Configurations",
     "promptsHelp": "Reusable instructions shared system-wide, within your tenant, or saved privately for your account.",
     "configurationsHelp": "Reusable generation settings, including sampling, output format and streaming. System prompts are managed separately.",
     "System": "System default",
