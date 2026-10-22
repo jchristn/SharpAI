@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LanguageSelector } from './LanguageSelector';
 import { Modal } from '../components/ui';
 import { ApiError } from '../api/ApiClient';
 import { useAuth } from './AuthProvider';
@@ -43,27 +44,29 @@ export function LoginModal({ open, onClose }: LoginModalProps): JSX.Element {
           <button type="button" className="sa-btn" onClick={onClose}>
             {t('login.cancel')}
           </button>
-          <button type="button" className="sa-btn sa-btn--primary" onClick={() => void submit()} disabled={busy}>
+          <button type="submit" form="sa-login" className="sa-btn sa-btn--primary" disabled={busy}>
             {busy ? t('login.signingIn') : t('login.signIn')}
           </button>
         </>
       }
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sa-space-3)' }}>
+      <form id="sa-login" onSubmit={(event) => { event.preventDefault(); void submit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sa-space-3)' }}>
+        <div style={{display:'flex',justifyContent:'flex-end'}}><LanguageSelector /></div><div className="sa-login-brand"><img src="/images/sharp-logo.png" alt="SharpAI" /><h2>{t('text.welcomeBack')}</h2><p>{t('text.signInToYourInferenceWorkspace')}</p></div>
+        <details className="sa-settings-note"><summary>{t('login.setupTitle')}</summary><p>{t('login.setupHelp')}</p><p>{t('login.setupConfig')}</p></details>
         <label className="sa-filterbar__field">
           <span className="sa-filterbar__label">{t('login.email')}</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+          <input required autoFocus type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
         </label>
         <label className="sa-filterbar__field">
           <span className="sa-filterbar__label">{t('login.password')}</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+          <input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
         </label>
         <label className="sa-filterbar__field">
           <span className="sa-filterbar__label">{t('login.tenant')}</span>
           <input type="text" value={tenant} placeholder={t('login.tenantPlaceholder')} onChange={(e) => setTenant(e.target.value)} />
         </label>
-        {error ? <div style={{ color: 'var(--sa-danger)' }}>{error}</div> : null}
-      </div>
+        {error ? <div role="alert" style={{ color: 'var(--sa-danger)' }}>{error}</div> : null}
+      </form>
     </Modal>
   );
 }

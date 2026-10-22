@@ -3,7 +3,6 @@ namespace SharpAI.Server.API.REST.Routes
     using System;
     using System.Collections.Generic;
     using System.Threading;
-
     using SharpAI.Models;
     using SharpAI.Models.OpenAI;
     using SharpAI.Security;
@@ -36,6 +35,13 @@ namespace SharpAI.Server.API.REST.Routes
                 List<object> data = new List<object>();
                 foreach (ModelFile m in EnumerateAll(ctx))
                 {
+                    if (String.Equals(req.Http.Request.Query.Elements?["include_context"], "true", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SharpAI.Operations.ModelInspection inspection = SharpAI.Operations.ModelInspector.Inspect(SharpAI.Operations.GgufShards.Resolve(ctx.Settings().Storage.ModelsDirectory, m.GUID));
+                        data.Add(new { id = m.Name, @object = "model", created = new DateTimeOffset(DateTime.SpecifyKind(m.CreatedUtc, DateTimeKind.Utc)).ToUnixTimeSeconds(), owned_by = "sharpai",
+                            trained_context_length = inspection.TrainedContext, effective_context_length = inspection.EffectiveContext });
+                        continue;
+                    }
                     data.Add(new
                     {
                         id = m.Name,
@@ -46,7 +52,7 @@ namespace SharpAI.Server.API.REST.Routes
                 }
                 return new { @object = "list", data = data };
             }, api => RouteHelpers.Describe(api, "OpenAI - Models", "List models (OpenAI-compatible)")
-                .WithDescription("OpenAI-compatible model list; returns locally available models.")
+                .WithDescription("OpenAI-compatible model list; returns locally available models. Optional include_context=true adds trained_context_length and effective_context_length without loading weights.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Model list", OpenApiSchemaMetadata.Create("object"))));
 
             ctx.Server.Post<OpenAIGenerateEmbeddingsRequest>("/v1/embeddings", async (req) =>

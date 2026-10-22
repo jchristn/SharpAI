@@ -145,6 +145,54 @@ namespace SharpAI.Models
         /// </summary>
         public DateTime? CompletedUtc { get; set; } = null;
 
+        /// <summary>Captured ModelName. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public string ModelName { get; set; } = null;
+
+        /// <summary>Captured IsStreaming. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public bool? IsStreaming { get; set; } = null;
+
+        /// <summary>Captured InputTokens. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public int? InputTokens { get; set; } = null;
+
+        /// <summary>Captured OutputTokens. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public int? OutputTokens { get; set; } = null;
+
+        /// <summary>Captured CachedTokens. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public int? CachedTokens { get; set; } = null;
+
+        /// <summary>Captured TtftMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? TtftMs { get; set; } = null;
+
+        /// <summary>Captured StreamDurationMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? StreamDurationMs { get; set; } = null;
+
+        /// <summary>Captured QueueMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? QueueMs { get; set; } = null;
+
+        /// <summary>Captured LoadMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? LoadMs { get; set; } = null;
+
+        /// <summary>Captured PromptMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? PromptMs { get; set; } = null;
+
+        /// <summary>Captured GenerationMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? GenerationMs { get; set; } = null;
+
+        /// <summary>Captured EngineTotalMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public double? EngineTotalMs { get; set; } = null;
+
+        /// <summary>Captured Cancelled. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public bool? Cancelled { get; set; } = null;
+
+        /// <summary>Captured PhaseTimingsApproximate. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public bool? PhaseTimingsApproximate { get; set; } = null;
+
+        /// <summary>Captured TraceId. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public string TraceId { get; set; } = null;
+
+        /// <summary>Captured SpanId. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        public string SpanId { get; set; } = null;
+
         #endregion
 
         #region Private-Members

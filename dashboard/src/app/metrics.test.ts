@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { averageLatencyMs, parseSample, ratePerSecond, sumMetric } from './metrics';
+import { averageLatencyMs, hasEngineMetrics, parseSample, ratePerSecond, sumMetric } from './metrics';
 
 const SAMPLE = `# HELP sharpai_inference_requests_total Inference requests processed.
 # TYPE sharpai_inference_requests_total counter
@@ -37,5 +37,14 @@ describe('metrics parser', () => {
     expect(ratePerSecond(100, 150, 5)).toBe(10);
     expect(ratePerSecond(150, 100, 5)).toBe(0); // reset -> 0, not negative
     expect(ratePerSecond(0, 10, 0)).toBe(0); // no interval -> 0
+  });
+});
+
+describe('metric source validation', () => {
+  it('accepts engine samples and rejects HTTP-only or HTML responses', () => {
+    expect(hasEngineMetrics(SAMPLE)).toBe(true);
+    expect(hasEngineMetrics('http_server_active_requests 0')).toBe(false);
+    expect(hasEngineMetrics('<!doctype html>')).toBe(false);
+    expect(hasEngineMetrics('# HELP sharpai_models_resident text')).toBe(false);
   });
 });

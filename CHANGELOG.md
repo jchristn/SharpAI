@@ -1,15 +1,23 @@
 # Changelog
 
-## v2.0.0
+### v4.0.1 dashboard and diagnostics follow-up
 
-The 2.0.0 release is a unified, breaking, enterprise-focused release. The full scope and task-by-task
+- Compact icon utilities and localized operational help across dashboard controls, forms, tables, and dialogs.
+- Full-height generation parameters, streaming toggle, localized wait messages, and complete request/inference inspectors.
+- Durable typed engine timings and token counts, bounded redacted response capture, and tenant-scoped history access.
+- Uniform JSON backend log bodies, reconstructable long events, and Grafana dashboards provisioned in the SharpAI folder.
+- Separate Access ID columns and editable Hugging Face credentials applied to subsequent downloads.
+- Actionable C#/TUIKit parity plan based on Armada, S3Drive, Armor, Mux, and Arguebot.
+
+
+## v4.0.1
+
+The v4.0.1 release is a unified, breaking, enterprise-focused release. The full scope and task-by-task
 status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md).
 
-> **Versioning note.** This release was developed under the working number 5.0.0 and ships as **2.0.0**.
-> All artifacts now share that one version: the `SharpAI` and `SharpAI.Sdk` NuGet packages (previously
-> 1.0.17 / 1.0.1), the server, the dashboard, the JS and Python SDKs, default configuration, and the
-> `jchristn77/sharpai` / `jchristn77/sharpai-ui` Docker images (`v2.0.0` + `latest`; the older `v4.0.x`
-> image tags were a separate server-only numbering track and are superseded).
+The current deployment image tags are `jchristn77/sharpai:v4.0.1` and
+`jchristn77/sharpai-ui:v4.0.1`. Dependency versions, settings-schema versions, and historical
+upgrade records below retain their own independent version numbers.
 
 ### Added
 
@@ -250,6 +258,10 @@ status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md).
 
 ### Changed
 
+- **Current runtime dependencies:** LLamaSharp and CPU/CUDA12 backends 0.30.0, Watson 7.3.2,
+  Radiant 0.1.3, SyslogLogging 2.4.1, and patched PKCS 10.0.13. Compatibility fixes preserve
+  .NET 8 native loading, mmap/mlock settings, and C# SDK SSE/NDJSON streaming.
+
 - **Inference error parity.** All six inference routes (Ollama + OpenAI chat/generate/embeddings) now return
   an OpenAI/Ollama-shaped error envelope (`{"error":{"message":...,"type":...}}`) on pre-stream failures —
   429 `server_busy`, 400 `invalid_request_error`, 404 `not_found_error`, 500 `internal_error` — so client
@@ -283,8 +295,8 @@ status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md).
   embedding context is created on first embedding request.
 - **Watson upgraded to 7.1.0**, enabling native HTTP-server telemetry: the server exposes a Prometheus
   `/metrics` endpoint on its listener and emits request spans (exported via Radiant) when telemetry is on.
-- **Version normalized to `2.0.0`** across the core library, server, dashboard, C#/JS/Python SDKs, Docker
-  images, and default configuration (previously split across 1.x/4.0.1/1.0.x tracks).
+- **Release documentation and Compose examples target `v4.0.1`.** Package dependencies and settings
+  schema versions retain their independent numbering.
 - **Dependency updates.** `Microsoft.Data.SqlClient` 7.0.2 -> 7.1.1, `Microsoft.Data.Sqlite` 10.0.11 ->
   10.0.12, `RestWrapper` 3.2.0 -> 3.3.1, `SyslogLogging` 2.2.1 -> 2.3.1, `System.Text.Json` 10.0.11 ->
   10.0.12, `Watson` 7.1.0 -> 7.2.2, `PersistentCollection` 2.0.12 -> 2.2.0. Test tooling: `Touchstone.*`
@@ -299,6 +311,11 @@ status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md).
   dependency notes in `src/CLAUDE.md` (Watson 7.1, hand-written ADO.NET 4-DB layer).
 
 ### Fixed
+
+- **Docker first-start SQLite mount.** Compose refuses to create a directory for a missing
+  `sharpai.db` bind source. `docker/update.sh` initializes an absent database file, preserves
+  existing files, and reports directory mistakes before stopping services. This prevents the
+  server's SQLite startup failure from leaving `sharpai-ui` waiting in `Created`.
 
 - **Security: session tokens are now authenticated (encrypt-then-MAC).** `SessionTokenService` used
   unauthenticated AES-256-CBC, so a token could occasionally (about 1 in 256) "decrypt" under the wrong key
@@ -341,7 +358,7 @@ status live in [IMPROVEMENTS.md](archive/IMPROVEMENTS.md).
 
 ---
 
-## v4.0.1
+## Earlier v4.0.1 server-only changes
 
 ### Added
 

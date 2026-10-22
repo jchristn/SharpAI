@@ -14,9 +14,8 @@
 # compose-cuda.yaml. For Apple Metal, run SharpAI directly on macOS (Docker on Apple
 # Silicon runs Linux containers which cannot access Metal).
 #
-# Metrics and traces light up once the in-app telemetry (Radiant + Watson 7.2) is
-# enabled (plan workstream W17); logs flow immediately because the collector tails the
-# server's rolling log files under ./logs.
+# Engine metrics and spans flow via OTLP; correlated operation logs are tailed
+# from the server rolling log files under ./logs.
 
 services:
 
@@ -32,7 +31,11 @@ services:
     tty: true
     volumes:
       - ./sharpai.json:/app/sharpai.json
-      - ./sharpai.db:/app/sharpai.db
+      - type: bind
+        source: ./sharpai.db
+        target: /app/sharpai.db
+        bind:
+          create_host_path: false
       - ./logs/:/app/logs/
       - sharpai-models:/app/models/
     environment:
@@ -45,7 +48,7 @@ services:
       SHARPAI_BATCH_THREADS: "0"
       SHARPAI_GPU_LAYERS: "auto"
       SHARPAI_MAIN_GPU: "0"
-      SHARPAI_CONTEXT_SIZE: "0"
+      SHARPAI_CONTEXT_SIZE: "${SHARPAI_CONTEXT_SIZE:-2048}"
       SHARPAI_BATCH_SIZE: "0"
       SHARPAI_UBATCH_SIZE: "0"
       SHARPAI_USE_MMAP: "true"
@@ -57,12 +60,12 @@ services:
       SHARPAI_KEEP_ALIVE_SECONDS: "0"           # evict idle models after N seconds; 0 = never
       SHARPAI_MAX_RESIDENT_MODELS: "0"          # cap resident models (LRU eviction); 0 = unlimited
       SHARPAI_MODEL_MEMORY_BUDGET_MB: "0"       # total model-memory budget; 0 = unlimited
-      # Telemetry (consumed once W17 in-app telemetry is wired; harmless until then)
+      # Telemetry: engine OTLP export plus Watson HTTP /metrics
       SHARPAI_TELEMETRY_ENABLE: "true"
       SHARPAI_TELEMETRY_SERVICE_NAME: "sharpai"
       SHARPAI_TELEMETRY_OTLP_ENDPOINT: "http://otel-collector:4317"
       SHARPAI_TELEMETRY_OTLP_PROTOCOL: "grpc"
-      SHARPAI_TELEMETRY_PROMETHEUS_ENABLE: "true"
+      SHARPAI_TELEMETRY_PROMETHEUS_ENABLE: "false"  # engine metrics use OTLP; avoid an unused separate listener
       SHARPAI_TELEMETRY_PROMETHEUS_PATH: "/metrics"
     healthcheck:
       test: ["CMD-SHELL", "curl --fail http://localhost:8000/ready || exit 1"]

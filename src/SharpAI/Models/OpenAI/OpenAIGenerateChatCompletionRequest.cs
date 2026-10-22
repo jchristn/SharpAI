@@ -11,6 +11,11 @@
     /// </summary>
     public class OpenAIGenerateChatCompletionRequest
     {
+        private OpenAIStreamOptions _StreamOptions;
+        /// <summary>Optional streaming usage controls. Null preserves the default stream contract.</summary>
+        [JsonPropertyName("stream_options")]
+        public OpenAIStreamOptions StreamOptions { get { return _StreamOptions; } set { _StreamOptions = value; } }
+
         /// <summary>
         /// ID of the model to use (required).
         /// </summary>

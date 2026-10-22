@@ -20,6 +20,7 @@ datasources:
         datasourceUid: loki
         spanStartTimeShift: -1h
         spanEndTimeShift: 1h
+        tags: [{key: service.name, value: service_name}]
         filterByTraceID: true
 
   - name: Loki
@@ -31,6 +32,6 @@ datasources:
     jsonData:
       derivedFields:
         - name: TraceID
-          matcherRegex: '"trace_id":"(\w+)"'
+          matcherRegex: '"trace_id":"([0-9a-f]{32})"'
           url: '$${__value.raw}'
           datasourceUid: tempo

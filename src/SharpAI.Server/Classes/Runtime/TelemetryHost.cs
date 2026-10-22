@@ -57,7 +57,7 @@ namespace SharpAI.Server.Classes.Runtime
             bool enable = EnvBool("SHARPAI_TELEMETRY_ENABLE", settings.Enable);
             if (!enable)
             {
-                _Logging.Debug(_Header + "telemetry disabled");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "telemetry disabled");
                 return;
             }
 
@@ -99,13 +99,13 @@ namespace SharpAI.Server.Classes.Runtime
 
                 _Host = RadiantHost.Start(radiant);
 
-                _Logging.Info(_Header + "telemetry started; service=" + serviceName + " otlp=" + otlpEndpoint
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "telemetry started; service=" + serviceName + " otlp=" + otlpEndpoint
                     + (prometheusEnable ? " prometheus=" + settings.PrometheusHostname + ":" + prometheusPort + prometheusPath : ""));
             }
             catch (Exception ex)
             {
                 _Host = null;
-                _Logging.Warn(_Header + "telemetry failed to start; continuing without it:" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "telemetry failed to start; continuing without it:" + Environment.NewLine + ex.ToString());
             }
         }
 
@@ -128,7 +128,7 @@ namespace SharpAI.Server.Classes.Runtime
             }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "exception disposing telemetry host:" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "exception disposing telemetry host:" + Environment.NewLine + ex.ToString());
             }
             finally
             {

@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [ -z "${1:-}" ]; then
   echo "Provide a tag argument for the build."
-  echo "Example: ./build-server.sh v2.0.0"
+  echo "Example: ./build-server.sh v4.0.1"
   exit 1
 fi
 

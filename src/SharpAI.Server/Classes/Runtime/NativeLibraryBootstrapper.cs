@@ -59,7 +59,7 @@ namespace SharpAI.Server.Classes.Runtime
             {
                 if (_IsInitialized)
                 {
-                    logging.Debug("[NativeLibraryBootstrapper] already initialized, skipping");
+                    SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] already initialized, skipping");
                     return;
                 }
 
@@ -74,7 +74,7 @@ namespace SharpAI.Server.Classes.Runtime
                 {
                     if (File.Exists(libraryPath))
                     {
-                        logging.Info($"[NativeLibraryBootstrapper] configuring {backend} backend: {libraryPath}");
+                        SharpAI.Logging.JsonLog.Info(logging, $"[NativeLibraryBootstrapper] configuring {backend} backend: {libraryPath}");
 
                         OSPlatform currentPlatform = GetCurrentPlatform();
 
@@ -93,18 +93,16 @@ namespace SharpAI.Server.Classes.Runtime
                             }
 
                             // CRITICAL: Configure library path BEFORE any LlamaSharp types are referenced
-                            NativeLibraryConfig
-                                .All
-                                .WithLibrary(libraryPath, "llama");
+                            NativeLibraryLoader.Configure(libraryPath);
 
-                            logging.Info($"[NativeLibraryBootstrapper] successfully configured {backend} backend");
+                            SharpAI.Logging.JsonLog.Info(logging, $"[NativeLibraryBootstrapper] successfully configured {backend} backend");
 
                             // Force NativeApi static constructor to run now (while we can catch errors)
                             // This ensures the library actually loads successfully
                             try
                             {
                                 long deviceCount = NativeApi.llama_max_devices();
-                                logging.Debug($"[NativeLibraryBootstrapper] library loaded successfully, {deviceCount} device(s) reported");
+                                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] library loaded successfully, {deviceCount} device(s) reported");
                             }
                             catch (Exception initEx)
                             {
@@ -116,7 +114,7 @@ namespace SharpAI.Server.Classes.Runtime
                         }
                         catch (Exception ex)
                         {
-                            logging.Warn($"[NativeLibraryBootstrapper] failed to configure {backend} backend, will attempt fallback: {ex.Message}" + Environment.NewLine + ex.ToString());
+                            SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] failed to configure {backend} backend, will attempt fallback: {ex.Message}" + Environment.NewLine + ex.ToString());
 
                             if (requireBackend)
                             {
@@ -129,7 +127,7 @@ namespace SharpAI.Server.Classes.Runtime
                                 string cpuPath = GetLibraryPath("cpu", settings, logging);
                                 if (!String.IsNullOrEmpty(cpuPath) && File.Exists(cpuPath))
                                 {
-                                    logging.Info($"[NativeLibraryBootstrapper] attempting CPU fallback: {cpuPath}");
+                                    SharpAI.Logging.JsonLog.Info(logging, $"[NativeLibraryBootstrapper] attempting CPU fallback: {cpuPath}");
 
                                     try
                                     {
@@ -145,19 +143,17 @@ namespace SharpAI.Server.Classes.Runtime
                                             PreLoadMacOSDependencies(cpuDir, logging);
                                         }
 
-                                        NativeLibraryConfig
-                                            .All
-                                            .WithLibrary(cpuPath, "llama");
+                                        NativeLibraryLoader.Configure(cpuPath);
 
                                         _SelectedBackend = "cpu";
                                         NativeBackendInfo.SelectedBackend = "cpu";
-                                        logging.Info("[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
+                                        SharpAI.Logging.JsonLog.Info(logging, "[NativeLibraryBootstrapper] successfully configured CPU backend as fallback");
 
                                         // Force library load
                                         try
                                         {
                                             long deviceCount = NativeApi.llama_max_devices();
-                                            logging.Debug($"[NativeLibraryBootstrapper] fallback library loaded successfully, {deviceCount} device(s) reported");
+                                            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] fallback library loaded successfully, {deviceCount} device(s) reported");
                                         }
                                         catch (Exception initEx)
                                         {
@@ -169,7 +165,7 @@ namespace SharpAI.Server.Classes.Runtime
                                     }
                                     catch (Exception fallbackEx)
                                     {
-                                        logging.Warn($"[NativeLibraryBootstrapper] CPU fallback also failed: {fallbackEx.Message}" + Environment.NewLine + fallbackEx.ToString());
+                                        SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] CPU fallback also failed: {fallbackEx.Message}" + Environment.NewLine + fallbackEx.ToString());
                                     }
                                 }
                             }
@@ -177,7 +173,7 @@ namespace SharpAI.Server.Classes.Runtime
                     }
                     else
                     {
-                        logging.Warn($"[NativeLibraryBootstrapper] library file not found: {libraryPath}");
+                        SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] library file not found: {libraryPath}");
                         if (requireBackend)
                         {
                             throw new FileNotFoundException($"Required {backend} backend library was not found.", libraryPath);
@@ -186,7 +182,7 @@ namespace SharpAI.Server.Classes.Runtime
                 }
                 else
                 {
-                    logging.Debug("[NativeLibraryBootstrapper] no explicit library path configured, using default LlamaSharp library loading");
+                    SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] no explicit library path configured, using default LlamaSharp library loading");
                 }
 
                 _IsInitialized = true;
@@ -197,7 +193,7 @@ namespace SharpAI.Server.Classes.Runtime
         {
             if (GetCurrentPlatform() != OSPlatform.Linux) return;
 
-            logging.Debug($"[NativeLibraryBootstrapper] pre-loading Linux dependencies from: {libraryDir}");
+            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] pre-loading Linux dependencies from: {libraryDir}");
 
             // List of dependencies in load order (base libraries first)
             string[] dependencies = new string[]
@@ -217,16 +213,16 @@ namespace SharpAI.Server.Classes.Runtime
                     try
                     {
                         IntPtr handle = NativeLibrary.Load(depPath);
-                        logging.Debug($"[NativeLibraryBootstrapper] pre-loaded dependency: {dep}");
+                        SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] pre-loaded dependency: {dep}");
                     }
                     catch (Exception ex)
                     {
-                        logging.Warn($"[NativeLibraryBootstrapper] failed to pre-load {dep}:" + Environment.NewLine + ex.ToString());
+                        SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] failed to pre-load {dep}:" + Environment.NewLine + ex.ToString());
                     }
                 }
                 else
                 {
-                    logging.Debug($"[NativeLibraryBootstrapper] dependency not found: {depPath}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] dependency not found: {depPath}");
                 }
             }
         }
@@ -235,7 +231,7 @@ namespace SharpAI.Server.Classes.Runtime
         {
             if (GetCurrentPlatform() != OSPlatform.OSX) return;
 
-            logging.Debug($"[NativeLibraryBootstrapper] pre-loading macOS dependencies from: {libraryDir}");
+            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] pre-loading macOS dependencies from: {libraryDir}");
 
             // List of dependencies in load order.
             // libggml.dylib depends on libggml-blas.dylib and libggml-metal.dylib,
@@ -257,16 +253,16 @@ namespace SharpAI.Server.Classes.Runtime
                     try
                     {
                         IntPtr handle = NativeLibrary.Load(depPath);
-                        logging.Debug($"[NativeLibraryBootstrapper] pre-loaded dependency: {dep}");
+                        SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] pre-loaded dependency: {dep}");
                     }
                     catch (Exception ex)
                     {
-                        logging.Warn($"[NativeLibraryBootstrapper] failed to pre-load {dep}:" + Environment.NewLine + ex.ToString());
+                        SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] failed to pre-load {dep}:" + Environment.NewLine + ex.ToString());
                     }
                 }
                 else
                 {
-                    logging.Debug($"[NativeLibraryBootstrapper] dependency not found: {depPath}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] dependency not found: {depPath}");
                 }
             }
         }
@@ -282,7 +278,7 @@ namespace SharpAI.Server.Classes.Runtime
 
                 if (File.Exists(metalLib))
                 {
-                    logging.Debug($"[NativeLibraryBootstrapper] Metal library detected: {metalLib}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] Metal library detected: {metalLib}");
                     return true;
                 }
 
@@ -290,16 +286,16 @@ namespace SharpAI.Server.Classes.Runtime
                 string customMetalLib = Path.Combine(baseDirectory, "runtimes", "metal", "libggml-metal.dylib");
                 if (File.Exists(customMetalLib))
                 {
-                    logging.Debug($"[NativeLibraryBootstrapper] Metal library detected at custom path: {customMetalLib}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] Metal library detected at custom path: {customMetalLib}");
                     return true;
                 }
 
-                logging.Debug("[NativeLibraryBootstrapper] Metal library not found");
+                SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] Metal library not found");
                 return false;
             }
             catch (Exception ex)
             {
-                logging.Debug($"[NativeLibraryBootstrapper] Metal detection failed: {ex.Message}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] Metal detection failed: {ex.Message}");
                 return false;
             }
         }
@@ -328,22 +324,22 @@ namespace SharpAI.Server.Classes.Runtime
                         switch (level)
                         {
                             case LLamaLogLevel.Error:
-                                logging.Warn("[llama.cpp] " + trimmed);
+                                SharpAI.Logging.JsonLog.Warn(logging, "[llama.cpp] " + trimmed);
                                 break;
                             case LLamaLogLevel.Warning:
-                                logging.Warn("[llama.cpp] " + trimmed);
+                                SharpAI.Logging.JsonLog.Warn(logging, "[llama.cpp] " + trimmed);
                                 break;
                             case LLamaLogLevel.Info:
-                                logging.Info("[llama.cpp] " + trimmed);
+                                SharpAI.Logging.JsonLog.Info(logging, "[llama.cpp] " + trimmed);
                                 break;
                             default:
-                                logging.Debug("[llama.cpp] " + trimmed);
+                                SharpAI.Logging.JsonLog.Debug(logging, "[llama.cpp] " + trimmed);
                                 break;
                         }
                     };
 
                     NativeLogConfig.llama_log_set(logCallback);
-                    logging.Debug("[NativeLibraryBootstrapper] native library logging enabled and redirected to log file");
+                    SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] native library logging enabled and redirected to log file");
                 }
                 else
                 {
@@ -354,12 +350,12 @@ namespace SharpAI.Server.Classes.Runtime
                     };
 
                     NativeLogConfig.llama_log_set(noOpCallback);
-                    logging.Debug("[NativeLibraryBootstrapper] native library logging disabled");
+                    SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] native library logging disabled");
                 }
             }
             catch (Exception ex)
             {
-                logging.Debug($"[NativeLibraryBootstrapper] failed to configure native logging:{Environment.NewLine}{ex.ToString()}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] failed to configure native logging:{Environment.NewLine}{ex.ToString()}");
             }
         }
 
@@ -374,11 +370,11 @@ namespace SharpAI.Server.Classes.Runtime
                 {
                     if (IsValidBackend(forced))
                     {
-                        logging.Info($"[NativeLibraryBootstrapper] backend forced by environment variable to: {forced}");
+                        SharpAI.Logging.JsonLog.Info(logging, $"[NativeLibraryBootstrapper] backend forced by environment variable to: {forced}");
                         return forced;
                     }
 
-                    logging.Warn($"[NativeLibraryBootstrapper] ignoring invalid {SharpAIEnvironment.ForceBackend} value: {envBackend}");
+                    SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] ignoring invalid {SharpAIEnvironment.ForceBackend} value: {envBackend}");
                 }
             }
 
@@ -390,18 +386,18 @@ namespace SharpAI.Server.Classes.Runtime
                 {
                     if (IsValidBackend(forced))
                     {
-                        logging.Info($"[NativeLibraryBootstrapper] backend forced by settings to: {forced}");
+                        SharpAI.Logging.JsonLog.Info(logging, $"[NativeLibraryBootstrapper] backend forced by settings to: {forced}");
                         return forced;
                     }
 
-                    logging.Warn($"[NativeLibraryBootstrapper] ignoring invalid Runtime.ForceBackend value: {settings.Runtime.ForceBackend}");
+                    SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] ignoring invalid Runtime.ForceBackend value: {settings.Runtime.ForceBackend}");
                 }
             }
 
             OSPlatform platform = GetCurrentPlatform();
             Architecture architecture = RuntimeInformation.ProcessArchitecture;
 
-            logging.Debug($"[NativeLibraryBootstrapper] detected platform {platform} architecture {architecture}");
+            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] detected platform {platform} architecture {architecture}");
 
             // Apple Silicon: check for Metal GPU acceleration
             if (platform == OSPlatform.OSX && architecture == Architecture.Arm64)
@@ -409,12 +405,12 @@ namespace SharpAI.Server.Classes.Runtime
                 bool metalAvailable = DetectMetalAvailability(logging);
                 if (metalAvailable)
                 {
-                    logging.Info("[NativeLibraryBootstrapper] Apple Silicon detected, selecting Metal backend");
+                    SharpAI.Logging.JsonLog.Info(logging, "[NativeLibraryBootstrapper] Apple Silicon detected, selecting Metal backend");
                     return "metal";
                 }
                 else
                 {
-                    logging.Info("[NativeLibraryBootstrapper] Apple Silicon detected, Metal not available, using CPU");
+                    SharpAI.Logging.JsonLog.Info(logging, "[NativeLibraryBootstrapper] Apple Silicon detected, Metal not available, using CPU");
                     return "cpu";
                 }
             }
@@ -424,12 +420,12 @@ namespace SharpAI.Server.Classes.Runtime
 
             if (gpuAvailable)
             {
-                logging.Info("[NativeLibraryBootstrapper] GPU detected, selecting CUDA backend");
+                SharpAI.Logging.JsonLog.Info(logging, "[NativeLibraryBootstrapper] GPU detected, selecting CUDA backend");
                 return "cuda";
             }
             else
             {
-                logging.Info("[NativeLibraryBootstrapper] no GPU detected, selecting CPU backend");
+                SharpAI.Logging.JsonLog.Info(logging, "[NativeLibraryBootstrapper] no GPU detected, selecting CPU backend");
                 return "cpu";
             }
         }
@@ -441,7 +437,7 @@ namespace SharpAI.Server.Classes.Runtime
             {
                 if (File.Exists("/proc/driver/nvidia/version"))
                 {
-                    logging.Debug("[NativeLibraryBootstrapper] NVIDIA driver detected via /proc/driver/nvidia/version");
+                    SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] NVIDIA driver detected via /proc/driver/nvidia/version");
                     return true;
                 }
             }
@@ -452,7 +448,7 @@ namespace SharpAI.Server.Classes.Runtime
                 && !nvidiaVisible.Equals("void", StringComparison.OrdinalIgnoreCase)
                 && !nvidiaVisible.Equals("none", StringComparison.OrdinalIgnoreCase))
             {
-                logging.Debug($"[NativeLibraryBootstrapper] NVIDIA_VISIBLE_DEVICES detected: {nvidiaVisible}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] NVIDIA_VISIBLE_DEVICES detected: {nvidiaVisible}");
                 return true;
             }
 
@@ -478,7 +474,7 @@ namespace SharpAI.Server.Classes.Runtime
 
                         if (process.ExitCode == 0 && !String.IsNullOrWhiteSpace(output))
                         {
-                            logging.Debug($"[NativeLibraryBootstrapper] nvidia-smi detected GPU: {output.Trim()}");
+                            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] nvidia-smi detected GPU: {output.Trim()}");
                             return true;
                         }
                     }
@@ -486,7 +482,7 @@ namespace SharpAI.Server.Classes.Runtime
             }
             catch (Exception ex)
             {
-                logging.Debug($"[NativeLibraryBootstrapper] nvidia-smi check failed: {ex.Message}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] nvidia-smi check failed: {ex.Message}");
             }
 
             // Method 4: Check for CUDA library files
@@ -503,7 +499,7 @@ namespace SharpAI.Server.Classes.Runtime
                 {
                     if (File.Exists(path))
                     {
-                        logging.Debug($"[NativeLibraryBootstrapper] CUDA library detected: {path}");
+                        SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] CUDA library detected: {path}");
                         return true;
                     }
                 }
@@ -516,13 +512,13 @@ namespace SharpAI.Server.Classes.Runtime
                     string cudaDll = Path.Combine(systemRoot, "System32", "nvcuda.dll");
                     if (File.Exists(cudaDll))
                     {
-                        logging.Debug($"[NativeLibraryBootstrapper] CUDA library detected: {cudaDll}");
+                        SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] CUDA library detected: {cudaDll}");
                         return true;
                     }
                 }
             }
 
-            logging.Debug("[NativeLibraryBootstrapper] no GPU detected via any method");
+            SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] no GPU detected via any method");
             return false;
         }
 
@@ -534,7 +530,7 @@ namespace SharpAI.Server.Classes.Runtime
                 if (!String.IsNullOrEmpty(settings.Runtime?.CpuBackendPath))
                 {
                     string expandedPath = Environment.ExpandEnvironmentVariables(settings.Runtime.CpuBackendPath);
-                    logging.Debug($"[NativeLibraryBootstrapper] using CPU backend path from settings: {expandedPath}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] using CPU backend path from settings: {expandedPath}");
                     return expandedPath;
                 }
             }
@@ -543,7 +539,7 @@ namespace SharpAI.Server.Classes.Runtime
                 if (!String.IsNullOrEmpty(settings.Runtime?.GpuBackendPath))
                 {
                     string expandedPath = Environment.ExpandEnvironmentVariables(settings.Runtime.GpuBackendPath);
-                    logging.Debug($"[NativeLibraryBootstrapper] using GPU backend path from settings: {expandedPath}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] using GPU backend path from settings: {expandedPath}");
                     return expandedPath;
                 }
             }
@@ -552,7 +548,7 @@ namespace SharpAI.Server.Classes.Runtime
                 if (!String.IsNullOrEmpty(settings.Runtime?.MetalBackendPath))
                 {
                     string expandedPath = Environment.ExpandEnvironmentVariables(settings.Runtime.MetalBackendPath);
-                    logging.Debug($"[NativeLibraryBootstrapper] using Metal backend path from settings: {expandedPath}");
+                    SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] using Metal backend path from settings: {expandedPath}");
                     return expandedPath;
                 }
             }
@@ -565,7 +561,7 @@ namespace SharpAI.Server.Classes.Runtime
             string customPath = Path.Combine(baseDirectory, "runtimes", backend, libraryName);
             if (File.Exists(customPath))
             {
-                logging.Debug($"[NativeLibraryBootstrapper] found library at custom path: {customPath}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] found library at custom path: {customPath}");
                 return customPath;
             }
 
@@ -573,12 +569,12 @@ namespace SharpAI.Server.Classes.Runtime
             string nugetPath = GetNuGetRuntimePath(backend, platform, baseDirectory, libraryName, logging);
             if (!String.IsNullOrEmpty(nugetPath) && File.Exists(nugetPath))
             {
-                logging.Debug($"[NativeLibraryBootstrapper] found library at NuGet path: {nugetPath}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] found library at NuGet path: {nugetPath}");
                 return nugetPath;
             }
 
             // Return custom path as fallback (will log file not found later)
-            logging.Debug($"[NativeLibraryBootstrapper] library not found, returning default path: {customPath}");
+            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] library not found, returning default path: {customPath}");
             return customPath;
         }
 
@@ -615,7 +611,7 @@ namespace SharpAI.Server.Classes.Runtime
                 string metalPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
                 if (File.Exists(metalPath))
                 {
-                    logging.Debug("[NativeLibraryBootstrapper] using Metal backend (osx-arm64 native)");
+                    SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] using Metal backend (osx-arm64 native)");
                     return metalPath;
                 }
             }
@@ -628,7 +624,7 @@ namespace SharpAI.Server.Classes.Runtime
                     string armPath = Path.Combine(baseDirectory, "runtimes", rid, "native", libraryName);
                     if (File.Exists(armPath))
                     {
-                        logging.Debug("[NativeLibraryBootstrapper] using ARM64 CPU backend");
+                        SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] using ARM64 CPU backend");
                         return armPath;
                     }
                 }
@@ -641,7 +637,7 @@ namespace SharpAI.Server.Classes.Runtime
                         string avxPath = Path.Combine(baseDirectory, "runtimes", rid, "native", variant, libraryName);
                         if (File.Exists(avxPath))
                         {
-                            logging.Debug($"[NativeLibraryBootstrapper] using {variant} CPU variant");
+                            SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] using {variant} CPU variant");
                             return avxPath;
                         }
                     }
@@ -677,21 +673,21 @@ namespace SharpAI.Server.Classes.Runtime
                 string normalized = NormalizeCpuVariant(requested);
                 if (String.IsNullOrEmpty(normalized))
                 {
-                    logging.Warn($"[NativeLibraryBootstrapper] ignoring invalid {SharpAIEnvironment.CpuVariant} value: {requested}");
+                    SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] ignoring invalid {SharpAIEnvironment.CpuVariant} value: {requested}");
                     return automatic;
                 }
 
                 if (!IsCpuVariantSupported(normalized))
                 {
-                    logging.Warn($"[NativeLibraryBootstrapper] requested CPU variant '{normalized}' is not supported by this CPU, using automatic selection");
+                    SharpAI.Logging.JsonLog.Warn(logging, $"[NativeLibraryBootstrapper] requested CPU variant '{normalized}' is not supported by this CPU, using automatic selection");
                     return automatic;
                 }
 
-                logging.Debug($"[NativeLibraryBootstrapper] CPU variant forced by environment variable to: {normalized}");
+                SharpAI.Logging.JsonLog.Debug(logging, $"[NativeLibraryBootstrapper] CPU variant forced by environment variable to: {normalized}");
                 return MoveVariantFirst(automatic, normalized);
             }
 
-            logging.Debug("[NativeLibraryBootstrapper] CPU variant order: " + String.Join(", ", automatic));
+            SharpAI.Logging.JsonLog.Debug(logging, "[NativeLibraryBootstrapper] CPU variant order: " + String.Join(", ", automatic));
             return automatic;
         }
 

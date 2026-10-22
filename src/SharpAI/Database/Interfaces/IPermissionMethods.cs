@@ -25,6 +25,10 @@ namespace SharpAI.Database.Interfaces
         /// <returns>Permissions; never null.</returns>
         List<Permission> GetForRole(string roleGuid);
 
+        /// <summary>Update a custom permission.</summary>
+        /// <param name="permission">Permission.</param><returns>Updated permission.</returns>
+        Permission Update(Permission permission);
+
         /// <summary>Delete a permission by identifier.</summary>
         /// <param name="guid">Permission identifier.</param>
         void Delete(string guid);

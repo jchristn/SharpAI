@@ -1,0 +1,5 @@
+simulation: sharpai-downloads
+routing: path
+mocks:
+  - routeKey: hf
+    path: ../mocks/huggingface/config.yaml

@@ -58,6 +58,25 @@ namespace SharpAI.Database.Implementations
             _Db.NonQuery("DELETE FROM authsessions WHERE guid = @guid", One("@guid", guid));
         }
 
+        public SharpAI.Models.EnumerationResult<AuthSession> Enumerate(string tenantGuid, SharpAI.Models.EnumerationQuery query)
+        {
+            if (query == null) query = new SharpAI.Models.EnumerationQuery();
+            SharpAI.Models.EnumerationResult<AuthSession> result = new SharpAI.Models.EnumerationResult<AuthSession> { MaxResults = query.PageSize, Skip = query.Offset };
+            Dictionary<string, object> p = new Dictionary<string, object>();
+            string where = String.Empty;
+            if (!String.IsNullOrEmpty(tenantGuid)) { where = " WHERE tenantguid = @tenantguid"; p["@tenantguid"] = tenantGuid; }
+
+            long total = Convert.ToInt64(_Db.Scalar("SELECT COUNT(*) FROM authsessions" + where, p));
+            result.TotalRecords = total;
+            DataTable t = _Db.Query("SELECT " + _Cols + " FROM authsessions" + where + " ORDER BY createdutc DESC " + _Db.BuildPaging(query.PageSize, query.Offset), p);
+            List<AuthSession> list = new List<AuthSession>();
+            foreach (DataRow row in t.Rows) list.Add(Map(row));
+            result.Objects = list;
+            result.RecordsRemaining = Math.Max(0, total - ((long)query.Offset + list.Count));
+            result.EndOfResults = result.RecordsRemaining <= 0;
+            return result;
+        }
+
         public int Prune(DateTime olderThanUtc)
         {
             return _Db.NonQuery("DELETE FROM authsessions WHERE expiresutc < @cutoff", One("@cutoff", DbRow.Iso(olderThanUtc)));

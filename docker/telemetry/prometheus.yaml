@@ -3,8 +3,7 @@
 # Two sources of metrics:
 #   1. The OpenTelemetry Collector's Prometheus exposition (OTLP metrics pushed by the app).
 #   2. The SharpAI server's own /metrics endpoint (Watson 7.2 in-process HTTP-server
-#      metrics). The 'sharpai' job stays DOWN until W17.T3 enables that endpoint — this is
-#      expected and harmless before then.
+#      metrics). Engine metrics arrive through the collector job.
 
 global:
   scrape_interval: 15s

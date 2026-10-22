@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { CopyButton } from './CopyButton';
 import './ui.css';
 
@@ -9,13 +10,14 @@ export interface CopyableIdProps {
 
 /** Renders a monospace identifier with a copy affordance, optionally truncated for dense tables. */
 export function CopyableId({ value, truncateTo = 0 }: CopyableIdProps): JSX.Element {
+  const { t } = useTranslation();
   const display = truncateTo > 0 && value.length > truncateTo ? `${value.slice(0, truncateTo)}…` : value;
   return (
     <span className="sa-copy">
       <span className="sa-copy__id" title={value}>
         {display}
       </span>
-      <CopyButton value={value} label="Copy id" />
+      <CopyButton value={value} label={t('common.copy')} />
     </span>
   );
 }

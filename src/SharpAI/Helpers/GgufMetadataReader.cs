@@ -7,7 +7,7 @@ namespace SharpAI.Helpers
 
     /// <summary>
     /// Lightweight pure-C# reader for GGUF file metadata.
-    /// Reads only the header and key-value metadata section without loading tensor weights.
+    /// Reads the header, metadata, and tensor descriptors without loading tensor weights.
     /// Supports GGUF format versions 2 and 3.
     /// </summary>
     public static class GgufMetadataReader
@@ -16,7 +16,7 @@ namespace SharpAI.Helpers
 
         /// <summary>
         /// Read all metadata key-value pairs from a GGUF file header.
-        /// Only the metadata section is read; tensor data is not touched.
+        /// Metadata and tensor descriptors are read; tensor weights are not touched. Derived parameter counts use the sharpai.tensor_parameter_count key.
         /// </summary>
         /// <param name="filePath">Path to the GGUF file.</param>
         /// <returns>Dictionary of metadata key-value pairs with string keys and object values.</returns>
@@ -46,20 +46,9 @@ namespace SharpAI.Helpers
                     throw new InvalidDataException($"Unsupported GGUF version: {version}. Supported: 2, 3.");
                 }
 
-                // Tensor count: uint64 (v3) or uint32 (v2)
-                ulong tensorCount;
-                ulong metadataKvCount;
-
-                if (version >= 3)
-                {
-                    tensorCount = reader.ReadUInt64();
-                    metadataKvCount = reader.ReadUInt64();
-                }
-                else
-                {
-                    tensorCount = reader.ReadUInt32();
-                    metadataKvCount = reader.ReadUInt32();
-                }
+                ulong tensorCount = reader.ReadUInt64();
+                ulong metadataKvCount = reader.ReadUInt64();
+                if (metadataKvCount > 1000000) throw new InvalidDataException("Too many GGUF metadata entries.");
 
                 Dictionary<string, object> metadata = new Dictionary<string, object>(StringComparer.Ordinal);
 
@@ -68,9 +57,31 @@ namespace SharpAI.Helpers
                     string key = ReadGgufString(reader, version);
                     uint valueType = reader.ReadUInt32();
                     object value = ReadGgufValue(reader, valueType, version);
-                    metadata[key] = value;
+                    if (!metadata.TryAdd(key, value)) throw new InvalidDataException("Duplicate GGUF metadata key: " + key);
                 }
 
+                if (tensorCount > 1000000) throw new InvalidDataException("Too many GGUF tensors.");
+                if (tensorCount > 0)
+                {
+                    long parameters = 0;
+                    for (ulong i = 0; i < tensorCount; i++)
+                    {
+                        ReadGgufString(reader, version);
+                        uint dimensions = reader.ReadUInt32();
+                        if (dimensions < 1 || dimensions > 4) throw new InvalidDataException("Invalid GGUF tensor rank.");
+                        long elements = 1;
+                        for (uint dimension = 0; dimension < dimensions; dimension++)
+                        {
+                            ulong length = reader.ReadUInt64();
+                            if (length == 0 || length > Int64.MaxValue) throw new InvalidDataException("Invalid GGUF tensor dimension.");
+                            elements = checked(elements * (long)length);
+                        }
+                        reader.ReadUInt32(); // tensor type
+                        reader.ReadUInt64(); // tensor data offset
+                        parameters = checked(parameters + elements);
+                    }
+                    metadata["sharpai.tensor_parameter_count"] = parameters;
+                }
                 return metadata;
             }
         }
@@ -190,17 +201,14 @@ namespace SharpAI.Helpers
 
         private static string ReadGgufString(BinaryReader reader, uint version)
         {
-            ulong length;
-            if (version >= 3)
-                length = reader.ReadUInt64();
-            else
-                length = reader.ReadUInt32();
+            ulong length = reader.ReadUInt64();
 
             if (length == 0) return String.Empty;
             if (length > 1024 * 1024) throw new InvalidDataException($"GGUF string length too large: {length}");
 
             byte[] bytes = reader.ReadBytes((int)length);
-            return Encoding.UTF8.GetString(bytes);
+            if (bytes.Length != (int)length) throw new EndOfStreamException("Truncated GGUF string.");
+            return new UTF8Encoding(false, true).GetString(bytes);
         }
 
         private static object ReadGgufValue(BinaryReader reader, uint valueType, uint version)
@@ -260,11 +268,9 @@ namespace SharpAI.Helpers
         {
             uint elementType = reader.ReadUInt32();
 
-            ulong count;
-            if (version >= 3)
-                count = reader.ReadUInt64();
-            else
-                count = reader.ReadUInt32();
+            ulong count = reader.ReadUInt64();
+            if (elementType > 12) throw new InvalidDataException("Unknown GGUF array element type.");
+            if (elementType == 9) throw new InvalidDataException("Nested GGUF arrays are unsupported.");
 
             if (count > 10 * 1024 * 1024) throw new InvalidDataException($"GGUF array too large: {count}");
 

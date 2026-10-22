@@ -9,6 +9,11 @@ namespace SharpAI.Database.Interfaces
     /// </summary>
     public interface IAuthSessionMethods
     {
+        /// <summary>Enumerate sessions within a tenant.</summary>
+        /// <param name="tenantGuid">Tenant identifier.</param><param name="query">Paging query.</param>
+        /// <returns>Session page, without bearer token material.</returns>
+        SharpAI.Models.EnumerationResult<AuthSession> Enumerate(string tenantGuid, SharpAI.Models.EnumerationQuery query);
+
         /// <summary>Create a session.</summary>
         /// <param name="session">Session.</param>
         /// <returns>The created session.</returns>

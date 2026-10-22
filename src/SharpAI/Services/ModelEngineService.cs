@@ -1,15 +1,16 @@
 namespace SharpAI.Services
 {
-    using SharpAI.Classes.Runtime;
-    using SharpAI.Engines;
-    using SharpAI.Exceptions;
-    using SyslogLogging;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using SharpAI.Classes.Runtime;
+    using SharpAI.Engines;
+    using SharpAI.Exceptions;
+    using SharpAI.Operations;
+    using SyslogLogging;
 
     /// <summary>
     /// Manages the lifecycle of loaded model engines. Each model is loaded at most once and cached;
@@ -38,7 +39,7 @@ namespace SharpAI.Services
         }
 
         /// <summary>
-        /// Total model-memory budget in bytes (sum of resident model file sizes). 0 means unlimited.
+        /// Total conservative peak model-memory budget in bytes (weights, KV, buffers, and headroom). 0 means unlimited.
         /// </summary>
         public long ModelMemoryBudgetBytes
         {
@@ -58,8 +59,11 @@ namespace SharpAI.Services
         private int _KeepAliveSeconds = 0;
         private int _MaxResidentModels = 0;
         private long _ModelMemoryBudgetBytes = 0;
+        private long _HostBudgetBytes;
+        private long _DeviceBudgetBytes;
         private Timer _SweepTimer = null;
-        private bool _Disposed = false;
+        private volatile bool _Disposed = false;
+        private Func<string, Task<LlamaSharpEngine>> _EngineFactory;
 
         #endregion
 
@@ -78,6 +82,8 @@ namespace SharpAI.Services
             int budgetMb = SharpAIEnvironment.GetInt(SharpAIEnvironment.ModelMemoryBudgetMb, 0, 0);
             _ModelMemoryBudgetBytes = (long)budgetMb * 1024L * 1024L;
 
+            _HostBudgetBytes = (long)SharpAIEnvironment.GetInt("SHARPAI_HOST_MEMORY_BUDGET_MB", 0, 0) * 1024 * 1024;
+            _DeviceBudgetBytes = (long)SharpAIEnvironment.GetInt("SHARPAI_DEVICE_MEMORY_BUDGET_MB", 0, 0) * 1024 * 1024;
             SharpAI.Telemetry.SharpAITelemetry.SetResidentModelCountProvider(CountResidentModels);
 
             if (_KeepAliveSeconds > 0)
@@ -86,7 +92,12 @@ namespace SharpAI.Services
                 _SweepTimer = new Timer(SweepIdleCallback, null, intervalMs, intervalMs);
             }
 
-            _Logging.Debug(_Header + $"initialized (keepAlive={_KeepAliveSeconds}s, maxResident={_MaxResidentModels}, budget={budgetMb}MB)");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"initialized (keepAlive={_KeepAliveSeconds}s, maxResident={_MaxResidentModels}, budget={budgetMb}MB)");
+        }
+
+        internal ModelEngineService(LoggingModule logging, Func<string, Task<LlamaSharpEngine>> engineFactory) : this(logging)
+        {
+            _EngineFactory = engineFactory ?? throw new ArgumentNullException(nameof(engineFactory));
         }
 
         #endregion
@@ -105,7 +116,7 @@ namespace SharpAI.Services
             {
                 LlamaSharpEngine engine = TryGetCompletedEngine(kvp.Value);
                 if (engine != null && !engine.IsDisposed) loaded.Add(kvp.Key);
-                else if (kvp.Value.Lazy.IsValueCreated && (engine == null || engine.IsDisposed)) RemoveEntryIfSame(kvp.Key, kvp.Value);
+                else if (kvp.Value.Lazy.IsValueCreated && kvp.Value.Lazy.Value.IsCompleted && (engine == null || engine.IsDisposed)) RemoveEntryIfSame(kvp.Key, kvp.Value);
             }
 
             return loaded;
@@ -139,7 +150,9 @@ namespace SharpAI.Services
         /// <exception cref="ModelAdmissionException">Thrown when the model cannot be admitted within the memory budget.</exception>
         public async Task<LlamaSharpEngine> GetByModelFileAsync(string filename, CancellationToken token = default)
         {
+            ObjectDisposedException.ThrowIf(_Disposed, this);
             if (String.IsNullOrEmpty(filename)) throw new ArgumentNullException(nameof(filename));
+            filename = Path.GetFullPath(filename);
             if (!File.Exists(filename)) throw new FileNotFoundException("The specified file could not be found.", filename);
 
             while (true)
@@ -183,6 +196,7 @@ namespace SharpAI.Services
         public DateTime? GetExpiryUtc(string filename)
         {
             if (_KeepAliveSeconds <= 0 || String.IsNullOrEmpty(filename)) return null;
+            filename = Path.GetFullPath(filename);
             if (_Engines.TryGetValue(filename, out ModelEngineEntry entry))
                 return entry.LastAccessUtc.AddSeconds(_KeepAliveSeconds);
             return null;
@@ -198,6 +212,9 @@ namespace SharpAI.Services
         {
             if (String.IsNullOrEmpty(filename)) throw new ArgumentNullException(nameof(filename));
 
+            filename = Path.GetFullPath(filename);
+            if (_Engines.TryGetValue(filename, out ModelEngineEntry pending) && (!pending.Lazy.IsValueCreated || !pending.Lazy.Value.IsCompleted)) return false;
+            if (_Engines.TryGetValue(filename, out ModelEngineEntry active) && TryGetCompletedEngine(active)?.ActiveGenerations > 0) return false;
             if (_Engines.TryRemove(filename, out ModelEngineEntry entry))
             {
                 DisposeEntry(filename, entry);
@@ -217,6 +234,8 @@ namespace SharpAI.Services
 
             foreach (string key in new List<string>(_Engines.Keys))
             {
+                if (!_Disposed && _Engines.TryGetValue(key, out ModelEngineEntry pending) &&
+                    (!pending.Lazy.IsValueCreated || !pending.Lazy.Value.IsCompleted || TryGetCompletedEngine(pending)?.ActiveGenerations > 0)) continue;
                 if (_Engines.TryRemove(key, out ModelEngineEntry entry))
                 {
                     if (DisposeEntry(key, entry)) count++;
@@ -248,18 +267,31 @@ namespace SharpAI.Services
         {
             lock (_AdmissionLock)
             {
+                ObjectDisposedException.ThrowIf(_Disposed, this);
                 if (_Engines.TryGetValue(filename, out ModelEngineEntry existing))
                 {
                     existing.LastAccessUtc = DateTime.UtcNow;
                     return existing;
                 }
 
-                long newBytes = TryGetFileSize(filename);
+                foreach (KeyValuePair<string, ModelEngineEntry> cached in _Engines)
+                {
+                    if (!cached.Value.Lazy.IsValueCreated || !cached.Value.Lazy.Value.IsCompleted) continue;
+                    LlamaSharpEngine completed = TryGetCompletedEngine(cached.Value);
+                    if (completed == null || completed.IsDisposed) RemoveEntryIfSame(cached.Key, cached.Value);
+                }
+                ModelInspection inspection = ModelInspector.Inspect(filename);
+                if (!inspection.Supported) throw new ModelAdmissionException("Model contains unsupported components.");
+                if ((_ModelMemoryBudgetBytes > 0 || _HostBudgetBytes > 0 || _DeviceBudgetBytes > 0) && !inspection.EstimateAvailable)
+                    throw new ModelAdmissionException("Cannot admit model within a memory budget: " + inspection.Assumptions);
+                long newBytes = inspection.EstimateAvailable ? inspection.TotalBytes : inspection.WeightsBytes;
                 AdmitLocked(filename, newBytes);
+                AdmitPoolLocked(inspection.HostBytes, _HostBudgetBytes, true);
+                AdmitPoolLocked(inspection.DeviceBytes, _DeviceBudgetBytes, false);
 
                 Lazy<Task<LlamaSharpEngine>> lazy = new Lazy<Task<LlamaSharpEngine>>(
                     () => CreateEngineAsync(filename), LazyThreadSafetyMode.ExecutionAndPublication);
-                ModelEngineEntry entry = new ModelEngineEntry(lazy, newBytes, DateTime.UtcNow);
+                ModelEngineEntry entry = new ModelEngineEntry(lazy, newBytes, DateTime.UtcNow, inspection.HostBytes, inspection.DeviceBytes);
                 _Engines[filename] = entry;
                 return entry;
             }
@@ -271,18 +303,18 @@ namespace SharpAI.Services
             {
                 while (_Engines.Count >= _MaxResidentModels)
                 {
-                    if (!EvictOneLruLocked()) break;
+                    if (!EvictOneLruLocked()) throw new ModelAdmissionException("Model capacity is reserved by loading models; retry after a load completes.");
                 }
             }
 
             if (_ModelMemoryBudgetBytes > 0)
             {
-                while (ResidentBytesLocked() + newBytes > _ModelMemoryBudgetBytes)
+                while (newBytes > _ModelMemoryBudgetBytes - ResidentBytesLocked())
                 {
                     if (!EvictOneLruLocked()) break;
                 }
 
-                if (ResidentBytesLocked() + newBytes > _ModelMemoryBudgetBytes && _Engines.Count == 0)
+                if (newBytes > _ModelMemoryBudgetBytes - ResidentBytesLocked())
                 {
                     throw new ModelAdmissionException(
                         $"Model '{Path.GetFileName(filename)}' (~{newBytes / (1024L * 1024L)} MB) exceeds the configured model-memory budget " +
@@ -291,10 +323,22 @@ namespace SharpAI.Services
             }
         }
 
+        private void AdmitPoolLocked(long bytes, long budget, bool host)
+        {
+            if (budget == 0) return;
+            while (true)
+            {
+                long reserved = 0;
+                foreach (ModelEngineEntry entry in _Engines.Values) reserved = checked(reserved + (host ? entry.HostBytes : entry.DeviceBytes));
+                if (bytes <= budget - reserved) return;
+                if (!EvictOneLruLocked()) throw new ModelAdmissionException((host ? "Host" : "Device") + " memory budget is exhausted or reserved by loading models.");
+            }
+        }
+
         private long ResidentBytesLocked()
         {
             long total = 0;
-            foreach (KeyValuePair<string, ModelEngineEntry> kvp in _Engines) total += kvp.Value.FileSizeBytes;
+            foreach (KeyValuePair<string, ModelEngineEntry> kvp in _Engines) total = checked(total + kvp.Value.FileSizeBytes);
             return total;
         }
 
@@ -306,7 +350,7 @@ namespace SharpAI.Services
             foreach (KeyValuePair<string, ModelEngineEntry> kvp in _Engines)
             {
                 LlamaSharpEngine engine = TryGetCompletedEngine(kvp.Value);
-                if (engine == null || engine.IsDisposed) continue; // only evict fully-loaded, live engines
+                if (engine == null || engine.IsDisposed || engine.ActiveGenerations > 0) continue; // only evict fully-loaded, live engines
 
                 if (lruEntry == null || kvp.Value.LastAccessUtc < lruEntry.LastAccessUtc)
                 {
@@ -318,7 +362,7 @@ namespace SharpAI.Services
             if (lruKey == null) return false;
 
             _Engines.TryRemove(lruKey, out _);
-            _Logging.Info(_Header + "evicting least-recently-used model to make room: " + lruKey);
+            SharpAI.Logging.JsonLog.Info(_Logging, _Header + "evicting least-recently-used model to make room: " + lruKey);
             DisposeEntry(lruKey, lruEntry);
             return true;
         }
@@ -338,11 +382,11 @@ namespace SharpAI.Services
                         if (kvp.Value.LastAccessUtc > cutoff) continue;
 
                         LlamaSharpEngine engine = TryGetCompletedEngine(kvp.Value);
-                        if (engine == null || engine.IsDisposed) continue;
+                        if (engine == null || engine.IsDisposed || engine.ActiveGenerations > 0) continue;
 
                         if (_Engines.TryRemove(kvp.Key, out ModelEngineEntry removed))
                         {
-                            _Logging.Info(_Header + "evicting idle model (keep-alive expired): " + kvp.Key);
+                            SharpAI.Logging.JsonLog.Info(_Logging, _Header + "evicting idle model (keep-alive expired): " + kvp.Key);
                             DisposeEntry(kvp.Key, removed);
                         }
                     }
@@ -350,16 +394,21 @@ namespace SharpAI.Services
             }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "exception during idle sweep:" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "exception during idle sweep:" + Environment.NewLine + ex.ToString());
             }
         }
 
         private async Task<LlamaSharpEngine> CreateEngineAsync(string filename)
         {
-            LlamaSharpEngine engine = new LlamaSharpEngine(_Logging);
+            LlamaSharpEngine engine = _EngineFactory == null ? new LlamaSharpEngine(_Logging) : await _EngineFactory(filename).ConfigureAwait(false);
             engine.ModelPath = filename;
-            await engine.InitializeAsync(filename).ConfigureAwait(false);
-            return engine;
+            try
+            {
+                if (_EngineFactory == null) await engine.InitializeAsync(filename).ConfigureAwait(false);
+                if (_Disposed || !_Engines.ContainsKey(filename)) { engine.Dispose(); throw new ObjectDisposedException(nameof(ModelEngineService)); }
+                return engine;
+            }
+            catch { engine.Dispose(); throw; }
         }
 
         private LlamaSharpEngine TryGetCompletedEngine(ModelEngineEntry entry)
@@ -380,12 +429,12 @@ namespace SharpAI.Services
             try
             {
                 engine.Dispose();
-                _Logging.Info(_Header + "unloaded model: " + filename);
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "unloaded model: " + filename);
                 return true;
             }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "exception during model unload:" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "exception during model unload:" + Environment.NewLine + ex.ToString());
                 return false;
             }
         }
@@ -395,18 +444,6 @@ namespace SharpAI.Services
             if (_Engines.TryGetValue(filename, out ModelEngineEntry current) && ReferenceEquals(current, expected))
             {
                 _Engines.TryRemove(new KeyValuePair<string, ModelEngineEntry>(filename, expected));
-            }
-        }
-
-        private long TryGetFileSize(string filename)
-        {
-            try
-            {
-                return new FileInfo(filename).Length;
-            }
-            catch
-            {
-                return 0;
             }
         }
 

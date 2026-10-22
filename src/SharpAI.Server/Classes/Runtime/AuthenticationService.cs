@@ -115,7 +115,7 @@ namespace SharpAI.Server.Classes.Runtime
             }
             catch (Exception e)
             {
-                _Logging.Warn(_Header + "unable to record authentication denial: " + e.Message);
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "unable to record authentication denial: " + e.Message);
             }
         }
 

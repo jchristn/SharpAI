@@ -133,44 +133,50 @@ namespace SharpAI.Models
         /// <summary>
         /// Apply query-string overrides. Any non-empty query-string value replaces the corresponding value.
         /// </summary>
-        /// <param name="queryGetter">Function that retrieves a query-string value by key.</param>
+        /// <param name="queryGetter">Function that retrieves a raw, URL-encoded query-string value by key.</param>
         public void ApplyQuerystringOverrides(Func<string, string> queryGetter)
         {
             if (queryGetter == null) return;
 
+            string Read(string key)
+            {
+                string encoded = queryGetter(key);
+                return encoded == null ? null : Uri.UnescapeDataString(encoded.Replace("+", " "));
+            }
+
             string value;
 
-            value = queryGetter("pageNumber");
+            value = Read("pageNumber");
             if (!String.IsNullOrEmpty(value) && Int32.TryParse(value, out int pageNumber)) PageNumber = pageNumber;
 
-            value = queryGetter("pageSize");
+            value = Read("pageSize");
             if (!String.IsNullOrEmpty(value) && Int32.TryParse(value, out int pageSize)) PageSize = pageSize;
 
-            value = queryGetter("tenantId");
+            value = Read("tenantId");
             if (!String.IsNullOrEmpty(value)) TenantId = value;
 
-            value = queryGetter("userId");
+            value = Read("userId");
             if (!String.IsNullOrEmpty(value)) UserId = value;
 
-            value = queryGetter("method");
+            value = Read("method");
             if (!String.IsNullOrEmpty(value)) Method = value;
 
-            value = queryGetter("statusCode");
+            value = Read("statusCode");
             if (!String.IsNullOrEmpty(value) && Int32.TryParse(value, out int statusCode)) StatusCode = statusCode;
 
-            value = queryGetter("pathContains");
+            value = Read("pathContains");
             if (!String.IsNullOrEmpty(value)) PathContains = value;
 
-            value = queryGetter("category");
+            value = Read("category");
             if (!String.IsNullOrEmpty(value)) Category = value;
 
-            value = queryGetter("fromUtc");
+            value = Read("fromUtc");
             if (!String.IsNullOrEmpty(value) && DateTime.TryParse(value, out DateTime fromUtc)) FromUtc = fromUtc.ToUniversalTime();
 
-            value = queryGetter("toUtc");
+            value = Read("toUtc");
             if (!String.IsNullOrEmpty(value) && DateTime.TryParse(value, out DateTime toUtc)) ToUtc = toUtc.ToUniversalTime();
 
-            value = queryGetter("bucketMinutes");
+            value = Read("bucketMinutes");
             if (!String.IsNullOrEmpty(value) && Int32.TryParse(value, out int bucketMinutes)) BucketMinutes = bucketMinutes;
         }
 

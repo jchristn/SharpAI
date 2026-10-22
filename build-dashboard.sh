@@ -4,7 +4,7 @@ set -euo pipefail
 if [ -z "${1:-}" ]; then
   echo
   echo "Provide a tag argument."
-  echo "Example: ./build-dashboard.sh v2.0.0"
+  echo "Example: ./build-dashboard.sh v4.0.1"
   exit 1
 fi
 

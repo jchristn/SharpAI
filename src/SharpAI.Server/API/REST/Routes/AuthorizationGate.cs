@@ -101,6 +101,7 @@ namespace SharpAI.Server.API.REST.Routes
         /// <param name="principalGuid">Principal GUID being inspected.</param>
         public void AuthorizeInspection(ApiRequest req, string tenantGuid, PrincipalTypeEnum principalType, string principalGuid)
         {
+            RequireTenant(req, tenantGuid);
             RequestContext context = req.Http.Metadata as RequestContext;
 
             if (context == null)
@@ -123,6 +124,31 @@ namespace SharpAI.Server.API.REST.Routes
             }
 
             Authorize(req, ResourceTypes.Admin, OperationTypeEnum.Admin, null);
+        }
+
+        /// <summary>Reject and audit conflicting tenant scopes before reading tenant data.</summary>
+        /// <param name="req">Request.</param><param name="tenantGuid">Requested tenant.</param>
+        public void RequireTenant(ApiRequest req, string tenantGuid)
+        {
+            RequestContext context = req.Http.Metadata as RequestContext;
+            if (!_Settings().Auth.Enabled || context?.IsAdmin == true) return;
+            if (context == null || context.ShouldChallenge) throw new WebserverException(ApiResultEnum.NotAuthorized, "Authentication required.");
+            if (!String.IsNullOrEmpty(tenantGuid) && context.TenantGuid == tenantGuid) return;
+            RecordAuthzDenial(req.Http, context, ResourceTypes.Tenant, OperationTypeEnum.Admin,
+                AuthorizationDecision.Deny(SharpAI.Security.AuthorizationResultEnum.DeniedImplicit, "Cross-tenant access is not permitted."));
+            throw new WebserverException(ApiResultEnum.Forbidden, "Cross-tenant access is not permitted.");
+        }
+
+        /// <summary>Require a platform administrator, excluding tenant administrator bypasses.</summary>
+        /// <param name="req">Request.</param>
+        public void RequirePlatformAdministrator(ApiRequest req)
+        {
+            RequestContext context = req.Http.Metadata as RequestContext;
+            if (!_Settings().Auth.Enabled || context?.IsAdmin == true) return;
+            if (context == null || context.ShouldChallenge) throw new WebserverException(ApiResultEnum.NotAuthorized, "Authentication required.");
+            RecordAuthzDenial(req.Http, context, ResourceTypes.Admin, OperationTypeEnum.Admin,
+                AuthorizationDecision.Deny(SharpAI.Security.AuthorizationResultEnum.DeniedImplicit, "Platform administrator privileges required."));
+            throw new WebserverException(ApiResultEnum.Forbidden, "Platform administrator privileges required.");
         }
 
         #endregion
@@ -158,7 +184,7 @@ namespace SharpAI.Server.API.REST.Routes
             }
             catch (Exception e)
             {
-                _Logging.Warn(_Header + "unable to record authorization denial: " + e.Message);
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "unable to record authorization denial: " + e.Message);
             }
         }
 

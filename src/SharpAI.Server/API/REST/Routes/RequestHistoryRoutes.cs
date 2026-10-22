@@ -28,6 +28,7 @@ namespace SharpAI.Server.API.REST.Routes
                 ctx.Auth.Authorize(req, ResourceTypes.RequestHistory, OperationTypeEnum.Read, null);
                 RequestHistoryQuery query = new RequestHistoryQuery();
                 query.ApplyQuerystringOverrides(key => req.Http.Request.Query.Elements?[key]);
+                BindTenant(ctx, req, query);
                 return ctx.Database.RequestHistory.Enumerate(query);
             }, api => RouteHelpers.Describe(api, "Request History", "List captured requests")
                 .WithDescription("Paginated list of captured requests (bodies omitted). Filters: method, statusCode, pathContains, fromUtc, toUtc, tenantId, userId, pageNumber, pageSize.")
@@ -38,6 +39,7 @@ namespace SharpAI.Server.API.REST.Routes
                 ctx.Auth.Authorize(req, ResourceTypes.RequestHistory, OperationTypeEnum.Read, null);
                 RequestHistoryQuery query = new RequestHistoryQuery();
                 query.ApplyQuerystringOverrides(key => req.Http.Request.Query.Elements?[key]);
+                BindTenant(ctx, req, query);
                 return ctx.Database.RequestHistory.Summarize(query);
             }, api => RouteHelpers.Describe(api, "Request History", "Summarize captured requests")
                 .WithDescription("Time-bucketed counts and average durations for chart rendering. Emits a bucket for every interval including empty ones. Query: fromUtc, toUtc, bucketMinutes, plus the list filters.")
@@ -48,6 +50,7 @@ namespace SharpAI.Server.API.REST.Routes
                 ctx.Auth.Authorize(req, ResourceTypes.RequestHistory, OperationTypeEnum.Read, null);
                 string id = RouteHelpers.RouteParam(req, "id");
                 RequestHistoryEntry entry = ctx.Database.RequestHistory.Read(id);
+                if (entry != null) ctx.Auth.RequireTenant(req, entry.TenantId);
                 if (entry == null) throw new WebserverException(ApiResultEnum.NotFound, "The specified request history entry was not found.");
                 return entry;
             }, api => RouteHelpers.Describe(api, "Request History", "Read a captured request")
@@ -59,6 +62,8 @@ namespace SharpAI.Server.API.REST.Routes
             {
                 ctx.Auth.Authorize(req, ResourceTypes.RequestHistory, OperationTypeEnum.Delete, null);
                 string id = RouteHelpers.RouteParam(req, "id");
+                RequestHistoryEntry existing = ctx.Database.RequestHistory.Read(id);
+                if (existing != null) ctx.Auth.RequireTenant(req, existing.TenantId);
                 bool deleted = ctx.Database.RequestHistory.Delete(id);
                 return new { deleted = deleted };
             }, api => RouteHelpers.Describe(api, "Request History", "Delete a captured request")
@@ -70,11 +75,21 @@ namespace SharpAI.Server.API.REST.Routes
                 ctx.Auth.Authorize(req, ResourceTypes.RequestHistory, OperationTypeEnum.Delete, null);
                 RequestHistoryQuery query = new RequestHistoryQuery();
                 query.ApplyQuerystringOverrides(key => req.Http.Request.Query.Elements?[key]);
+                BindTenant(ctx, req, query);
                 int deletedCount = ctx.Database.RequestHistory.DeleteMany(query);
                 return new { deletedCount = deletedCount };
             }, api => RouteHelpers.Describe(api, "Request History", "Bulk delete captured requests")
                 .WithDescription("Deletes all captured requests matching the supplied filter. Returns the number of rows deleted.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Bulk delete result", OpenApiSchemaMetadata.Create("object"))));
+        }
+
+        private static void BindTenant(RouteContext ctx, ApiRequest req, RequestHistoryQuery query)
+        {
+            RequestContext principal = req.Http.Metadata as RequestContext;
+            if (!ctx.Settings().Auth.Enabled || principal?.IsAdmin == true) return;
+            string requested = query.TenantId ?? principal?.TenantGuid;
+            ctx.Auth.RequireTenant(req, requested);
+            query.TenantId = requested;
         }
 
         #endregion

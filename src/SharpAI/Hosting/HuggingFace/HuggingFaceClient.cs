@@ -1,4 +1,4 @@
-﻿namespace SharpAI.Hosting
+namespace SharpAI.Hosting
 {
     using System;
     using System.Collections.Generic;
@@ -25,31 +25,46 @@
 
         #region Public-Members
 
+        /// <summary>Repository token for newly created HTTP clients. Null or empty uses anonymous access.
+        /// String updates are atomic. In-flight downloads retain the credentials used when they started.</summary>
+        public string ApiKey { get { return _ApiKey; } set { _ApiKey = value; } }
+
         #endregion
 
         #region Private-Members
 
         private readonly string _Header = "[HuggingFace] ";
-        private readonly string _ApiKey;
+        private string _ApiKey;
+        private readonly string _BaseUrl;
         private readonly LoggingModule _Logging;
 
         #endregion
 
         #region Constructors-and-Factories
 
+        /// <summary>Create a repository client using the public Hugging Face endpoint. Preserves the original constructor signature.</summary>
+        /// <param name="logging">Optional logger.</param><param name="apiKey">Optional token.</param>
+        public HuggingFaceClient(LoggingModule logging, string apiKey) : this(logging, apiKey, "https://huggingface.co") { }
+
         /// <summary>
         /// Initializes a new instance of the HuggingFace client.
         /// </summary>
         /// <param name="logging">LoggingModule instance for logging operations.</param>
+        /// <param name="baseUrl">Repository API root; HTTPS except loopback test endpoints. Default https://huggingface.co.</param>
         /// <param name="apiKey">HuggingFace API token, or null/empty for anonymous access. A token is only
         /// required to download gated or private repositories; public repositories download without one
         /// (W5.T2). When supplied it is sent as a bearer token; when absent no Authorization header is set.</param>
-        public HuggingFaceClient(LoggingModule logging, string apiKey)
+        public HuggingFaceClient(LoggingModule logging, string apiKey, string baseUrl = "https://huggingface.co")
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(baseUrl);
+            Uri endpoint = new Uri(baseUrl, UriKind.Absolute);
+            if (endpoint.Scheme != "https" && !(endpoint.Scheme == "http" && endpoint.IsLoopback))
+                throw new ArgumentException("Repository endpoint must use HTTPS (HTTP is permitted for local testing).", nameof(baseUrl));
+            _BaseUrl = baseUrl.TrimEnd('/');
             _ApiKey = apiKey;
             _Logging = logging ?? new LoggingModule();
 
-            _Logging.Debug(_Header + (String.IsNullOrEmpty(_ApiKey)
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + (String.IsNullOrEmpty(_ApiKey)
                 ? "initialized (anonymous — public repositories only; set a HuggingFace token for gated/private repos)"
                 : "initialized (authenticated)"));
         }
@@ -57,6 +72,28 @@
         #endregion
 
         #region Public-Methods
+
+        /// <summary>Create a caller-owned client with repository authentication. Automatic redirects strip authorization across hosts.</summary>
+        /// <returns>HTTP client.</returns>
+        public HttpClient CreateDownloadClient()
+        {
+            HttpClient client = new HttpClient();
+            string apiKey = _ApiKey;
+            if (!String.IsNullOrEmpty(apiKey)) client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("SharpAI");
+            return client;
+        }
+
+        /// <summary>Build a download URL pinned to a repository revision, never a file Git object ID.</summary>
+        /// <param name="name">Repository.</param><param name="revision">Commit.</param><param name="path">Repository-relative file.</param>
+        /// <returns>Immutable URL.</returns>
+        public string GetRevisionDownloadUrl(string name, string revision, string path)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ArgumentException.ThrowIfNullOrWhiteSpace(revision);
+            ArgumentException.ThrowIfNullOrWhiteSpace(path);
+            return _BaseUrl + "/" + name + "/resolve/" + Uri.EscapeDataString(revision) + "/" + String.Join("/", path.Split('/').Select(Uri.EscapeDataString));
+        }
 
         /// <summary>
         /// Retrieve model metadata.
@@ -69,9 +106,9 @@
             if (string.IsNullOrEmpty(modelName))
                 throw new ArgumentNullException(nameof(modelName));
 
-            using (HttpClient client = new HttpClient())
+            using (HttpClient client = CreateDownloadClient())
             {
-                string apiUrl = $"https://huggingface.co/api/models/{modelName}";
+                string apiUrl = $"{_BaseUrl}/api/models/{modelName}";
                 HttpResponseMessage response = await client.GetAsync(apiUrl, token).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 
@@ -88,7 +125,7 @@
 
                 if (metadata == null)
                 {
-                    _Logging.Warn($"{_Header}failed to retrieve metadata for model {modelName}");
+                    SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}failed to retrieve metadata for model {modelName}");
                     throw new InvalidOperationException($"failed to retrieve metadata for model: {modelName}");
                 }
 
@@ -98,7 +135,7 @@
                 {
                     try
                     {
-                        _Logging.Debug($"{_Header}retrieving base model {metadata.CardData.BaseModel} for model {modelName}");
+                        SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}retrieving base model {metadata.CardData.BaseModel} for model {modelName}");
                         HuggingFaceModelMetadata baseModelMetadata = await GetModelMetadata(metadata.CardData.BaseModel, token).ConfigureAwait(false);
 
                         if (baseModelMetadata != null)
@@ -107,19 +144,27 @@
                             {
                                 // copy data from base model
                                 metadata.SafeTensors = baseModelMetadata.SafeTensors;
-                                _Logging.Debug($"{_Header}copied assets from base model {metadata.CardData.BaseModel}");
+                                SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}copied assets from base model {metadata.CardData.BaseModel}");
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        _Logging.Warn($"{_Header}failed to retrieve base model metadata: {ex.Message}");
+                        SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}failed to retrieve base model metadata: {ex.Message}");
                     }
                 }
 
-                _Logging.Debug($"{_Header}retrieved metadata for model {modelName}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}retrieved metadata for model {modelName}");
                 return metadata;
             }
+        }
+
+        /// <summary>List repository files at main using the original binary-compatible signature.</summary>
+        /// <param name="modelName">Repository.</param><param name="token">Cancellation token.</param>
+        /// <returns>Repository files.</returns>
+        public Task<List<HuggingFaceModelFile>> GetModelFilesAsync(string modelName, CancellationToken token = default)
+        {
+            return GetModelFilesAsync(modelName, token, "main");
         }
 
         /// <summary>
@@ -127,58 +172,60 @@
         /// </summary>
         /// <param name="modelName">The name of the model (e.g., "microsoft/DialoGPT-medium").</param>
         /// <param name="token">Cancellation token.</param>
+        /// <param name="revision">Repository commit or reference. Pulls use immutable commits; default main.</param>
         /// <returns>A list of HuggingFaceModelFile objects representing all files in the repository.</returns>
         /// <exception cref="Exception">Thrown when API request fails or JSON parsing fails.</exception>
-        public async Task<List<HuggingFaceModelFile>> GetModelFilesAsync(string modelName, CancellationToken token = default)
+        public async Task<List<HuggingFaceModelFile>> GetModelFilesAsync(string modelName, CancellationToken token, string revision)
         {
-            try
+            ArgumentException.ThrowIfNullOrWhiteSpace(modelName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(revision);
+            string url = $"{_BaseUrl}/api/models/{modelName}/tree/{Uri.EscapeDataString(revision)}?recursive=true";
+            List<HuggingFaceModelFile> files = new List<HuggingFaceModelFile>();
+            HashSet<string> pages = new HashSet<string>(StringComparer.Ordinal);
+            using HttpClient client = CreateDownloadClient();
+            while (url != null)
             {
-                _Logging.Debug(_Header + $"retrieving model files for {modelName}");
-
-                string url = $"https://huggingface.co/api/models/{modelName}/tree/main";
-
-                using (RestRequest request = new RestRequest(url, HttpMethod.Get))
+                if (!pages.Add(url) || pages.Count > 1000) throw new InvalidDataException("Invalid repository pagination loop.");
+                using HttpResponseMessage response = await client.GetAsync(url, token).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                using JsonDocument document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(token).ConfigureAwait(false));
+                foreach (JsonElement element in document.RootElement.EnumerateArray())
                 {
-                    if (!String.IsNullOrEmpty(_ApiKey)) request.Headers.Add("Authorization", $"Bearer {_ApiKey}");
-                    request.Headers.Add("User-Agent", "SharpAI");
-
-                    using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
+                    files.Add(new HuggingFaceModelFile
                     {
-                        if (response.StatusCode < 200 || response.StatusCode >= 300)
+                        Path = GetStringValue(element, "path"), Type = GetStringValue(element, "type"),
+                        Size = GetLongValue(element, "size"), LastModified = GetDateTimeValue(element, "lastModified"),
+                        Oid = GetStringValue(element, "oid"), Lfs = GetStringValue(element, "lfs"),
+                        SecurityStatus = GetStringValue(element, "securityStatus")
+                    });
+                }
+                string next = null;
+                if (response.Headers.TryGetValues("Link", out IEnumerable<string> links))
+                {
+                    foreach (string link in links)
+                    {
+                        System.Text.RegularExpressions.Match match = System.Text.RegularExpressions.Regex.Match(link, "<([^>]+)>;\\s*rel=\"next\"");
+                        if (match.Success)
                         {
-                            _Logging.Error(_Header + $"request failed with status {response.StatusCode}" + (!String.IsNullOrEmpty(response.DataAsString) ? ":" + Environment.NewLine + response.DataAsString : ""));
-                            return null;
+                            Uri target = new Uri(new Uri(url), match.Groups[1].Value);
+                            Uri origin = new Uri(_BaseUrl);
+                            if (target.Scheme != origin.Scheme || target.Authority != origin.Authority || !target.AbsolutePath.StartsWith(origin.AbsolutePath.TrimEnd('/') + "/api/models/", StringComparison.Ordinal))
+                                throw new InvalidDataException("Repository pagination left the configured API origin.");
+                            next = target.ToString();
                         }
-
-                        JsonDocument jsonDocument = JsonDocument.Parse(response.DataAsString);
-                        List<HuggingFaceModelFile> modelFiles = new List<HuggingFaceModelFile>();
-
-                        foreach (JsonElement element in jsonDocument.RootElement.EnumerateArray())
-                        {
-                            HuggingFaceModelFile file = new HuggingFaceModelFile
-                            {
-                                Path = GetStringValue(element, "path"),
-                                Type = GetStringValue(element, "type"),
-                                Size = GetLongValue(element, "size"),
-                                LastModified = GetDateTimeValue(element, "lastModified"),
-                                Oid = GetStringValue(element, "oid"),
-                                Lfs = GetStringValue(element, "lfs"),
-                                SecurityStatus = GetStringValue(element, "securityStatus")
-                            };
-
-                            modelFiles.Add(file);
-                        }
-
-                        _Logging.Info(_Header + $"retrieved {modelFiles.Count} files for model {modelName}");
-                        return modelFiles;
                     }
                 }
+                url = next;
             }
-            catch (Exception ex)
-            {
-                _Logging.Warn(_Header + "exception retrieving model files:" + Environment.NewLine + ex.ToString());
-                throw new Exception($"Error retrieving model files:{Environment.NewLine}{ex.ToString()}", ex);
-            }
+            return files;
+        }
+
+        /// <summary>List repository files at main using the original binary-compatible signature.</summary>
+        /// <param name="modelName">Repository.</param><param name="token">Cancellation token.</param>
+        /// <returns>Repository files.</returns>
+        public Task<List<GgufFileInfo>> GetGgufFilesAsync(string modelName, CancellationToken token = default)
+        {
+            return GetGgufFilesAsync(modelName, token, "main");
         }
 
         /// <summary>
@@ -186,12 +233,13 @@
         /// </summary>
         /// <param name="modelName">The name of the model to search for GGUF files.</param>
         /// <param name="token">Cancellation token.</param>
+        /// <param name="revision">Repository commit or reference. Pulls use immutable commits; default main.</param>
         /// <returns>A list of GgufFileInfo objects containing only .gguf files with enhanced metadata.</returns>
-        public async Task<List<GgufFileInfo>> GetGgufFilesAsync(string modelName, CancellationToken token = default)
+        public async Task<List<GgufFileInfo>> GetGgufFilesAsync(string modelName, CancellationToken token, string revision)
         {
-            _Logging.Debug(_Header + $"filtering GGUF files for model {modelName}");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"filtering GGUF files for model {modelName}");
 
-            List<HuggingFaceModelFile> allFiles = await GetModelFilesAsync(modelName, token).ConfigureAwait(false);
+            List<HuggingFaceModelFile> allFiles = await GetModelFilesAsync(modelName, token, revision).ConfigureAwait(false);
             if (allFiles == null || allFiles.Count < 1) return null;
 
             List<GgufFileInfo> ggufFiles = allFiles.Where(f =>
@@ -211,7 +259,7 @@
                 IsMainModel = IsMainModelFile(file.Path)
             }).OrderByDescending(f => f.Size ?? 0).ToList();
 
-            _Logging.Info(_Header + $"found {ggufFiles.Count} GGUF files for model {modelName}");
+            SharpAI.Logging.JsonLog.Info(_Logging, _Header + $"found {ggufFiles.Count} GGUF files for model {modelName}");
             return ggufFiles;
         }
 
@@ -224,7 +272,7 @@
         /// <returns>A list of GgufFileInfo objects matching the specified quantization type.</returns>
         public async Task<List<GgufFileInfo>> GetGgufFilesByQuantizationAsync(string modelName, string quantizationType, CancellationToken token = default)
         {
-            _Logging.Debug(_Header + $"getting GGUF files with quantization {quantizationType} for model: {modelName}");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"getting GGUF files with quantization {quantizationType} for model: {modelName}");
 
             List<GgufFileInfo> allGgufFiles = await GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
             if (allGgufFiles == null || allGgufFiles.Count < 1) return null;
@@ -233,7 +281,7 @@
                 f.QuantizationType?.Equals(quantizationType, StringComparison.OrdinalIgnoreCase) == true
             ).ToList();
 
-            _Logging.Info(_Header + $"found {filteredFiles.Count} files with {quantizationType} quantization for model {modelName}");
+            SharpAI.Logging.JsonLog.Info(_Logging, _Header + $"found {filteredFiles.Count} files with {quantizationType} quantization for model {modelName}");
             return filteredFiles;
         }
 
@@ -245,7 +293,7 @@
         /// <returns>A sorted list of unique quantization type strings.</returns>
         public async Task<List<string>> GetAvailableQuantizationTypesAsync(string modelName, CancellationToken token = default)
         {
-            _Logging.Debug(_Header + $"getting available quantization types for model: {modelName}");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"getting available quantization types for model: {modelName}");
 
             List<GgufFileInfo> ggufFiles = await GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
             if (ggufFiles == null || ggufFiles.Count < 1) return null;
@@ -257,8 +305,15 @@
                 .OrderBy(q => q)
                 .ToList();
 
-            _Logging.Info(_Header + $"found {quantTypes.Count} quantization types for model {modelName} {string.Join(", ", quantTypes)}");
+            SharpAI.Logging.JsonLog.Info(_Logging, _Header + $"found {quantTypes.Count} quantization types for model {modelName} {string.Join(", ", quantTypes)}");
             return quantTypes;
+        }
+
+        /// <summary>Build download URLs at main using the original binary-compatible signature.</summary>
+        /// <param name="modelName">Repository.</param><param name="file">Repository file.</param><returns>Download URLs.</returns>
+        public List<string> GetDownloadUrls(string modelName, HuggingFaceModelFile file)
+        {
+            return GetDownloadUrls(modelName, file, "main");
         }
 
         /// <summary>
@@ -266,32 +321,12 @@
         /// </summary>
         /// <param name="modelName">The model name (e.g., "microsoft/phi-2").</param>
         /// <param name="file">The HuggingFaceModelFile containing path and OID.</param>
+        /// <param name="revision">Repository revision; never the file Git object ID. Default main.</param>
         /// <returns>List of URLs to try in order of preference.</returns>
-        public List<string> GetDownloadUrls(string modelName, HuggingFaceModelFile file)
+        public List<string> GetDownloadUrls(string modelName, HuggingFaceModelFile file, string revision = "main")
         {
-            string normalizedPath = file.Path.Replace("\\", "/");
-            if (normalizedPath.StartsWith("/"))
-                normalizedPath = normalizedPath.Substring(1);
-
-            List<string> urls = new List<string>();
-
-            // If we have an OID (commit hash), use it for the most reliable download
-            if (!string.IsNullOrEmpty(file.Oid))
-            {
-                urls.Add($"https://huggingface.co/{modelName}/resolve/{file.Oid}/{normalizedPath}");
-            }
-
-            // Fallback URLs
-            urls.Add($"https://huggingface.co/{modelName}/resolve/main/{normalizedPath}");
-            urls.Add($"https://huggingface.co/{modelName}/resolve/HEAD/{normalizedPath}");
-
-            // For GGUF files, also try /raw/ but it's less reliable for large files
-            if (file.Path.EndsWith(".gguf", StringComparison.OrdinalIgnoreCase))
-            {
-                urls.Add($"https://huggingface.co/{modelName}/raw/main/{normalizedPath}");
-            }
-
-            return urls;
+            ArgumentNullException.ThrowIfNull(file);
+            return new List<string> { GetRevisionDownloadUrl(modelName, revision, file.Path) };
         }
 
         /// <summary>
@@ -311,14 +346,14 @@
                     using (RestResponse response = await request.SendAsync(token).ConfigureAwait(false))
                     {
                         bool isAccessible = (response.StatusCode >= 200 && response.StatusCode < 400);
-                        _Logging.Debug(_Header + $"URL test for {url}: {response.StatusCode} - {(isAccessible ? "accessible" : "not accessible")}");
+                        SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"URL test for {url}: {response.StatusCode} - {(isAccessible ? "accessible" : "not accessible")}");
                         return isAccessible;
                     }
                 }
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"URL test failed for {url}:{Environment.NewLine}{ex.ToString()}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"URL test failed for {url}:{Environment.NewLine}{ex.ToString()}");
                 return false;
             }
         }
@@ -354,14 +389,14 @@
                 // Verify download actually succeeded
                 if (!File.Exists(destinationFilename))
                 {
-                    _Logging.Warn($"{_Header}download completed but file does not exist: {destinationFilename}");
+                    SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}download completed but file does not exist: {destinationFilename}");
                     return false;
                 }
 
                 FileInfo fileInfo = new FileInfo(destinationFilename);
                 if (fileInfo.Length == 0)
                 {
-                    _Logging.Warn($"{_Header}download completed but file is empty: {destinationFilename}");
+                    SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}download completed but file is empty: {destinationFilename}");
                     return false;
                 }
 
@@ -377,7 +412,7 @@
             }
             catch (Exception e)
             {
-                _Logging.Warn($"{_Header}exception downloading {sourceUrl} to {destinationFilename}: {e.Message}");
+                SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}exception downloading {sourceUrl} to {destinationFilename}: {e.Message}");
                 return false;
             }
         }
@@ -406,16 +441,16 @@
 
             string downloadUrl = "";
             bool cleanup = false;
-            
+
             try
             {
-                _Logging.Debug(_Header + $"starting download from {sourceUrl} to {destinationFilename}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"starting download from {sourceUrl} to {destinationFilename}");
 
                 string destinationDirectory = Path.GetDirectoryName(destinationFilename);
                 if (!string.IsNullOrEmpty(destinationDirectory) && !Directory.Exists(destinationDirectory))
                 {
                     Directory.CreateDirectory(destinationDirectory);
-                    _Logging.Debug(_Header + $"created destination directory {destinationDirectory}");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"created destination directory {destinationDirectory}");
                 }
 
                 // First, get the metadata to find the actual download URL for LFS files
@@ -433,7 +468,7 @@
                         var contentLength = response.Content.Headers.ContentLength;
                         var isChunked = response.Headers.TransferEncodingChunked ?? false;
 
-                        _Logging.Debug(_Header +
+                        SharpAI.Logging.JsonLog.Debug(_Logging, _Header +
                                        $"content length {contentLength?.ToString() ?? "unknown"} bytes (chunked transfer: {isChunked})");
 
                         using (var contentStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
@@ -483,7 +518,7 @@
                         }
 
                         var fileInfo = new FileInfo(destinationFilename);
-                        _Logging.Info(_Header +
+                        SharpAI.Logging.JsonLog.Info(_Logging, _Header +
                                       $"successfully downloaded {fileInfo.Length} bytes to {destinationFilename}");
                     }
                 }
@@ -498,15 +533,15 @@
             }
             catch (HttpRequestException hre)
             {
-                _Logging.Warn(_Header + "HTTP exception for URL " + downloadUrl + ": " + hre.Message);
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "HTTP exception for URL " + downloadUrl + ": " + hre.Message);
                 cleanup = true;
-                
+
                 // Report failure through callback
                 progressCallback?.Invoke(sourceUrl, 0, -1);
             }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "exception in download:" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "exception in download:" + Environment.NewLine + ex.ToString());
                 cleanup = true;
 
                 // Report failure through callback
@@ -525,7 +560,7 @@
                         if (File.Exists(destinationFilename))
                         {
                             File.Delete(destinationFilename);
-                            _Logging.Debug(_Header + "cleaned up partial download file");
+                            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "cleaned up partial download file");
                         }
                     }
                     catch
@@ -558,13 +593,13 @@
             if (files == null || files.Count == 0)
                 return 0;
 
-            _Logging.Info(_Header + $"starting batch download of {files.Count} files to {downloadDirectory}");
+            SharpAI.Logging.JsonLog.Info(_Logging, _Header + $"starting batch download of {files.Count} files to {downloadDirectory}");
 
             // Ensure download directory exists
             if (!Directory.Exists(downloadDirectory))
             {
                 Directory.CreateDirectory(downloadDirectory);
-                _Logging.Debug(_Header + $"created download directory: {downloadDirectory}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"created download directory: {downloadDirectory}");
             }
 
             int successCount = 0;
@@ -576,7 +611,7 @@
                     string fileName = Path.GetFileName(file.Path);
                     string destinationPath = Path.Combine(downloadDirectory, fileName);
 
-                    _Logging.Debug(_Header + $"downloading {fileName}");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"downloading {fileName}");
 
                     List<string> urls = GetDownloadUrls(modelName, file);
                     bool downloadSuccessful = false;
@@ -593,28 +628,28 @@
                         catch (Exception ex)
                         {
                             lastError = ex.Message;
-                            _Logging.Debug(_Header + $"download attempt failed for {url}:{Environment.NewLine}{ex.ToString()}");
+                            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"download attempt failed for {url}:{Environment.NewLine}{ex.ToString()}");
                         }
                     }
 
                     if (downloadSuccessful)
                     {
                         successCount++;
-                        _Logging.Info(_Header + $"successfully downloaded {fileName}");
+                        SharpAI.Logging.JsonLog.Info(_Logging, _Header + $"successfully downloaded {fileName}");
                     }
                     else
                     {
-                        _Logging.Error(_Header + $"failed to download {fileName}: {lastError}");
+                        SharpAI.Logging.JsonLog.Error(_Logging, _Header + $"failed to download {fileName}: {lastError}");
                     }
                 }
                 catch (Exception ex)
                 {
                     string fileName = Path.GetFileName(file.Path);
-                    _Logging.Error(_Header + $"download failed for {fileName}:{Environment.NewLine}{ex.ToString()}");
+                    SharpAI.Logging.JsonLog.Error(_Logging, _Header + $"download failed for {fileName}:{Environment.NewLine}{ex.ToString()}");
                 }
             }
 
-            _Logging.Info(_Header + $"batch download completed, {successCount}/{files.Count} files successful");
+            SharpAI.Logging.JsonLog.Info(_Logging, _Header + $"batch download completed, {successCount}/{files.Count} files successful");
             return successCount;
         }
 
@@ -639,12 +674,12 @@
             {
                 if (fileName.Contains(pattern, StringComparison.OrdinalIgnoreCase))
                 {
-                    _Logging.Debug(_Header + $"detected quantization type {pattern} in file: {filePath}");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"detected quantization type {pattern} in file: {filePath}");
                     return pattern;
                 }
             }
 
-            _Logging.Debug(_Header + $"unknown quantization type for file: {filePath}");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"unknown quantization type for file: {filePath}");
             return "Unknown";
         }
 
@@ -668,12 +703,12 @@
             {
                 if (url.Contains(pattern, StringComparison.OrdinalIgnoreCase))
                 {
-                    _Logging.Debug(_Header + $"detected quantization type {pattern} in URL: {url}");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"detected quantization type {pattern} in URL: {url}");
                     return pattern;
                 }
             }
 
-            _Logging.Debug(_Header + $"unknown quantization type for URL: {url}");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"unknown quantization type for URL: {url}");
             return "Unknown";
         }
 
@@ -811,7 +846,7 @@
                             string redirectUrl = response.Headers["Location"];
                             if (!string.IsNullOrEmpty(redirectUrl))
                             {
-                                _Logging.Debug(_Header + $"LFS redirect detected {sourceUrl} to {redirectUrl}");
+                                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"LFS redirect detected {sourceUrl} to {redirectUrl}");
                                 return redirectUrl;
                             }
                         }
@@ -822,7 +857,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to get metadata for {sourceUrl}:{Environment.NewLine}{ex.ToString()}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"failed to get metadata for {sourceUrl}:{Environment.NewLine}{ex.ToString()}");
                 return sourceUrl;
             }
         }
@@ -839,7 +874,7 @@
                           !fileName.Contains("shard") &&
                           !fileName.Contains("part");
 
-            _Logging.Debug(_Header + $"file {filePath} is {(isMain ? "main model" : "shard/part")}");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"file {filePath} is {(isMain ? "main model" : "shard/part")}");
             return isMain;
         }
 
@@ -882,7 +917,7 @@
                     case JsonValueKind.Null:
                         return null;
                     case JsonValueKind.Object:
-                        if (propertyName == "lfs" && prop.TryGetProperty("oid", out JsonElement lfsOid))
+                        if (propertyName == "lfs" && (prop.TryGetProperty("sha256", out JsonElement lfsOid) || prop.TryGetProperty("oid", out lfsOid)))
                         {
                             return lfsOid.GetString();
                         }
@@ -895,7 +930,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to extract string value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"failed to extract string value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
                 return null;
             }
         }
@@ -922,7 +957,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to extract long value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"failed to extract long value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
             }
 
             return null;
@@ -946,7 +981,7 @@
             }
             catch (Exception ex)
             {
-                _Logging.Debug(_Header + $"failed to extract DateTime value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + $"failed to extract DateTime value for property '{propertyName}':{Environment.NewLine}{ex.ToString()}");
             }
 
             return null;

@@ -1,0 +1,9 @@
+# Backend JSON log bodies
+
+SharpAI emits a JSON document as every application log message body through `SharpAI.Logging.JsonLog`. Syslog severity, host and timestamp headers remain transport envelopes. Startup messages and native logging callbacks use the same JSON format. The explicit `inspect-gguf` command is a separate JSON document output, not a service log stream.
+
+The format follows the separation used by Jurat's backend: a versioned event body, stable event selector, UTC emission time, service/process identity, human message and trace correlation. SharpAI's schema version is `v: 1`; it is independent of Docker v4.0.1. Common keys are `evt`, `ts`, `svc`, `inst`, `msg`, `trace_id` and nested `corr`. Component messages use a stable component event name. Existing structured engine completion payloads retain their top-level `event_name`, operation, model, outcome, token counts, phase timings and `trace_id`, so Grafana and Loki queries keep working.
+
+Exceptions remain complete inside the escaped `msg` string. Newlines are JSON escapes, not separate unparseable log lines. Oversized logical records use `evt: log.chunk` with `err.id`, zero-based `chunk.i`, total `chunk.n`, `chunk.enc: base64-utf8` and `chunk.data`. Reassemble decoded bytes in index order before decoding UTF-8 and parsing the logical event. A missing frame means incomplete evidence. Encoding is not encryption. The application prevents SyslogLogging from splitting JSON into invalid fragments.
+
+The collector tails rolling files and ships them to Loki. Legacy lines already retained in Loki remain historical data; restarting does not rewrite old logs. Grafana provisions all three SharpAI dashboards directly in the `SharpAI` folder (`folderUid: sharpai`), and the dashboard's Grafana link opens that folder. Engine completion trace IDs link to Tempo through the configured Loki derived field.

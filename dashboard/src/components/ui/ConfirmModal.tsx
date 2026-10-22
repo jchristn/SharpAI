@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { Modal } from './Modal';
 import './ui.css';
@@ -18,12 +19,13 @@ export function ConfirmModal({
   open,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   danger = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps): JSX.Element {
+  const { t } = useTranslation();
   return (
     <Modal
       open={open}
@@ -32,14 +34,14 @@ export function ConfirmModal({
       footer={
         <>
           <button type="button" className="sa-btn" onClick={onCancel}>
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             type="button"
             className={`sa-btn ${danger ? 'sa-btn--danger' : 'sa-btn--primary'}`}
             onClick={onConfirm}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('common.confirm')}
           </button>
         </>
       }

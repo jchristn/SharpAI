@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { StatusBadge } from '../../components/ui';
 import { formatDurationMs, formatNumber } from '../../i18n/format';
 import { useApi } from '../ApiProvider';
-import { averageLatencyMs, parseSample, ratePerSecond } from '../metrics';
+import { averageLatencyMs, hasEngineMetrics, parseSample, ratePerSecond } from '../metrics';
 import type { MetricsSample } from '../metrics';
 
 type Probe = 'ok' | 'down' | 'checking';
@@ -44,6 +44,7 @@ export function ObservabilityView(): JSX.Element {
       try {
         const text = await api.metrics();
         if (cancelled) return;
+        if (!hasEngineMetrics(text)) { setMetricsError(true); return; }
         const sample = parseSample(text);
         const now = Date.now();
         const prev = previous.current;
@@ -79,7 +80,7 @@ export function ObservabilityView(): JSX.Element {
 
   return (
     <div>
-      <h1 className="sa-page__title">{t('observability.title')}</h1>
+      <div><h1 className="sa-page__title">{t('observability.title')}</h1><p className="sa-heading-description">{t('text.monitorLiveThroughputLatencyAndServiceReadiness')}</p></div>
 
       <div className="sa-kpis">
         <div className="sa-kpi">
@@ -121,11 +122,11 @@ export function ObservabilityView(): JSX.Element {
       <div className="sa-kpi" style={{ marginTop: 'var(--sa-space-4)' }}>
         <p style={{ fontWeight: 600 }}>{t('observability.endpoints')}</p>
         <p style={{ color: 'var(--sa-text-muted)' }}>{t('observability.prometheusText', { url: `${baseUrl}/metrics` })}</p>
-        <p>
-          <a className="sa-btn sa-btn--primary" href="http://localhost:9400" target="_blank" rel="noreferrer">
-            {t('observability.openGrafana')}
-          </a>
-        </p>
+        <div className="sa-observability-links">
+          {([{ name: 'Grafana', port: 9400, path: '/dashboards/f/sharpai' }, { name: 'Prometheus', port: 9090, path: '/graph' }, { name: 'Tempo', port: 3200, path: '/ready' }, { name: 'Loki', port: 3100, path: '/ready' }]).map(service =>
+            <a key={service.name} className="sa-btn" href={`${window.location.protocol}//${window.location.hostname}:${service.port}${service.path}`} target="_blank" rel="noreferrer">{t('observability.openService', { service: service.name })}</a>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ namespace SharpAI.Security
     /// Whether a permission grants or explicitly denies access. Explicit <see cref="Deny"/> always wins over
     /// any matching <see cref="Permit"/> within the same tenant and resource scope.
     /// </summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     public enum PermissionEffectEnum
     {
         /// <summary>Grant access when this permission matches.</summary>

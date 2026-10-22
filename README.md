@@ -107,6 +107,9 @@ SharpAI/
 - **SQLite Model Registry** — Tracks model metadata and file information
 - **Web Dashboard** — Vite + React + Ant Design UI for pulling models, generating embeddings, running completions and chat, inspecting running models, and editing server configuration live
 
+See [inference operations and verification](docs/OPERATIONS.md) for verified downloads, usage fields,
+context preflight, memory admission, diagnostics, benchmark receipts, and the integration test harness.
+
 ## 📋 Table of Contents
 
 - [Installation](#-installation)
@@ -357,7 +360,7 @@ If you are unsure which your model supports, choose `Simple`.
 
 SharpAI maps common architecture aliases automatically, including `qwen3.5`, `qwen-3.5`, `gemma4`, and `gemma-4`.
 
-These mappings align with the LLamaSharp 0.27.0 upgrade and help newer Qwen3.5 and Gemma4 GGUFs pick the correct prompt template automatically.
+These mappings help newer Qwen3.5 and Gemma4 GGUFs pick the correct prompt template automatically.
 
 ### Text Generation Formatting
 
@@ -527,7 +530,7 @@ SharpAI has been tested on:
 
 ### Full Deployment Guide
 
-For detailed installation instructions, troubleshooting, and production deployment, see **[DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)**.
+For detailed installation instructions, troubleshooting, and production deployment, see **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)**.
 
 ## 📊 Model Information
 
@@ -572,30 +575,35 @@ The `NativeLibraryBootstrapper` automatically detects your platform and GPU at s
 
 SharpAI.Server is available as a Docker image, providing an easy way to deploy the Ollama-compatible API server without local installation.
 
-### Quick Start
+### Quick Start (v4.0.1)
+
+For the bundled stack, run `cd docker && ./update.sh`. This initializes a missing SQLite database
+file, pulls the v4.0.1 server/dashboard images, and starts the stack. The UI is at
+http://localhost:3000 and waits for the server at http://localhost:8000/ready to become healthy.
+For a first manual `docker compose up -d`, run `touch sharpai.db` from `docker/` beforehand.
 
 #### Using Docker Run
 
-For Windows:
-```batch
-run.bat v2.0.0
-```
-
-For Linux/macOS:
 ```bash
-./run.sh v2.0.0
+docker run -d --name sharpai -p 8000:8000 jchristn77/sharpai:v4.0.1
 ```
 
 #### Using Docker Compose
 
-For Windows:
-```batch
-compose-up.bat
+Linux/macOS, from the repository root:
+
+```bash
+cd docker
+./update.sh
 ```
 
-For Linux/macOS:
-```bash
-./compose-up.sh
+Windows PowerShell, from the repository root:
+
+```powershell
+cd docker
+if (!(Test-Path sharpai.db)) { New-Item -ItemType File sharpai.db | Out-Null }
+docker compose pull
+docker compose up -d
 ```
 
 ### Prerequisites
@@ -679,11 +687,7 @@ Operational endpoints:
 
 3. Run the container:
    ```bash
-   # Windows
-   run.bat v2.0.0
-   
-   # Linux/macOS
-   ./run.sh v2.0.0
+   docker run -d --name sharpai -p 8000:8000 jchristn77/sharpai:v4.0.1
    ```
 
 4. Download a model using the API (GGUF format required):
@@ -711,12 +715,16 @@ and `compose-cuda.yaml`. A minimal standalone service looks like this:
 ```yaml
 services:
   sharpai:
-    image: jchristn77/sharpai:v2.0.0
+    image: jchristn77/sharpai:v4.0.1
     ports:
       - "8000:8000"
     volumes:
       - ./sharpai.json:/app/sharpai.json
-      - ./sharpai.db:/app/sharpai.db
+      - type: bind
+        source: ./sharpai.db
+        target: /app/sharpai.db
+        bind:
+          create_host_path: false
       - ./logs:/app/logs
       - ./models:/app/models
     environment:
@@ -763,7 +771,7 @@ docker run --gpus all \
   -v ./sharpai.db:/app/sharpai.db \
   -v ./logs:/app/logs \
   -v ./models:/app/models \
-  jchristn77/sharpai:v2.0.0
+  jchristn77/sharpai:v4.0.1
 ```
 
 For Docker Compose, add:
@@ -807,3 +815,7 @@ This project is licensed under the MIT License.
 - Model hosting by [HuggingFace](https://huggingface.co/)
 - Inspired by (and forever grateful to) [Ollama](https://ollama.ai/) for API compatibility
 - Special thanks to the community of developers that helped build, test, and refine SharpAI
+
+## Operator interface plans and diagnostics
+
+See [the TUI implementation plan](TUI_PLAN.md) for the proposed C#/TUIKit client and complete dashboard parity checklist. The TUI is planned, not yet shipped. Current dashboard diagnostics are documented in [request and inference history](docs/HISTORY_TELEMETRY.md), [JSON logging](docs/LOGGING.md), and [Access administration](docs/DASHBOARD_ADMINISTRATION.md).

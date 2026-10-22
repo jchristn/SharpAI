@@ -1,4 +1,4 @@
-﻿namespace SharpAI.Server.API.REST.Ollama
+namespace SharpAI.Server.API.REST.Ollama
 {
     using System;
     using System.Collections.Concurrent;
@@ -8,7 +8,7 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-
+    using System.Threading.Channels;
     using SharpAI.Engines;
     using SharpAI.Grammars;
     using SharpAI.Helpers;
@@ -16,6 +16,7 @@
     using SharpAI.Hosting.HuggingFace;
     using SharpAI.Models;
     using SharpAI.Models.Ollama;
+    using SharpAI.Operations;
     using SharpAI.Prompts;
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
@@ -23,7 +24,6 @@
     using SharpAI.Tools;
     using SyslogLogging;
     using WatsonWebserver.Core;
-
     using Constants = SharpAI.Constants;
 
     internal class OllamaApiHandler
@@ -47,7 +47,6 @@
 
         private static string _TimestampFormat = "yyyy-MM-ddTHH:mm:ss.ffffffZ";
 
-        private ConcurrentDictionary<string, bool> _Pulls = new ConcurrentDictionary<string, bool>(StringComparer.InvariantCultureIgnoreCase);
 
         #endregion
 
@@ -70,7 +69,7 @@
             _HuggingFaceClient = huggingFaceClient ?? throw new ArgumentNullException(nameof(huggingFaceClient));
             _Presets = presets;
 
-            _Logging.Debug(_Header + "initialized");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "initialized");
         }
 
         #endregion
@@ -88,7 +87,7 @@
 
             if (String.IsNullOrEmpty(modelName))
             {
-                _Logging.Warn(_Header + "no model name supplied");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "no model name supplied");
 
                 req.Http.Response.StatusCode = 400;
 
@@ -98,332 +97,52 @@
                 };
             }
 
-            #region Hold-Concurrent-Pulls
-
-            int heldCount = 0;
-            while (_Pulls.ContainsKey(modelName))
-            {
-                if (heldCount % 10 == 0)
-                    _Logging.Debug(_Header + "holding pull request for " + modelName + " due to an existing pull");
-
-                heldCount++;
-                await Task.Delay(1000, token).ConfigureAwait(false);
-            }
-
-            _Pulls.TryAdd(modelName, true);
-
-            #endregion
-
+            req.Http.Response.ContentType = Constants.NdJsonContentType;
+            req.Http.Response.ChunkedTransfer = true;
             try
             {
-                #region Check-for-Existing
-
-                ModelFile existing = _ModelFileService.GetByName(modelName);
-                if (existing != null)
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes("{\"status\":\"pulling manifest\"}\n"), false, token).ConfigureAwait(false);
+                Channel<string> updates = Channel.CreateBounded<string>(new BoundedChannelOptions(1)
                 {
-                    _Logging.Debug(_Header + "model " + modelName + " already exists");
-
-                    req.Http.Response.ContentType = Constants.JsonContentType;
-
-                    return new OllamaPullModelResultMessage
-                    {
-                        Status = "success"
-                    };
+                    SingleReader = true, SingleWriter = true, FullMode = BoundedChannelFullMode.DropOldest
+                });
+                async Task SendUpdatesAsync()
+                {
+                    await foreach (string update in updates.Reader.ReadAllAsync(token).ConfigureAwait(false))
+                        await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(update + "\n"), false, token).ConfigureAwait(false);
                 }
-
-                #endregion
-
-                #region Identify-GGUF-Files
-
-                req.Http.Response.ContentType = Constants.NdJsonContentType;
-                req.Http.Response.ChunkedTransfer = true;
-
-                List<GgufFileInfo> ggufFiles = await _HuggingFaceClient.GetGgufFilesAsync(modelName, token).ConfigureAwait(false);
-                if (ggufFiles == null || ggufFiles.Count < 1)
-                {
-                    _Logging.Warn(_Header + "no GGUF files found for model " + modelName);
-
-                    string notFound = _Serializer.SerializeJson(new
-                    {
-                        error = "pull model manifest: file does not exist"
-                    }, false) + Environment.NewLine;
-
-                    req.Http.Response.StatusCode = 404;
-                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(notFound), true, token).ConfigureAwait(false);
-                    return null;
-                }
-
-                string pullingManifest = _Serializer.SerializeJson(new
-                {
-                    status = "pulling manifest"
-                }, false) + Environment.NewLine;
-
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(pullingManifest), false, token).ConfigureAwait(false);
-
-                GgufFileInfo preferred = null;
-
-                if (_Settings.QuantizationPriority == null || _Settings.QuantizationPriority.Count < 1)
-                    preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
-                else
-                    preferred = GgufSelector.SortByPreference(ggufFiles, _Settings.QuantizationPriority).First();
-
-                _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + modelName);
-
-                #endregion
-
-                #region Get-Download-URLs
-
-                List<string> urls = _HuggingFaceClient.GetDownloadUrls(modelName, preferred);
-                if (urls == null || urls.Count < 1)
-                {
-                    _Logging.Warn("no download URLs found for model " + modelName);
-                    throw new WebserverException(ApiResultEnum.InternalError, "No download URLs found for the specified model " + modelName + ".");
-                }
-
-                string msg = _Header + "attempting download of model " + modelName + " from the following URLs:";
-                foreach (string url in urls)
-                {
-                    msg += Environment.NewLine + "| " + url;
-                }
-
-                _Logging.Debug(_Header + msg);
-
-                #endregion
-
-                #region Download
-
-                ModelFile modelFile = new ModelFile
-                {
-                    Name = modelName
-                };
-
-                bool success = false;
-                string filename = null;
-                string successUrl = null;
-
-                long totalSize = preferred.Size != null ? preferred.Size.Value : 0;
-
-                Action<string, long, decimal> progressCallback = async (filename, bytesDownloaded, percentComplete) =>
-                {
-                    if (percentComplete > 0 && percentComplete < 1)
-                    {
-                        string complete = percentComplete.ToString("F3");
-
-                        string progress = _Serializer.SerializeJson(new
-                        {
-                            status = "pulling " + modelName,
-                            downloaded = bytesDownloaded,
-                            completed = bytesDownloaded,
-                            total = totalSize,
-                            percent = Convert.ToDecimal(complete)
-                        }, false) + Environment.NewLine;
-
-                        await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(progress), false, token).ConfigureAwait(false);
-                    }
-                };
-
-                long fileLength = 0;
-
-                filename = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
-
-                foreach (string url in urls)
-                {
-                    _Logging.Debug(_Header + "attempting download of model " + modelName + " using URL " + url + " to file " + modelFile.GUID.ToString());
-
-                    success = await _HuggingFaceClient.TryDownloadFileAsync(url, filename, progressCallback, token).ConfigureAwait(false);
-                    if (success)
-                    {
-                        fileLength = new FileInfo(filename).Length;
-                        if (File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
-                        {
-                            _Logging.Info(_Header + "successfully downloaded model " + modelName + " using URL " + url + " to file " + filename);
-                            successUrl = url;
-                            success = true;
-                            break;
-                        }
-                        else
-                        {
-                            success = false;
-                        }
-                    }
-                }
-
-                if (!success || String.IsNullOrEmpty(filename))
-                {
-                    _Logging.Warn(_Header + "unable to download model " + modelName + " using " + urls.Count + " URL(s)");
-                    throw new WebserverException(ApiResultEnum.InternalError, "Unable to download model " + modelName + " using " + urls.Count + " URL(s).");
-                }
-
-                _Logging.Info(_Header + "downloaded GGUF file for " + modelName);
-
-                #endregion
-
-                #region Persist
-
-                bool supportsEmbeddings = false;
-                bool supportsCompletions = true;
-                string detectedArchitecture = null;
-                bool capabilitiesDetected = false;
-
-                // Try lightweight GGUF header reader first (no native dependencies, milliseconds)
+                Task sending = SendUpdatesAsync();
+                long lastUpdate = 0;
+                ModelFile model;
                 try
                 {
-                    SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(
-                        filename,
-                        out detectedArchitecture,
-                        out supportsEmbeddings,
-                        out supportsCompletions);
-
-                    capabilitiesDetected = true;
-
-                    _Logging.Debug(_Header + "detected capabilities for " + modelName +
-                        " via GGUF metadata: architecture=" + (detectedArchitecture ?? "unknown") +
-                        ", embeddings=" + supportsEmbeddings +
-                        ", completions=" + supportsCompletions);
+                    model = await SharpAI.Operations.ModelPullService.PullAsync(_HuggingFaceClient, _ModelFileService,
+                        _Settings.Storage.ModelsDirectory, modelName, _Settings.QuantizationPriority,
+                        (path, downloaded, percent) =>
+                        {
+                            long now = Environment.TickCount64;
+                            if (now - lastUpdate < 250 && percent < 1) return;
+                            lastUpdate = now;
+                            updates.Writer.TryWrite(_Serializer.SerializeJson(new
+                            {
+                                status = percent >= 1 ? "verifying" : "downloading",
+                                file = Path.GetFileName(path), downloaded, percent
+                            }, false));
+                        }, token).ConfigureAwait(false);
                 }
-                catch (Exception metaEx)
+                finally
                 {
-                    _Logging.Warn(_Header + "lightweight GGUF metadata read failed for " + modelName +
-                        ", falling back to full model load:" + Environment.NewLine + metaEx.ToString());
+                    updates.Writer.TryComplete();
+                    await sending.ConfigureAwait(false);
                 }
-
-                // Fall back to full engine initialization if lightweight reader failed
-                if (!capabilitiesDetected)
-                {
-                    try
-                    {
-                        using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString())))
-                        {
-                            supportsEmbeddings = engine.SupportsEmbeddings;
-                            supportsCompletions = engine.SupportsGeneration;
-                            detectedArchitecture = engine.Architecture;
-                            _Logging.Debug(_Header + "detected capabilities for " + modelName +
-                                " via full model load: architecture=" + (detectedArchitecture ?? "unknown") +
-                                ", embeddings=" + supportsEmbeddings +
-                                ", completions=" + supportsCompletions);
-                        }
-                    }
-                    catch (Exception capEx)
-                    {
-                        _Logging.Warn(_Header + "capability detection failed for " + modelName +
-                            ", cleaning up downloaded file:" + Environment.NewLine + capEx.ToString());
-
-                        try
-                        {
-                            if (File.Exists(filename))
-                                File.Delete(filename);
-                        }
-                        catch (Exception cleanupEx)
-                        {
-                            _Logging.Warn(_Header + "failed to delete orphaned model file " + filename + ": " + cleanupEx.ToString());
-                        }
-
-                        throw;
-                    }
-                }
-
-                using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
-                {
-                    (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
-
-                    string writingManifest = _Serializer.SerializeJson(new
-                    {
-                        status = "writing manifest",
-                        downloaded = fileLength,
-                        percent = 1
-                    }, false) + Environment.NewLine;
-
-                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(writingManifest), false, token).ConfigureAwait(false);
-
-                    HuggingFaceModelMetadata md = null;
-
-                    try
-                    {
-                        md = await _HuggingFaceClient.GetModelMetadata(modelName, token).ConfigureAwait(false);
-                        if (md == null)
-                        {
-                            _Logging.Warn(_Header + "unable to retrieve metadata for " + modelName);
-                            throw new WebserverException(ApiResultEnum.InternalError, "Unable to retrieve metadata for model '" + modelName + "'.");
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        _Logging.Warn(_Header + "exception retrieving model metadata:" + Environment.NewLine + e.ToString());
-                    }
-
-                    long parameterCount = 0;
-                    if (md != null && md.SafeTensors != null) parameterCount = md.SafeTensors.Total;
-
-                    modelFile.ContentLength = preferred.Size != null ? preferred.Size.Value : 0;
-                    modelFile.MD5Hash = Convert.ToHexString(md5);
-                    modelFile.SHA1Hash = Convert.ToHexString(sha1);
-                    modelFile.SHA256Hash = Convert.ToHexString(sha256);
-                    modelFile.Quantization = preferred.QuantizationType;
-                    modelFile.ParameterCount = parameterCount;
-                    modelFile.ModelCreationUtc = preferred.LastModified;
-                    modelFile.SourceUrl = successUrl;
-                    modelFile.Embeddings = supportsEmbeddings;
-                    modelFile.Completions = supportsCompletions;
-                    if (!String.IsNullOrEmpty(detectedArchitecture))
-                        modelFile.Family = detectedArchitecture;
-
-                    _ModelFileService.Add(modelFile);
-
-                    req.Http.Response.ContentType = Constants.JsonContentType;
-
-                    string complete = _Serializer.SerializeJson(new
-                    {
-                        status = "success",
-                        downloaded = fileLength,
-                        percent = 1
-                    }, false) + Environment.NewLine;
-
-                    _Logging.Info(_Header + "successfully pulled model " + modelName);
-
-                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(complete), true, token).ConfigureAwait(false);
-
-                    return null;
-                }
-
-                #endregion
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(_Serializer.SerializeJson(new { status = "success", downloaded = model.ContentLength, percent = 1 }, false) + "\n"), true, token).ConfigureAwait(false);
             }
-            catch (KeyNotFoundException)
-            {
-                _Logging.Warn(_Header + "unable to find repository or GGUF files for " + modelName);
-
-                string notFound = _Serializer.SerializeJson(new
-                {
-                    error = "pull model manifest: file does not exist"
-                }, false) + Environment.NewLine;
-
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(notFound), true, token).ConfigureAwait(false);
-                return null;
-            }
+            catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "pull failed for " + modelName + ":" + Environment.NewLine + ex.ToString());
-
-                string errorMsg = _Serializer.SerializeJson(new
-                {
-                    error = "pull failed: " + ex.Message
-                }, false) + Environment.NewLine;
-
-                try
-                {
-                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(errorMsg), true, token).ConfigureAwait(false);
-                }
-                catch (Exception chunkEx)
-                {
-                    _Logging.Warn(_Header + "failed to send error chunk for " + modelName + ":" + Environment.NewLine + chunkEx.ToString());
-                }
-
-                return null;
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(_Serializer.SerializeJson(new { error = "pull failed: " + ex.Message }, false) + "\n"), true, token).ConfigureAwait(false);
             }
-            finally
-            {
-                if (!String.IsNullOrEmpty(modelName))
-                    _Pulls.TryRemove(modelName, out _);
-            }
+            return null;
         }
 
         internal async Task<object> ImportModel(
@@ -444,14 +163,14 @@
             string sourcePath = imr.Path;
             if (!File.Exists(sourcePath))
             {
-                _Logging.Warn(_Header + "import requested for nonexistent file " + sourcePath);
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "import requested for nonexistent file " + sourcePath);
                 req.Http.Response.StatusCode = 404;
                 return new { error = "The specified file does not exist or is not readable by the server: " + sourcePath };
             }
 
             if (!IsGgufFile(sourcePath))
             {
-                _Logging.Warn(_Header + "import requested for non-GGUF file " + sourcePath);
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "import requested for non-GGUF file " + sourcePath);
                 req.Http.Response.StatusCode = 400;
                 return new { error = "The specified file is not a valid GGUF model (missing GGUF magic header)." };
             }
@@ -473,7 +192,7 @@
             ModelFile existing = _ModelFileService.GetByName(modelName);
             if (existing != null)
             {
-                _Logging.Debug(_Header + "import: model " + modelName + " already exists");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "import: model " + modelName + " already exists");
                 req.Http.Response.StatusCode = 409;
                 return new { error = "A model with the name '" + modelName + "' already exists." };
             }
@@ -487,49 +206,38 @@
             if (!Directory.Exists(_Settings.Storage.ModelsDirectory))
                 Directory.CreateDirectory(_Settings.Storage.ModelsDirectory);
 
-            string destination = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+            string storagePath = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+            string stagingPath = storagePath + ".import";
+            string destination = stagingPath;
 
             try
             {
-                _Logging.Info(_Header + "importing local GGUF '" + sourcePath + "' as model '" + modelName + "' (" + modelFile.GUID + ")");
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "importing local GGUF '" + sourcePath + "' as model '" + modelName + "' (" + modelFile.GUID + ")");
 
-                await Task.Run(() => File.Copy(sourcePath, destination, false), token).ConfigureAwait(false);
+                List<string> sourceFiles = GgufShards.Files(sourcePath);
+                if (sourceFiles.Count > 1)
+                {
+                    Directory.CreateDirectory(stagingPath);
+                    foreach (string file in sourceFiles)
+                    {
+                        token.ThrowIfCancellationRequested();
+                        await Task.Run(() => File.Copy(file, Path.Combine(stagingPath, Path.GetFileName(file)), false), token).ConfigureAwait(false);
+                    }
+                    destination = Path.Combine(stagingPath, Path.GetFileName(sourceFiles[0]));
+                }
+                else await Task.Run(() => File.Copy(sourcePath, destination, false), token).ConfigureAwait(false);
+                ModelInspection inspection = ModelInspector.Inspect(destination);
+                if (!inspection.Supported) throw new InvalidDataException("Model contains unsupported components.");
+                modelFile.ParameterCount = inspection.ParameterCount;
 
                 #endregion
 
                 #region Detect-And-Persist
 
-                bool supportsEmbeddings = false;
-                bool supportsCompletions = true;
-                string detectedArchitecture = null;
-                bool capabilitiesDetected = false;
+                SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(destination, out string detectedArchitecture,
+                    out bool supportsEmbeddings, out bool supportsCompletions);
 
-                try
-                {
-                    SharpAI.Helpers.GgufMetadataReader.DetectCapabilities(
-                        destination,
-                        out detectedArchitecture,
-                        out supportsEmbeddings,
-                        out supportsCompletions);
-                    capabilitiesDetected = true;
-                }
-                catch (Exception metaEx)
-                {
-                    _Logging.Warn(_Header + "import: lightweight GGUF metadata read failed for " + modelName +
-                        ", falling back to full model load:" + Environment.NewLine + metaEx.ToString());
-                }
-
-                if (!capabilitiesDetected)
-                {
-                    using (LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(destination))
-                    {
-                        supportsEmbeddings = engine.SupportsEmbeddings;
-                        supportsCompletions = engine.SupportsGeneration;
-                        detectedArchitecture = engine.Architecture;
-                    }
-                }
-
-                long fileLength = new FileInfo(destination).Length;
+                long fileLength = inspection.WeightsBytes;
 
                 using (FileStream fs = new FileStream(destination, FileMode.Open, FileAccess.Read))
                 {
@@ -539,6 +247,21 @@
                     modelFile.SHA256Hash = Convert.ToHexString(sha256);
                 }
 
+                if (sourceFiles.Count > 1)
+                {
+                    List<string> hashes = new List<string>();
+                    foreach (string file in inspection.Files)
+                    {
+                        using FileStream shard = File.OpenRead(file);
+                        hashes.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(shard)));
+                    }
+                    modelFile.MD5Hash = null;
+                    modelFile.SHA1Hash = null;
+                    modelFile.SHA256Hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(String.Join("\n", hashes))));
+                }
+                token.ThrowIfCancellationRequested();
+                if (Directory.Exists(stagingPath)) Directory.Move(stagingPath, storagePath);
+                else File.Move(stagingPath, storagePath);
                 modelFile.ContentLength = fileLength;
                 modelFile.Embeddings = supportsEmbeddings;
                 modelFile.Completions = supportsCompletions;
@@ -548,7 +271,7 @@
 
                 _ModelFileService.Add(modelFile);
 
-                _Logging.Info(_Header + "successfully imported model " + modelName +
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "successfully imported model " + modelName +
                     " (architecture=" + (detectedArchitecture ?? "unknown") +
                     ", embeddings=" + supportsEmbeddings + ", completions=" + supportsCompletions + ")");
 
@@ -559,18 +282,20 @@
             }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "import failed for " + modelName + ":" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "import failed for " + modelName + ":" + Environment.NewLine + ex.ToString());
 
                 try
                 {
-                    if (File.Exists(destination)) File.Delete(destination);
+                    if (Directory.Exists(stagingPath)) Directory.Delete(stagingPath, true);
+                    else File.Delete(stagingPath);
+                    GgufShards.Delete(_Settings.Storage.ModelsDirectory, modelFile.GUID);
                 }
                 catch (Exception cleanupEx)
                 {
-                    _Logging.Warn(_Header + "failed to delete orphaned imported file " + destination + ": " + cleanupEx.Message);
+                    SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "failed to delete orphaned imported file " + destination + ": " + cleanupEx.Message);
                 }
 
-                req.Http.Response.StatusCode = 500;
+                req.Http.Response.StatusCode = ex is InvalidDataException ? 400 : 500;
                 return new { error = "import failed: " + ex.Message };
             }
         }
@@ -605,7 +330,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(dmr.Model);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + dmr.Model + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + dmr.Model + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -617,7 +342,8 @@
             else
             {
                 _ModelFileService.Delete(modelFile.GUID);
-                File.Delete(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+                _ModelEngineService.UnloadModel(SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID));
+                SharpAI.Operations.GgufShards.Delete(_Settings.Storage.ModelsDirectory, modelFile.GUID);
                 return null;
             }
         }
@@ -633,7 +359,7 @@
             if (String.IsNullOrEmpty(umr?.Model))
             {
                 int count = _ModelEngineService.UnloadAllModels();
-                _Logging.Info(_Header + "unloaded " + count + " model(s)");
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "unloaded " + count + " model(s)");
 
                 return new
                 {
@@ -647,7 +373,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(umr.Model);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + umr.Model + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + umr.Model + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -658,12 +384,12 @@
             }
 
             // Build the file path and attempt to unload
-            string modelPath = Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString());
+            string modelPath = SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID);
             bool unloaded = _ModelEngineService.UnloadModel(modelPath);
 
             if (unloaded)
             {
-                _Logging.Info(_Header + "unloaded model " + umr.Model);
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "unloaded model " + umr.Model);
 
                 return new
                 {
@@ -674,7 +400,7 @@
             }
             else
             {
-                _Logging.Debug(_Header + "model " + umr.Model + " was not loaded");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "model " + umr.Model + " was not loaded");
 
                 return new
                 {
@@ -692,7 +418,7 @@
             List<ModelFile> modelFiles = CollectAllModels();
             if (modelFiles == null || modelFiles.Count < 1)
             {
-                _Logging.Debug(_Header + "no models downloaded");
+                SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "no models downloaded");
 
                 return new
                 {
@@ -707,7 +433,7 @@
                 ret.Add(modelFile.ToOllamaModelDetails());
             }
 
-            return ret;
+            return new { models = ret };
         }
 
         private List<ModelFile> CollectAllModels()
@@ -757,16 +483,16 @@
                 if (String.IsNullOrEmpty(filename)) continue;
 
                 Guid modelGuid;
-                if (!Guid.TryParse(filename, out modelGuid))
+                if (!Guid.TryParse(filename, out modelGuid) && !Guid.TryParse(Path.GetFileName(Path.GetDirectoryName(loadedPath)), out modelGuid))
                 {
-                    _Logging.Debug(_Header + "loaded engine path is not GUID-backed, skipping: " + loadedPath);
+                    SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "loaded engine path is not GUID-backed, skipping: " + loadedPath);
                     continue;
                 }
 
                 ModelFile modelFile = _ModelFileService.GetByGuid(modelGuid);
                 if (modelFile == null)
                 {
-                    _Logging.Debug(_Header + "no model file record for loaded engine " + modelGuid.ToString());
+                    SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "no model file record for loaded engine " + modelGuid.ToString());
                     continue;
                 }
 
@@ -813,7 +539,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(ger.Model);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + ger.Model + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + ger.Model + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -823,11 +549,11 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID));
 
             if (!engine.SupportsEmbeddings)
             {
-                _Logging.Warn(_Header + "model '" + ger.Model + "' does not support embeddings");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model '" + ger.Model + "' does not support embeddings");
 
                 req.Http.Response.StatusCode = 500;
 
@@ -864,7 +590,7 @@
                     {
                         if (String.IsNullOrEmpty(input))
                         {
-                            _Logging.Warn(_Header + "input contains null or invalid entries");
+                            SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "input contains null or invalid entries");
 
                             req.Http.Response.StatusCode = 400;
 
@@ -896,7 +622,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(gcr.Model);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + gcr.Model + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + gcr.Model + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -906,13 +632,17 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+            string enginePath = SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID);
+            bool wasLoaded = _ModelEngineService.GetLoadedModelPaths().Contains(Path.GetFullPath(enginePath));
+            LlamaSharpEngine engine = await _ModelEngineService.GetByModelFileAsync(enginePath, token).ConfigureAwait(false);
+            InferenceStatistics statistics = new InferenceStatistics(wasLoaded ? 0 : engine.LoadDurationNanoseconds);
+            SharpAI.Server.Classes.Runtime.RequestDiagnostics.Attach(req.Http, statistics);
 
             string json = null;
 
             if (!engine.SupportsGeneration)
             {
-                _Logging.Warn(_Header + "'" + gcr.Model + "' does not support generate");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "'" + gcr.Model + "' does not support generate");
 
                 req.Http.Response.StatusCode = 400;
 
@@ -928,6 +658,8 @@
             if (genStopSequences == null || genStopSequences.Length == 0)
                 genStopSequences = ChatFormatHelper.GetDefaultStopSequences(genFormat);
 
+            if (!String.IsNullOrEmpty(gcr.Prompt)) engine.ValidateContext(gcr.Prompt, gcr.Options.NumPredict ?? 128);
+
             bool genDisplayThinking = gcr.Options.DisplayThinking ?? false;
 
             if (gcr.Stream == null || !gcr.Stream.Value)
@@ -941,7 +673,7 @@
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         genStopSequences,
-                        token).ConfigureAwait(false);
+                        null, token, statistics, gcr.Options).ConfigureAwait(false);
 
                     if (!genDisplayThinking)
                         response = ThinkingFilter.RemoveThinkingBlocks(response);
@@ -953,7 +685,17 @@
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
                     response = response,
                     done = true,
-                    done_reason = "stop"
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
+                    done_reason = statistics.CompletionTokens >= (gcr.Options.NumPredict ?? 128) ? "length" : "stop"
                 };
             }
             else
@@ -971,7 +713,7 @@
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         genStopSequences,
-                        token).ConfigureAwait(false))
+                        null, token, statistics, gcr.Options).ConfigureAwait(false))
                     {
                         string filtered = genThinkFilter != null ? genThinkFilter.ProcessToken(curr) : curr;
 
@@ -986,7 +728,7 @@
 
                             }, false) + Environment.NewLine;
 
-                            await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
+                            await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
                         }
 
                         nextToken = filtered;
@@ -1006,11 +748,21 @@
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
                     response = nextToken,
                     done = true,
-                    done_reason = "stop"
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
+                    done_reason = statistics.CompletionTokens >= (gcr.Options.NumPredict ?? 128) ? "length" : "stop"
 
                 }, false);
 
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), true, token).ConfigureAwait(false);
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(json), true, token).ConfigureAwait(false);
 
                 return null;
             }
@@ -1036,7 +788,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(effectiveModel);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + effectiveModel + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + effectiveModel + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -1046,11 +798,15 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+            string enginePath = SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID);
+            bool wasLoaded = _ModelEngineService.GetLoadedModelPaths().Contains(Path.GetFullPath(enginePath));
+            LlamaSharpEngine engine = await _ModelEngineService.GetByModelFileAsync(enginePath, token).ConfigureAwait(false);
+            InferenceStatistics statistics = new InferenceStatistics(wasLoaded ? 0 : engine.LoadDurationNanoseconds);
+            SharpAI.Server.Classes.Runtime.RequestDiagnostics.Attach(req.Http, statistics);
 
             if (!engine.SupportsGeneration)
             {
-                _Logging.Warn(_Header + "'" + effectiveModel + "' does not support generate");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "'" + effectiveModel + "' does not support generate");
 
                 req.Http.Response.StatusCode = 400;
 
@@ -1129,6 +885,8 @@
                 }
             }
 
+            if (!String.IsNullOrEmpty(prompt)) engine.ValidateContext(prompt, gcr.Options.NumPredict ?? 128);
+
             bool displayThinking = gcr.Options.DisplayThinking ?? false;
 
             // JSON mode (W4.T4): honor the Ollama `format` field via a JSON GBNF grammar, unless tools are in
@@ -1147,7 +905,7 @@
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         stopSequences,
                         jsonGrammar,
-                        token).ConfigureAwait(false);
+                        token, statistics, gcr.Options).ConfigureAwait(false);
 
                     if (!displayThinking)
                         response = ThinkingFilter.RemoveThinkingBlocks(response);
@@ -1169,6 +927,16 @@
                                 tool_calls = ToolResponseMapper.ToOllama(parsedCalls)
                             },
                             done = true,
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
                             done_reason = "tool_calls"
                         };
                     }
@@ -1178,9 +946,19 @@
                 {
                     model = gcr.Model,
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                    response = response,
+                    message = new { role = "assistant", content = response },
                     done = true,
-                    done_reason = "stop"
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
+                    done_reason = statistics.CompletionTokens >= (gcr.Options.NumPredict ?? 128) ? "length" : "stop"
                 };
             }
             else
@@ -1202,7 +980,7 @@
                         gcr.Options.NumPredict != null ? gcr.Options.NumPredict.Value : 128,
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         stopSequences,
-                        token).ConfigureAwait(false))
+                        null, token, statistics, gcr.Options).ConfigureAwait(false))
                     {
                         buffered.Append(curr);
                     }
@@ -1217,19 +995,39 @@
                             created_at = DateTime.UtcNow.ToString(_TimestampFormat),
                             message = new { role = "assistant", content = "", tool_calls = ToolResponseMapper.ToOllama(streamedCalls) },
                             done = true,
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
                             done_reason = "tool_calls"
                         }
                         : new
                         {
                             model = gcr.Model,
                             created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                            response = bufferedText.Trim(),
+                            message = new { role = "assistant", content = bufferedText.Trim() },
                             done = true,
-                            done_reason = "stop"
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
+                            done_reason = statistics.CompletionTokens >= (gcr.Options.NumPredict ?? 128) ? "length" : "stop"
                         };
 
                     string terminalJson = _Serializer.SerializeJson(terminal, false) + Environment.NewLine;
-                    await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(terminalJson), true, token).ConfigureAwait(false);
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(terminalJson), true, token).ConfigureAwait(false);
                     return null;
                 }
 
@@ -1241,7 +1039,7 @@
                         gcr.Options.Temperature != null ? gcr.Options.Temperature.Value : 0.6f,
                         stopSequences,
                         jsonGrammar,
-                        token).ConfigureAwait(false))
+                        token, statistics, gcr.Options).ConfigureAwait(false))
                     {
                         string filtered = thinkFilter != null ? thinkFilter.ProcessToken(curr) : curr;
 
@@ -1251,12 +1049,12 @@
                             {
                                 model = gcr.Model,
                                 created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                                response = nextToken,
+                                message = new { role = "assistant", content = nextToken },
                                 done = false
 
                             }, false) + Environment.NewLine;
 
-                            await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
+                            await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(json), false, token).ConfigureAwait(false);
                         }
 
                         nextToken = filtered;
@@ -1275,13 +1073,23 @@
                 {
                     model = gcr.Model,
                     created_at = DateTime.UtcNow.ToString(_TimestampFormat),
-                    response = nextToken,
+                    message = new { role = "assistant", content = nextToken },
                     done = true,
-                    done_reason = "stop"
+                    total_duration = statistics.TotalDurationNanoseconds,
+                    first_token_duration = statistics.FirstTokenDurationNanoseconds,
+                    queue_duration = statistics.QueueDurationNanoseconds,
+                    phase_timings_approximate = statistics.PhaseTimingsApproximate,
+                    cancelled = statistics.Cancelled,
+                    load_duration = statistics.LoadDurationNanoseconds,
+                    prompt_eval_count = statistics.PromptTokens,
+                    prompt_eval_duration = statistics.PromptDurationNanoseconds,
+                    eval_count = statistics.CompletionTokens,
+                    eval_duration = statistics.GenerationDurationNanoseconds,
+                    done_reason = statistics.CompletionTokens >= (gcr.Options.NumPredict ?? 128) ? "length" : "stop"
 
                 }, false) + Environment.NewLine;
 
-                await req.Http.Response.SendChunk(Encoding.UTF8.GetBytes(json), true, token).ConfigureAwait(false);
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(req, Encoding.UTF8.GetBytes(json), true, token).ConfigureAwait(false);
 
                 return null;
             }

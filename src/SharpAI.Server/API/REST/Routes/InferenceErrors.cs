@@ -2,7 +2,6 @@ namespace SharpAI.Server.API.REST.Routes
 {
     using System;
     using System.Threading.Tasks;
-
     using WatsonWebserver.Core;
 
     /// <summary>
@@ -26,6 +25,10 @@ namespace SharpAI.Server.API.REST.Routes
             try
             {
                 return await handler().ConfigureAwait(false);
+            }
+            catch (SharpAI.Exceptions.ContextLimitException ex)
+            {
+                return await WriteInferenceError(req, 400, "context_length_exceeded", ex.Message).ConfigureAwait(false);
             }
             catch (SharpAI.Exceptions.EngineBusyException ex)
             {
@@ -84,8 +87,10 @@ namespace SharpAI.Server.API.REST.Routes
             {
                 req.Http.Response.StatusCode = status;
                 req.Http.Response.ContentType = "application/json";
-                string body = "{\"error\":{\"message\":" + System.Text.Json.JsonSerializer.Serialize(message ?? string.Empty)
-                    + ",\"type\":\"" + type + "\"}}";
+                string serializedMessage = System.Text.Json.JsonSerializer.Serialize(message ?? string.Empty);
+                bool ollama = req.Http.Request.Url.RawWithQuery.StartsWith("/api/", StringComparison.Ordinal);
+                string body = ollama ? "{\"error\":" + serializedMessage + "}"
+                    : "{\"error\":{\"message\":" + serializedMessage + ",\"type\":\"" + type + "\",\"code\":\"" + type + "\"}}";
                 await req.Http.Response.Send(body).ConfigureAwait(false);
             }
             catch (Exception)

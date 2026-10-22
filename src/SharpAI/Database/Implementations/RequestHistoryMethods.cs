@@ -22,12 +22,12 @@ namespace SharpAI.Database.Implementations
         private const string _ListColumns =
             "id, tenantid, userid, principalname, method, path, url, statuscode, durationms, sourceip, " +
             "requestheadersjson, requestbodybytes, requestbodytruncated, responseheadersjson, " +
-            "responsebodybytes, responsebodytruncated, createdutc, completedutc";
+            "responsebodybytes, responsebodytruncated, createdutc, completedutc, modelname, isstreaming, inputtokens, outputtokens, cachedtokens, ttftms, streamdurationms, queuems, loadms, promptms, generationms, enginetotalms, cancelled, phasetimingsapproximate, traceid, spanid";
 
         private const string _AllColumns =
             "id, tenantid, userid, principalname, method, path, url, statuscode, durationms, sourceip, " +
             "requestheadersjson, requestbody, requestbodybytes, requestbodytruncated, responseheadersjson, " +
-            "responsebody, responsebodybytes, responsebodytruncated, createdutc, completedutc";
+            "responsebody, responsebodybytes, responsebodytruncated, createdutc, completedutc, modelname, isstreaming, inputtokens, outputtokens, cachedtokens, ttftms, streamdurationms, queuems, loadms, promptms, generationms, enginetotalms, cancelled, phasetimingsapproximate, traceid, spanid";
 
         private static readonly string _TimeFormat = "yyyy-MM-ddTHH:mm:ss.fffffffZ";
 
@@ -52,6 +52,22 @@ namespace SharpAI.Database.Implementations
 
             Dictionary<string, object> parameters = new Dictionary<string, object>
             {
+                { "@modelname", (object)entry.ModelName },
+                { "@isstreaming", (object)entry.IsStreaming == null ? null : (object)(entry.IsStreaming.Value ? 1 : 0) },
+                { "@inputtokens", (object)entry.InputTokens },
+                { "@outputtokens", (object)entry.OutputTokens },
+                { "@cachedtokens", (object)entry.CachedTokens },
+                { "@ttftms", (object)entry.TtftMs },
+                { "@streamdurationms", (object)entry.StreamDurationMs },
+                { "@queuems", (object)entry.QueueMs },
+                { "@loadms", (object)entry.LoadMs },
+                { "@promptms", (object)entry.PromptMs },
+                { "@generationms", (object)entry.GenerationMs },
+                { "@enginetotalms", (object)entry.EngineTotalMs },
+                { "@cancelled", (object)entry.Cancelled == null ? null : (object)(entry.Cancelled.Value ? 1 : 0) },
+                { "@phasetimingsapproximate", (object)entry.PhaseTimingsApproximate == null ? null : (object)(entry.PhaseTimingsApproximate.Value ? 1 : 0) },
+                { "@traceid", (object)entry.TraceId },
+                { "@spanid", (object)entry.SpanId },
                 { "@id", entry.Id },
                 { "@tenantid", (object)entry.TenantId },
                 { "@userid", (object)entry.UserId },
@@ -78,7 +94,7 @@ namespace SharpAI.Database.Implementations
                 "INSERT INTO request_history (" + _AllColumns + ") VALUES (" +
                 "@id, @tenantid, @userid, @principalname, @method, @path, @url, @statuscode, @durationms, @sourceip, " +
                 "@requestheadersjson, @requestbody, @requestbodybytes, @requestbodytruncated, @responseheadersjson, " +
-                "@responsebody, @responsebodybytes, @responsebodytruncated, @createdutc, @completedutc)",
+                "@responsebody, @responsebodybytes, @responsebodytruncated, @createdutc, @completedutc, @modelname, @isstreaming, @inputtokens, @outputtokens, @cachedtokens, @ttftms, @streamdurationms, @queuems, @loadms, @promptms, @generationms, @enginetotalms, @cancelled, @phasetimingsapproximate, @traceid, @spanid)",
                 parameters);
         }
 
@@ -262,6 +278,22 @@ namespace SharpAI.Database.Implementations
         {
             RequestHistoryEntry entry = new RequestHistoryEntry
             {
+                ModelName = row.IsNull("modelname") ? null : (string)(Convert.ToString(row["modelname"])),
+                IsStreaming = row.IsNull("isstreaming") ? null : (bool?)(Convert.ToInt32(row["isstreaming"]) != 0),
+                InputTokens = row.IsNull("inputtokens") ? null : (int?)(Convert.ToInt32(row["inputtokens"])),
+                OutputTokens = row.IsNull("outputtokens") ? null : (int?)(Convert.ToInt32(row["outputtokens"])),
+                CachedTokens = row.IsNull("cachedtokens") ? null : (int?)(Convert.ToInt32(row["cachedtokens"])),
+                TtftMs = row.IsNull("ttftms") ? null : (double?)(Convert.ToDouble(row["ttftms"])),
+                StreamDurationMs = row.IsNull("streamdurationms") ? null : (double?)(Convert.ToDouble(row["streamdurationms"])),
+                QueueMs = row.IsNull("queuems") ? null : (double?)(Convert.ToDouble(row["queuems"])),
+                LoadMs = row.IsNull("loadms") ? null : (double?)(Convert.ToDouble(row["loadms"])),
+                PromptMs = row.IsNull("promptms") ? null : (double?)(Convert.ToDouble(row["promptms"])),
+                GenerationMs = row.IsNull("generationms") ? null : (double?)(Convert.ToDouble(row["generationms"])),
+                EngineTotalMs = row.IsNull("enginetotalms") ? null : (double?)(Convert.ToDouble(row["enginetotalms"])),
+                Cancelled = row.IsNull("cancelled") ? null : (bool?)(Convert.ToInt32(row["cancelled"]) != 0),
+                PhaseTimingsApproximate = row.IsNull("phasetimingsapproximate") ? null : (bool?)(Convert.ToInt32(row["phasetimingsapproximate"]) != 0),
+                TraceId = row.IsNull("traceid") ? null : (string)(Convert.ToString(row["traceid"])),
+                SpanId = row.IsNull("spanid") ? null : (string)(Convert.ToString(row["spanid"])),
                 Id = GetString(row, "id"),
                 TenantId = GetNullableString(row, "tenantid"),
                 UserId = GetNullableString(row, "userid"),

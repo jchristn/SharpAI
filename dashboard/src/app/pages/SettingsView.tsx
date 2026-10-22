@@ -1,5 +1,7 @@
+import { Icon } from '../Icon';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { SettingsFields } from './SettingsFields';
 import { StatusBadge } from '../../components/ui';
 import { ApiError } from '../../api/ApiClient';
 import { useApi } from '../ApiProvider';
@@ -35,11 +37,14 @@ function buildInfo(settings: unknown, health: unknown): ServerInfo {
   };
 }
 
-/** Settings / Server Info view (T8): a structured server-info panel plus a raw settings JSON editor. */
+/** Settings / Server Info view (T8): a structured server-info panel plus editable, typed configuration sections. */
 export function SettingsView(): JSX.Element {
   const { t } = useTranslation();
   const api = useApi();
-  const [text, setText] = useState<string>('');
+  const [settings, setSettings] = useState<Record<string, unknown> | null>(null);
+  const [baseline, setBaseline] = useState('');
+  const [saving, setSaving] = useState(false);
+  const dirty = settings !== null && JSON.stringify(settings) !== baseline;
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +55,11 @@ export function SettingsView(): JSX.Element {
     setError(null);
     try {
       const settings = await api.getSettings();
-      setText(JSON.stringify(settings, null, 2));
+      if (!settings || typeof settings !== 'object' || Array.isArray(settings)) throw new ApiError(502, t('settings.invalidResponse'), null);
+      const editable = { ...record(settings), HuggingFace: { ApiKey: null, ...record(record(settings).HuggingFace) }, Runtime: { ForceBackend: null, CpuBackendPath: null, GpuBackendPath: null, MetalBackendPath: null, ...record(record(settings).Runtime) }, Database: { Username: null, Password: null, ...record(record(settings).Database) } };
+      setSettings(editable);
+      setBaseline(JSON.stringify(editable));
+      setSave({ kind: 'idle' });
       const health = await api.health().catch(() => null);
       setInfo(buildInfo(settings, health));
     } catch (err) {
@@ -66,35 +75,31 @@ export function SettingsView(): JSX.Element {
 
   const onSave = async (): Promise<void> => {
     setSave({ kind: 'idle' });
-    let parsed: unknown;
+    if (!settings || saving) return;
+    setSaving(true);
     try {
-      parsed = JSON.parse(text);
-    } catch {
-      setSave({ kind: 'error', message: t('settings.invalidJson') });
-      return;
-    }
-    try {
-      await api.updateSettings(parsed);
+      await api.updateSettings(settings);
+      setBaseline(JSON.stringify(settings));
       setSave({ kind: 'saved' });
     } catch (err) {
       setSave({ kind: 'error', message: err instanceof ApiError ? `${err.status}: ${err.message}` : t('settings.saveError') });
+    } finally {
+      setSaving(false);
     }
   };
 
   const flag = (on: boolean): string => (on ? t('settings.enabled') : t('settings.disabled'));
 
   return (
-    <div>
+    <form onSubmit={(event) => { event.preventDefault(); void onSave(); }}>
       <div className="sa-page__toolbar">
-        <h1 className="sa-page__title">{t('settings.title')}</h1>
+        <div><h1 className="sa-page__title">{t('settings.title')}</h1><p className="sa-heading-description">{t('text.configureYourServerInferenceRuntimeAndConnected')}</p></div>
         <div style={{ display: 'flex', gap: 'var(--sa-space-2)', alignItems: 'center' }}>
           {save.kind === 'saved' ? <StatusBadge tone="success">{t('settings.saved')}</StatusBadge> : null}
           {save.kind === 'error' ? <StatusBadge tone="danger">{save.message}</StatusBadge> : null}
-          <button type="button" className="sa-btn" onClick={() => void load()} disabled={loading}>
-            {t('settings.reload')}
-          </button>
-          <button type="button" className="sa-btn sa-btn--primary" onClick={() => void onSave()} disabled={loading}>
-            {t('settings.save')}
+          <button type="button" className="sa-btn--icon sa-btn" onClick={() => void load()} disabled={loading || saving} aria-label={t('settings.reload')}><Icon name="refresh"/></button>
+          <button type="submit" className="sa-btn sa-btn--primary" disabled={loading || saving || !dirty}>
+            {saving ? t('settings.saving') : t('settings.save')}
           </button>
         </div>
       </div>
@@ -125,15 +130,9 @@ export function SettingsView(): JSX.Element {
         </>
       ) : null}
 
-      <div className="sa-kpi__label" style={{ margin: 'var(--sa-space-3) 0 var(--sa-space-2)' }}>{t('settings.rawConfig')}</div>
-      <textarea
-        className="sa-json"
-        style={{ width: '100%', minHeight: '45vh', resize: 'vertical' }}
-        value={text}
-        spellCheck={false}
-        onChange={(event) => setText(event.target.value)}
-        aria-label={t('settings.rawConfig')}
-      />
-    </div>
+      <div className="sa-settings-note">{t('text.changesAreSavedToTheServerConfiguration')}</div>
+      {loading ? <div className="sa-empty" role="status">{t('text.loadingConfiguration')}</div> : settings ? <fieldset disabled={saving} className="sa-settings-fields"><SettingsFields value={settings} onChange={(next) => { setSettings(next); setSave({ kind: 'idle' }); }} /></fieldset> : null}
+      <div role="status" aria-live="polite" className="sa-page-description">{dirty ? t('settings.dirty') : settings ? t('settings.current') : ''}</div>
+    </form>
   );
 }

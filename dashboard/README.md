@@ -1,114 +1,93 @@
-<img src="https://raw.githubusercontent.com/jchristn/sharpai/main/assets/logo.png" height="48">
+<img src="../assets/logo.png" height="48" alt="SharpAI">
 
-# SharpAI Dashboard
+# SharpAI Dashboard (v4.0.1)
 
-A web interface for the SharpAI server, built with Vite, React, and Ant Design.
+A React and TypeScript workspace for the SharpAI server, built with Vite. The dashboard uses shared, accessible controls and supports light and dark themes, English, Spanish, Portuguese, French, Italian, German, Simplified Chinese, Arabic, Russian, Malay, Hindi, and Japanese, and desktop, tablet, and phone layouts.
 
-> **Part of the SharpAI monorepo** — See the [main README](../README.md) for an overview of all components.
+## Pages
 
-### SharpAI Github
+- **Overview:** model counts, request activity, and recent failures.
+- **Models:** running and downloaded models, streaming pull progress, confirmed deletion and unloading.
+- **Playground:** streaming chat with a stop button, installed-model suggestions, and embedding previews.
+- **Request and inference history:** time ranges, filters, charts, pagination, and request details.
+- **API Explorer:** browse the live OpenAPI document and execute requests with the current session.
+- **Observability:** health, readiness, live metrics, and a Grafana link.
+- **Settings:** grouped configuration forms with typed controls, masked credentials, lists, and key/value overrides. Saves preserve unmodified fields. Some changes require a server restart.
 
-https://github.com/jchristn/sharpai
+The logo and favicon in `public/images/` match the canonical assets in `../assets/`.
 
-## Features
+## Development
 
-- **Models** — Pull GGUF models from HuggingFace, delete ones you no longer need, see which models are loaded into memory, and monitor active downloads with a live progress bar and cancel button
-- **Embeddings** — Generate vector embeddings for one or more inputs via the Ollama or OpenAI API flavor
-- **Completions** — Send raw prompts to completion-capable models with full control over sampling parameters and stop sequences
-- **Chat Completion** — Multi-turn conversations with chat-tuned models; the dashboard automatically wraps messages in the correct chat template (ChatML, Llama2/3, Mistral, etc.) based on the model's GGUF architecture
-- **Configuration** — Live editor for every field in `sharpai.json`. Saves replace the in-memory server settings and rewrite the file on disk
-- **Model-type awareness** — The embeddings page only shows embedding-capable models; completions pages only show completion-capable models. Driven by a `capabilities` object the server returns from `/api/tags`
-- **Per-field tooltips** — Every column header, label, and input has an explanatory tooltip
-- **Dark / light theme** with a purple accent drawn from the logo
-- **Streaming-aware UI** — Animated "thinking" indicator, robust NDJSON parser, and automatic focus return after generation finishes
+Use a Node.js version supported by Vite 8 (Node 22.12+ or a newer supported release).
 
-## Requirements
-
-- Node.js 18+ (tested on 22)
-- npm
-
-## Quick Start
-
-### Install dependencies
-
-```bash
-npm install
-```
-
-### Configure the API endpoint
-
-Update [`src/constants/apiConfig.ts`](src/constants/apiConfig.ts) if your SharpAI server is running somewhere other than `http://localhost:8000`. The dashboard also lets you change this at runtime on the landing page.
-
-### Development server
-
-```bash
+```sh
+npm ci
 npm run dev
 ```
 
-Vite's dev server starts in roughly 500 ms on the first run. Hot-module replacement is used for all code and SCSS changes — no page reload is required.
+The application calls its own origin. The production nginx configuration proxies API requests to the SharpAI server. For a custom embedding or development harness, pass `baseUrl` to `NewApp`.
 
-Available at `http://localhost:3000`.
+## Build and validation
 
-### Production build
-
-```bash
+```sh
 npm run build
-```
-
-This runs `tsc --noEmit` first (type-check), then `vite build` to produce a static `dist/` directory. Serve it with any static web server, or use `npm start` to preview it locally via `vite preview`:
-
-```bash
-npm start
-```
-
-### Testing
-
-```bash
-# Run all tests
 npm test
-
-# Run tests with coverage
-npm run test:coverage
-
-# Watch mode for development
-npm run test:watch
+npm run lint
+npx playwright install chromium
+npm run e2e
 ```
 
-Tests use Jest with `ts-jest` and the jsdom environment. Setup lives in [`jest.setup.js`](jest.setup.js).
+Playwright starts a separate preview server on port 3017 so it does not reuse the Docker dashboard on port 3000. Tests cover all routes in desktop light/dark, tablet, and mobile layouts, accessibility, navigation, login, settings preservation and error handling, chat, embeddings, model actions, model pulls, and API execution. Workflow fixtures validate browser behavior without changing the live server configuration or downloading models.
 
-## Project Structure
+Build the dashboard Docker image from the repository root using `./build-dashboard.sh v4.0.1`.
 
-- `index.html` — Vite entry document with the root `<head>` tags and `<script type="module" src="/src/main.tsx">`
-- `vite.config.ts` — Vite + React plugin + `vite-tsconfig-paths` + SCSS modern-compiler API
-- `src/main.tsx` — ReactDOM root, mounts `<ErrorBoundary>` + `<AppProviders>` + `<App>`
-- `src/App.tsx` — `<BrowserRouter>` + `<Routes>` declaring every navigable route with a nested dashboard layout
-- `src/components/` — Reusable React components (tables, forms, buttons, tooltips, etc.)
-- `src/components/layout/DashboardLayout.tsx` — Top-level dashboard shell with sidebar + header + `<Outlet />`
-- `src/components/base/sidebar/` — Left navigation sidebar with Models / Embeddings / Completions / Chat Completion / Configuration links and version display
-- `src/components/base/tooltip/` — Shared `SharpTooltip` wrapper and `TooltipHeader` column helper
-- `src/page/` — Page-level components: `landing`, `dashboard-home`, `embeddings`, `completion`, `chat-completion`, `configuration`
-- `src/hoc/` — `AppProviders`, `ErrorBoundary`, `PullProgressProvider` (owns the live model-pull lifecycle and background download state)
-- `src/lib/store/` — Redux Toolkit store and RTK Query `apiSlice` with hooks for every SharpAI endpoint
-- `src/lib/reducer/` — API slice definitions and TypeScript types for server responses
-- `src/constants/` — App constants, `tooltips.ts` (centralized tooltip text and page descriptions), and `apiConfig.ts`
-- `src/theme/` — Ant Design `ConfigProvider` theme tokens for light and dark modes
-- `src/utils/` — Helpers: size formatting, error formatting, NDJSON streaming parser, model capability filtering
+## Localization
 
-## Tech Stack
+English is the source and fallback catalog. Locale files are UTF-8 JSON in `src/i18n/`, lazy-loaded before the selected language is rendered. The registry owns autonyms and direction. Regional variants map to the supported base language; `zh` uses Simplified Chinese and `pt` uses general Portuguese. `en-XA` expands text and `ar-XB` exercises RTL layout. The language selector is available in the shell and the sign-in dialog and persists across reloads and authentication changes.
 
-- **Vite 5** for dev server and production bundling
-- **React 18** with React Router 6 for routing
-- **TypeScript 5** in strict mode
-- **Ant Design 5** for the component library (`@ant-design/cssinjs` for styling, path-aliased via `vite-tsconfig-paths`)
-- **Redux Toolkit** and **RTK Query** with an `axios`-backed base query for API calls, including streaming progress callbacks and abort signals
-- **SCSS modules** via `sass` in modern-compiler mode
-- **Jest + ts-jest** for unit and snapshot tests
+Use semantic keys and i18next interpolation (`{{name}}`); never concatenate translated fragments. To add a locale, add its registry entry and a complete catalog with identical keys and interpolation placeholders. Run `npm test` for missing/orphaned keys, encoding, placeholders, locale switching, and the hard-coded JSX/accessibility-string gate. Browser tests exercise every supported locale and pseudo-locale. Both gates run on every push and pull request.
 
-## Code Quality
+The new catalogs were machine translated and checked for structural correctness; native-speaker terminology review remains advisable. Keep SharpAI, Hugging Face, Grafana, Prometheus, Loki, Tempo, API paths, IDs, enum wire values, and raw diagnostic payloads unchanged. Server-authored errors and downloadable request/response examples are diagnostic content: requests carry `Accept-Language`, but untranslated upstream errors remain verbatim so operators can troubleshoot them. UI labels and operation descriptions are localized independently.
 
-- ESLint (flat config in `eslint.config.mjs`) with `@typescript-eslint`, `eslint-plugin-react-hooks`, and `eslint-plugin-react-refresh`
-- TypeScript strict mode on the app (`tsconfig.json` `strict: true`; tests live under `tests/` and are excluded from the production type-check because they contain pre-existing strict-null-check violations that ts-jest handles at test time)
+`npm run e2e` exercises browser behavior with fixtures. Separately run `python3 ../scripts/test-dashboard-deployment.py` against the Docker UI for real nginx/API routing, JSON response shapes, SPA route boundaries, and pull-method handling. It does not download models or change settings.
 
-## Migrating from the Next.js dashboard
+Pulls accept a full Hugging Face repository ID (for example `Qwen/Qwen3-8B-GGUF`) or its repository-page URL. Short names without an owner are rejected with guidance instead of guessing a repository. Public repositories need no API token; private or gated repositories require a valid token.
 
-The dashboard was migrated from Next.js 14 App Router to Vite in v4.0.0. There is no SSR, no `src/app/` directory, no `next/link`, no `next/navigation`, and no `AntdRegistry` wrapper. Routes are now declared in `src/App.tsx` via `react-router-dom`. `"use client"` directives have been removed; every component is a client component.
+The Compose deployment defaults to a 2,048-token context so a model with a large trained context does not allocate its full KV cache in a small Docker VM. Override `SHARPAI_CONTEXT_SIZE` when starting Compose if your available memory supports a larger context. This deployment setting does not change the library's model-default context behavior.
+
+The Observability view reads `/engine-metrics`, proxied to the collector's Prometheus exporter, while `/metrics` remains the server's HTTP instrumentation endpoint. Without a collector the engine cards report unavailable instead of presenting false zeroes. For the full stack, add `--engine-metrics` to the deployment smoke command.
+
+### Chat and model transfers
+
+Playground selects installed models from a dropdown and retains conversation turns until a new conversation,
+model change, or navigation. It renders Markdown without enabling raw HTML and shows per-turn visible-output
+TTFT, total request time, streaming time, input/output/total tokens, and engine generation tokens per second.
+Times are measured by the browser; token counts come from the terminal Ollama event and remain unavailable
+when a stream is interrupted. Hidden reasoning tokens are included in the engine output count; the server does
+not currently report a separate reasoning-token count. Sampling controls are request-scoped and blank values
+use server defaults. Context/memory settings remain in Settings. Pull progress includes transfer bytes,
+percentage when known, the current file, and a clear completion or error state; the HTTP stream remains NDJSON
+for Ollama clients. Closing the dialog leaves the server-side transfer running.
+
+For initial administrator credentials and enabling sign-in, see
+[Dashboard sign-in credentials](../DEPLOYMENT_GUIDE.md#dashboard-sign-in-credentials).
+
+The server exposes Ollama `/api/chat`, `/api/generate`, `/api/embed`, and model management operations,
+and OpenAI-compatible `/v1/models`, `/v1/chat/completions`, `/v1/completions`, and `/v1/embeddings`.
+This is inference compatibility, not the full OpenAI hosted-service API (for example, `/v1/responses`
+is not implemented). To verify both chat protocols against an installed completion model, run:
+
+```sh
+python3 scripts/test-playground-api.py --model Qwen/Qwen3-8B-GGUF
+```
+
+Run this from the repository root. It checks actual streaming and non-streaming replies, terminal markers,
+and input/output token usage through the UI's nginx proxy. Set `SHARPAI_API_KEY` when authentication requires it.
+
+### Administration
+
+The sidebar's Administration group includes Tenants, Users, Credentials, Roles, Permissions, Assignments,
+Sessions, and Security audit. Use the Selected tenant dropdown to scope administration. Platform tenant
+management is restricted to platform administrators; other principals see only permitted surfaces in their
+own tenant. Forms are purpose-built, password fields are write-only, and credential secrets are displayed
+once. See [the operator guide](../docs/DASHBOARD_ADMINISTRATION.md) for setup, role grants, and test commands.

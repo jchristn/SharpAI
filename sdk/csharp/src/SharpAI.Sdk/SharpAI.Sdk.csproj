@@ -48,8 +48,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="SharpAI" Version="2.0.0" />
-		<PackageReference Include="RestWrapper" Version="3.3.1" />
-		<PackageReference Include="System.Text.Json" Version="10.0.12" />
+		<PackageReference Include="RestWrapper" Version="3.3.2" />
+		<!-- Override the vulnerable PKCS dependency brought in by Microsoft.Data.SqlClient. -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+		<PackageReference Include="System.Text.Json" Version="10.0.13" />
 	</ItemGroup>
 
 	<ItemGroup>

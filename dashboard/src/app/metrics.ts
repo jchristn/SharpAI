@@ -46,3 +46,8 @@ export function ratePerSecond(previous: number, current: number, seconds: number
   if (seconds <= 0 || current < previous) return 0;
   return (current - previous) / seconds;
 }
+
+/** Distinguish engine samples from an HTTP-only endpoint or an HTML fallback. */
+export function hasEngineMetrics(text: string): boolean {
+  return /^sharpai_(?:inference_requests_total|models_resident)(?:\{|\s)/m.test(text);
+}

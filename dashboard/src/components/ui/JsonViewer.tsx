@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { CopyButton } from './CopyButton';
 import './ui.css';
 
@@ -15,11 +16,12 @@ function stringify(value: unknown): string {
 
 /** Pretty-prints a JSON value in a scrollable monospace block with a copy affordance. */
 export function JsonViewer({ value }: JsonViewerProps): JSX.Element {
+  const { t } = useTranslation();
   const text = stringify(value);
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <CopyButton value={text} label="Copy JSON" />
+        <CopyButton value={text} label={t('common.copyJson')} />
       </div>
       <pre className="sa-json">{text}</pre>
     </div>

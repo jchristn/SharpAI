@@ -8,8 +8,11 @@ using Test.Shared;
 
 using Touchstone.Cli;
 
+if (args.Length > 0 && args[0] == "--recovery-probe") return await RecoveryProbe.RunAsync(args);
+
 string? resultsPath = null;
 bool benchmark = false;
+string receiptPath = "benchmark-receipt.json";
 bool dbmatrix = false;
 int iterations = 8;
 int concurrency = 4;
@@ -18,6 +21,7 @@ int maxTokens = 64;
 for (int i = 0; i < args.Length; i++)
 {
     if (args[i] == "--results" && i + 1 < args.Length) resultsPath = args[i + 1];
+    else if (args[i] == "--receipt" && i + 1 < args.Length) receiptPath = args[i + 1];
     else if (args[i] == "--benchmark") benchmark = true;
     else if (args[i] == "--dbmatrix") dbmatrix = true;
     else if (args[i] == "--iterations" && i + 1 < args.Length) int.TryParse(args[i + 1], out iterations);
@@ -43,6 +47,8 @@ if (benchmark)
     ConcurrencyBenchmark.BenchmarkResult r =
         await ConcurrencyBenchmark.RunAsync(ModelFixture.Path!, iterations, concurrency, maxTokens).ConfigureAwait(false);
 
+    await System.IO.File.WriteAllTextAsync(receiptPath, System.Text.Json.JsonSerializer.Serialize(r.Receipt, new System.Text.Json.JsonSerializerOptions { WriteIndented = true })).ConfigureAwait(false);
+    Console.WriteLine("Receipt: " + System.IO.Path.GetFullPath(receiptPath));
     Console.WriteLine("Sequential (1 at a time):");
     Console.WriteLine("  total:        " + r.SequentialSeconds.ToString("F2", CultureInfo.InvariantCulture) + " s");
     Console.WriteLine("  avg latency:  " + r.SequentialAvgLatencyMs.ToString("F1", CultureInfo.InvariantCulture) + " ms/req");
@@ -52,7 +58,7 @@ if (benchmark)
     Console.WriteLine("  total:        " + r.ConcurrentSeconds.ToString("F2", CultureInfo.InvariantCulture) + " s");
     Console.WriteLine("  throughput:   " + r.ConcurrentTokensPerSecond.ToString("F1", CultureInfo.InvariantCulture) + " tok/s");
     Console.WriteLine("  wall speedup: " + r.Speedup.ToString("F2", CultureInfo.InvariantCulture) + "x");
-    return 0;
+    return r.FailureCount == 0 ? 0 : 1;
 }
 
 if (dbmatrix)

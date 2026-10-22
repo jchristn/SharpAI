@@ -34,15 +34,17 @@ and begins serving:
 Chat requests are rendered with each model's own embedded chat template when the GGUF carries one, so
 prompts match what the model was trained on rather than a hand-maintained format table.
 
-## Getting started
+## Getting started (v4.0.1)
 
 ```bash
+touch sharpai.db
 docker run -d \
   --name sharpai \
   -p 8000:8000 \
   -v sharpai-models:/app/models \
-  -v sharpai-data:/app \
-  jchristn/sharpai:v2.0.0
+  -v sharpai-logs:/app/logs \
+  --mount type=bind,source="$(pwd)/sharpai.db",target=/app/sharpai.db \
+  jchristn77/sharpai:v4.0.1
 ```
 
 The server listens on port 8000. Pull a model and chat with it using any Ollama client, or `curl`:
@@ -77,7 +79,7 @@ you operate the server. The server exports OTLP metrics/traces/logs and a Promet
 ## Links
 
 - Source, full README, and Compose files: https://github.com/jchristn/SharpAI
-- Deployment guide: https://github.com/jchristn/SharpAI/blob/main/DEPLOYMENT-GUIDE.md
+- Deployment guide: https://github.com/jchristn/SharpAI/blob/main/DEPLOYMENT_GUIDE.md
 - Issues: https://github.com/jchristn/SharpAI/issues
 
 Licensed under the MIT license.

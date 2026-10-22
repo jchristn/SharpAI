@@ -1,43 +1,22 @@
-import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useEffect, useRef, useState } from 'react';
+import { copyToClipboard } from './clipboard';
+import { Icon } from '../../app/Icon';
 import './ui.css';
 
-export interface CopyButtonProps {
-  value: string;
-  label?: string;
-}
+export interface CopyButtonProps { value: string; label?: string }
 
-async function copyToClipboard(value: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(value);
-      return true;
-    }
-  } catch {
-    // fall through to false
-  }
-  return false;
-}
-
-/** A small button that copies a value to the clipboard and briefly confirms. */
-export function CopyButton({ value, label = 'Copy' }: CopyButtonProps): JSX.Element {
-  const [copied, setCopied] = useState<boolean>(false);
-
-  const onCopy = async (): Promise<void> => {
-    const ok = await copyToClipboard(value);
-    if (ok) {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
-    }
-  };
-
-  return (
-    <button
-      type="button"
-      className="sa-btn sa-btn--ghost"
-      onClick={() => void onCopy()}
-      aria-label={label}
-    >
-      {copied ? 'Copied' : label}
-    </button>
-  );
+export function CopyButton({ value, label }: CopyButtonProps): JSX.Element {
+  const { t } = useTranslation();
+  const [state, setState] = useState<'idle'|'copied'|'error'>('idle');
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const description = state === 'copied' ? t('common.copied') : state === 'error' ? t('common.copyFailed') : label ?? t('common.copy');
+  return <button type="button" className={`sa-btn sa-btn--ghost sa-btn--icon sa-copy-button ${state === 'copied' ? 'sa-copy-button--copied' : ''}`} title={description} aria-label={description} onClick={() => {
+    void copyToClipboard(value).then(ok => {
+      setState(ok ? 'copied' : 'error');
+      window.clearTimeout(timer.current);
+      timer.current = window.setTimeout(() => setState('idle'), 1800);
+    });
+  }}><Icon name={state === 'copied' ? 'check' : 'copy'}/><span className="sa-sr-only" role="status">{state === 'idle' ? '' : description}</span></button>;
 }

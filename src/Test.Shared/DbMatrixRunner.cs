@@ -122,7 +122,7 @@ namespace Test.Shared
             });
 
             // ---- Request history ----
-            string historyId = null;
+            string? historyId = null;
 
             Check(result, "history.create+read", () =>
             {
@@ -184,7 +184,7 @@ namespace Test.Shared
             }
         }
 
-        private static void Require(bool condition, string message)
+        private static void Require([System.Diagnostics.CodeAnalysis.DoesNotReturnIf(false)] bool condition, string message)
         {
             if (!condition) throw new Exception(message);
         }

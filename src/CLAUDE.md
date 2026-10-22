@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+Current server/dashboard Docker release: **v4.0.1**.
+
 SharpAI is a .NET library for local AI inference with an optional Ollama-compatible API server. It provides direct model embedding capabilities and server deployment without cloud dependencies.
 
 ## Architecture
@@ -68,7 +70,7 @@ Use the provided build scripts from the repository root (multi-arch buildx push 
 ## Key Dependencies
 
 - **LLamaSharp** - Local model inference engine with CPU, CUDA12, and Metal backends
-- **Watson** (7.2) - Webserver for the server's REST routing, OpenAPI/Swagger, and native telemetry meters
+- **Watson** (7.3) - Webserver for the server's REST routing, OpenAPI/Swagger, and native telemetry meters
 - **Hand-written ADO.NET data layer** - A provider-neutral database layer (interface/implementation pattern)
   over Microsoft.Data.Sqlite, Npgsql, MySqlConnector, and Microsoft.Data.SqlClient. SQLite is the default;
   MySQL, PostgreSQL, and SQL Server are all supported. Portable SQL with versioned migrations. (This replaces

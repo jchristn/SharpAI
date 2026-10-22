@@ -9,7 +9,7 @@ export function LanguageSelector(): JSX.Element {
     <select
       className="sa-btn sa-btn--ghost"
       value={i18n.language}
-      onChange={(event) => setActiveLocale(event.target.value)}
+      onChange={(event) => void setActiveLocale(event.target.value)}
       aria-label={t('topbar.language')}
     >
       {LOCALES.map((locale) => (

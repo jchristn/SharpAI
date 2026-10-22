@@ -165,7 +165,7 @@ namespace SharpAI.Database
         {
             await Task.Run(() => RunMigrations(), token).ConfigureAwait(false);
             _IsInitialized = true;
-            Logging.Debug(_Header + DatabaseType + " initialized");
+            SharpAI.Logging.JsonLog.Debug(Logging, _Header + DatabaseType + " initialized");
         }
 
         /// <summary>
@@ -316,7 +316,7 @@ namespace SharpAI.Database
                 };
                 NonQuery("INSERT INTO schema_migrations (version, description, appliedutc) VALUES (@version, @description, @appliedutc)", parameters);
 
-                Logging.Info(_Header + "applied migration v" + migration.Version + " (" + migration.Description + ")");
+                SharpAI.Logging.JsonLog.Info(Logging, _Header + "applied migration v" + migration.Version + " (" + migration.Description + ")");
             }
         }
 

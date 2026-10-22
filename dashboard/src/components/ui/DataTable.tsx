@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { Pagination } from './Pagination';
 import './ui.css';
@@ -18,6 +19,7 @@ export interface DataTableProps<T> {
   columns: Column<T>[];
   rows: T[];
   rowKey: (row: T) => string;
+  onRowClick?: (row:T)=>void;
   loading?: boolean;
   error?: string | null;
   emptyMessage?: string;
@@ -39,7 +41,8 @@ export interface DataTableProps<T> {
  * its own container so the page body never scrolls horizontally.
  */
 export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
-  const { columns, rows, rowKey, loading, error, emptyMessage, sortColumn, sortDirection, onSort, pagination } = props;
+  const { t } = useTranslation();
+  const { onRowClick, columns, rows, rowKey, loading, error, emptyMessage, sortColumn, sortDirection, onSort, pagination } = props;
 
   const headerClick = (column: Column<T>): void => {
     if (!column.sortable || !onSort) return;
@@ -55,7 +58,7 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
   return (
     <div>
       {pagination ? <Pagination {...pagination} /> : null}
-      <div className="sa-table__wrap">
+      <div className="sa-table__wrap" tabIndex={0} role="region" aria-label={t('text.dataTable')}>
         <table className="sa-table">
           <thead>
             <tr>
@@ -69,7 +72,7 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
                     sortColumn === column.key ? (sortDirection === 'asc' ? 'ascending' : 'descending') : undefined
                   }
                 >
-                  {column.header}
+                  {column.header || (column.key === 'actions' ? t('common.actions') : '')}
                   {sortIndicator(column)}
                 </th>
               ))}
@@ -79,8 +82,7 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
             {loading ? (
               <tr>
                 <td className="sa-table__state" colSpan={columns.length}>
-                  Loading…
-                </td>
+                  {t('text.loading')}</td>
               </tr>
             ) : error ? (
               <tr>
@@ -91,12 +93,12 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
             ) : rows.length === 0 ? (
               <tr>
                 <td className="sa-table__state" colSpan={columns.length}>
-                  {emptyMessage ?? 'No records.'}
+                  {emptyMessage ?? t('common.none')}
                 </td>
               </tr>
             ) : (
               rows.map((row) => (
-                <tr key={rowKey(row)}>
+                <tr key={rowKey(row)} className={onRowClick ? 'sa-table-row--interactive' : undefined} onClick={onRowClick ? ()=>onRowClick(row) : undefined} onKeyDown={onRowClick ? event=>{if(event.target===event.currentTarget && (event.key==='Enter'||event.key===' ')){event.preventDefault();onRowClick(row);}} : undefined} tabIndex={onRowClick ? 0 : undefined}>
                   {columns.map((column) => (
                     <td key={column.key}>
                       {column.render ? column.render(row) : column.accessor ? column.accessor(row) : null}

@@ -1,3 +1,5 @@
+import { RequestDetails } from './RequestDetails';
+import { Icon } from '../Icon';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -8,12 +10,12 @@ import {
   DEFAULT_PAGE_SIZE,
   FilterBar,
   FilterField,
-  JsonViewer,
   Modal,
   StatusBadge,
   toneForHttpStatus,
 } from '../../components/ui';
 import { ApiError } from '../../api/ApiClient';
+import { formatDateTime, formatDurationMs, formatNumber, formatPercent } from '../../i18n/format';
 import { useApi } from '../ApiProvider';
 import { DEFAULT_RANGE_KEY, TIME_RANGES, rangeByKey } from './requestHistoryRanges';
 
@@ -87,7 +89,7 @@ export interface RequestHistoryPanelProps {
  * modal. Rendered once for all API requests and once (with category="inference") for inference/embeddings.
  */
 export function RequestHistoryPanel({ titleKey, category, endpointOptions }: RequestHistoryPanelProps): JSX.Element {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const api = useApi();
   const [page, setPage] = useState<Page>({ objects: [], total: 0 });
   const [pageNumber, setPageNumber] = useState<number>(1);
@@ -167,7 +169,13 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
     void load();
   }, [load]);
 
+  const showDetail = (row:Row):void => {
+    setDetail(row);
+    const id=asText(pick(row,'Id','id','guid'));
+    if(id) void api.requestHistoryEntry(id).then(value=>setDetail(current=>current && asText(pick(current,'Id','id','guid'))===id ? value as Row : current)).catch(()=>setDetail(current=>current && asText(pick(current,'Id','id','guid'))===id ? {...current, DetailUnavailable:true} : current));
+  };
   const columns: Column<Row>[] = [
+    { key: 'created', header: t('requestHistory.colCreated'), render: (row) => formatDateTime(asText(pick(row, 'CreatedUtc', 'createdUtc')), i18n.language, 'UTC') },
     { key: 'method', header: t('requestHistory.colMethod'), render: (row) => asText(pick(row, 'Method', 'method')) },
     { key: 'path', header: t('requestHistory.colPath'), render: (row) => asText(pick(row, 'Path', 'path')) },
     {
@@ -182,14 +190,14 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
         );
       },
     },
-    { key: 'duration', header: t('requestHistory.colDuration'), render: (row) => asText(pick(row, 'DurationMs', 'durationMs')) },
+    { key: 'duration', header: t('requestHistory.colDuration'), render: (row) => <span className="sa-duration-cell">{formatDurationMs(Number(pick(row, 'DurationMs', 'durationMs') ?? 0), i18n.language)}{category==='inference' && <meter min={0} max={Math.max(1,...page.objects.map(item=>Number(pick(item,'DurationMs','durationMs')??0)))} value={Number(pick(row,'DurationMs','durationMs')??0)}/>}</span> },
     { key: 'ip', header: t('requestHistory.colSourceIp'), render: (row) => asText(pick(row, 'SourceIp', 'sourceIp')) },
-    { key: 'created', header: t('requestHistory.colCreated'), render: (row) => asText(pick(row, 'CreatedUtc', 'createdUtc')) },
+
     {
       key: 'actions',
       header: '',
       render: (row) => (
-        <button type="button" className="sa-btn sa-btn--ghost" onClick={() => setDetail(row)}>
+        <button type="button" className="sa-btn sa-btn--ghost" onClick={(event) => {event.stopPropagation();showDetail(row);}}>
           {t('requestHistory.details')}
         </button>
       ),
@@ -199,7 +207,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
   return (
     <div>
       <div className="sa-page__toolbar">
-        <h1 className="sa-page__title">{t(titleKey)}</h1>
+        <div><h1 className="sa-page__title">{t(titleKey)}</h1><p className="sa-heading-description">{t('text.inspectRequestActivityFilterResultsAndOpen')}</p></div>
         <div className="sa-rangebar" role="group" aria-label={t('requestHistory.rangeLabel')}>
           {TIME_RANGES.map((r) => (
             <button
@@ -217,9 +225,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
               {t(r.labelKey)}
             </button>
           ))}
-          <button type="button" className="sa-btn sa-btn--sm" onClick={() => setAnchorMs(Date.now())} disabled={loading}>
-            {t('common.refresh')}
-          </button>
+          <button type="button" className="sa-btn--icon sa-btn sa-btn--sm" onClick={() => setAnchorMs(Date.now())} disabled={loading} aria-label={t('common.refresh')}><Icon name="refresh"/></button>
         </div>
       </div>
 
@@ -228,15 +234,15 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
           <div className="sa-kpis">
             <div className="sa-kpi">
               <div className="sa-kpi__label">{t('requestHistory.requests')}</div>
-              <div className="sa-kpi__value">{summary.total}</div>
+              <div className="sa-kpi__value">{formatNumber(summary.total, i18n.language)}</div>
             </div>
             <div className="sa-kpi">
               <div className="sa-kpi__label">{t('requestHistory.successRate')}</div>
-              <div className="sa-kpi__value">{summary.total ? Math.round((summary.success / summary.total) * 100) : 0}%</div>
+              <div className="sa-kpi__value">{formatPercent(summary.total ? summary.success / summary.total : 0, i18n.language)}</div>
             </div>
             <div className="sa-kpi">
               <div className="sa-kpi__label">{t('requestHistory.avgDuration')}</div>
-              <div className="sa-kpi__value">{Math.round(summary.avgMs)} ms</div>
+              <div className="sa-kpi__value">{formatDurationMs(summary.avgMs, i18n.language)}</div>
             </div>
           </div>
           <ActivityChart
@@ -278,6 +284,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
       <DataTable<Row>
         columns={columns}
         rows={page.objects}
+        onRowClick={showDetail}
         rowKey={(row) => asText(pick(row, 'Id', 'id', 'guid')) || Math.random().toString(36)}
         loading={loading}
         error={error}
@@ -294,8 +301,8 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
         }}
       />
 
-      <Modal open={detail !== null} title={t('requestHistory.detailsTitle')} onClose={() => setDetail(null)}>
-        {detail ? <JsonViewer value={detail} /> : null}
+      <Modal wide open={detail !== null} title={t('requestHistory.detailsTitle')} onClose={() => setDetail(null)}>
+        {detail ? <RequestDetails row={detail} inference={category==='inference'}/> : null}
       </Modal>
     </div>
   );

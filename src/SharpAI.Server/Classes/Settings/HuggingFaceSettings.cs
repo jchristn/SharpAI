@@ -8,12 +8,12 @@
     public class HuggingFaceSettings
     {
         /// <summary>
-        /// API key.
+        /// Optional API key. Null or empty permits public repository access.
         /// </summary>
         public string ApiKey
         {
             get => _ApiKey;
-            set => _ApiKey = (!String.IsNullOrEmpty(value) ? value : throw new ArgumentNullException(nameof(ApiKey)));
+            set => _ApiKey = value;
         }
 
         private string _ApiKey = Constants.DefaultHuggingFaceApiKey;

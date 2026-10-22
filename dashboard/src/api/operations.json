@@ -1,0 +1,596 @@
+[
+  {
+    "method": "GET",
+    "path": "/health",
+    "tag": "General",
+    "summary": "Health check",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/ready",
+    "tag": "General",
+    "summary": "Readiness check",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/diagnostics/runtime",
+    "tag": "Diagnostics",
+    "summary": "Runtime capabilities and configuration",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/diagnostics/memory",
+    "tag": "Diagnostics",
+    "summary": "Process memory and model estimates",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/inspect",
+    "tag": "Models",
+    "summary": "Inspect a registered model by name without loading weights",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/models/{id}/inspect",
+    "tag": "Models",
+    "summary": "Inspect GGUF metadata and memory without loading weights",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/settings",
+    "tag": "Settings",
+    "summary": "Get current server settings",
+    "example": null
+  },
+  {
+    "method": "PUT",
+    "path": "/api/settings",
+    "tag": "Settings",
+    "summary": "Update server settings",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/api/request-history",
+    "tag": "Request History",
+    "summary": "List captured requests",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/api/request-history",
+    "tag": "Request History",
+    "summary": "Bulk delete captured requests",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/api/request-history/summary",
+    "tag": "Request History",
+    "summary": "Summarize captured requests",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/api/request-history/{id}",
+    "tag": "Request History",
+    "summary": "Read a captured request",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/api/request-history/{id}",
+    "tag": "Request History",
+    "summary": "Delete a captured request",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/embed",
+    "tag": "Ollama - Inference",
+    "summary": "Generate embeddings",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF",
+      "input": "Hello"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/generate",
+    "tag": "Ollama - Inference",
+    "summary": "Generate text completion",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF",
+      "prompt": "Hello",
+      "stream": false
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/chat",
+    "tag": "Ollama - Inference",
+    "summary": "Generate chat completion",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello"
+        }
+      ],
+      "stream": false
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/v1/models",
+    "tag": "OpenAI - Models",
+    "summary": "List models (OpenAI-compatible)",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1/embeddings",
+    "tag": "OpenAI - Inference",
+    "summary": "Generate embeddings (OpenAI-compatible)",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF",
+      "input": "Hello"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/v1/completions",
+    "tag": "OpenAI - Inference",
+    "summary": "Generate text completion (OpenAI-compatible)",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF",
+      "prompt": "Hello",
+      "stream": false
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/v1/chat/completions",
+    "tag": "OpenAI - Inference",
+    "summary": "Generate chat completion (OpenAI-compatible)",
+    "example": {
+      "model": "Qwen/Qwen3-8B-GGUF",
+      "messages": [
+        {
+          "role": "user",
+          "content": "Hello"
+        }
+      ],
+      "stream": false
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/token",
+    "tag": "Authentication",
+    "summary": "Log in and create a session token",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/token",
+    "tag": "Authentication",
+    "summary": "Read the current session",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/token",
+    "tag": "Authentication",
+    "summary": "Revoke the current session",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/api/audit",
+    "tag": "Authentication",
+    "summary": "List security audit events",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}/permissions",
+    "tag": "Authentication",
+    "summary": "Inspect a user's effective permissions",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/permissions",
+    "tag": "Authentication",
+    "summary": "Inspect a credential's effective permissions",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants",
+    "tag": "Management - Tenants",
+    "summary": "List tenants",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants",
+    "tag": "Management - Tenants",
+    "summary": "Create a tenant",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}",
+    "tag": "Management - Tenants",
+    "summary": "Read a tenant",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}",
+    "tag": "Management - Tenants",
+    "summary": "Delete a tenant",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/users",
+    "tag": "Management - Users",
+    "summary": "List users",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/users",
+    "tag": "Management - Users",
+    "summary": "Create a user",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}",
+    "tag": "Management - Users",
+    "summary": "Read a user",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}",
+    "tag": "Management - Users",
+    "summary": "Delete a user",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials",
+    "tag": "Management - Credentials",
+    "summary": "List credentials",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials",
+    "tag": "Management - Credentials",
+    "summary": "Create a credential",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}",
+    "tag": "Management - Credentials",
+    "summary": "Read a credential",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}",
+    "tag": "Management - Credentials",
+    "summary": "Delete a credential",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/roles",
+    "tag": "Management - Roles",
+    "summary": "List roles",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/roles",
+    "tag": "Management - Roles",
+    "summary": "Create a custom role",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}",
+    "tag": "Management - Roles",
+    "summary": "Delete a custom role",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/permissions",
+    "tag": "Management - Permissions",
+    "summary": "List permissions",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/permissions",
+    "tag": "Management - Permissions",
+    "summary": "Create a permission",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions/{permissionGuid}",
+    "tag": "Management - Roles",
+    "summary": "Map a permission to a role",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}/assignments",
+    "tag": "Management - Assignments",
+    "summary": "List a user's role assignments",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/assignments",
+    "tag": "Management - Assignments",
+    "summary": "Assign a role to a user",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/assignments/{assignmentGuid}",
+    "tag": "Management - Assignments",
+    "summary": "Revoke a role assignment",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/pull",
+    "tag": "Ollama - Models",
+    "summary": "Pull a model",
+    "example": {
+      "name": "Qwen/Qwen3-8B-GGUF",
+      "stream": false
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/import",
+    "tag": "Ollama - Models",
+    "summary": "Import a local GGUF model",
+    "example": {
+      "path": "/app/models/model.gguf",
+      "name": "my-model"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/models/presets",
+    "tag": "Ollama - Models",
+    "summary": "List model presets",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/models/presets",
+    "tag": "Ollama - Models",
+    "summary": "Create a model preset",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/models/presets/{name}",
+    "tag": "Ollama - Models",
+    "summary": "Read a model preset",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/models/presets/{name}",
+    "tag": "Ollama - Models",
+    "summary": "Delete a model preset",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/delete",
+    "tag": "Ollama - Models",
+    "summary": "Delete a model",
+    "example": {
+      "name": "Qwen/Qwen3-8B-GGUF"
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/unload",
+    "tag": "Ollama - Models",
+    "summary": "Unload a model from memory",
+    "example": {
+      "name": "Qwen/Qwen3-8B-GGUF"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/tags",
+    "tag": "Ollama - Models",
+    "summary": "List local models",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/ps",
+    "tag": "Ollama - Models",
+    "summary": "List running (loaded) models",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/api/version",
+    "tag": "Ollama - Models",
+    "summary": "Server version",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/api/show",
+    "tag": "Ollama - Models",
+    "summary": "Show model information",
+    "example": {
+      "name": "Qwen/Qwen3-8B-GGUF"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/auth/context",
+    "tag": "Administration",
+    "summary": "Read dashboard authorization context",
+    "example": null
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/tenants/{tenantGuid}",
+    "tag": "Administration",
+    "summary": "Update a tenant",
+    "example": {
+      "Name": "Example",
+      "Active": true
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}",
+    "tag": "Administration",
+    "summary": "Update a user",
+    "example": {
+      "Email": "user@example.com",
+      "FirstName": "Example",
+      "LastName": "User",
+      "Active": true
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}/password",
+    "tag": "Administration",
+    "summary": "Reset a user's password and revoke sessions",
+    "example": {
+      "Password": "replace-with-a-new-password"
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}",
+    "tag": "Administration",
+    "summary": "Update credential metadata, expiration, or active status",
+    "example": {
+      "Name": "Example",
+      "Active": true
+    }
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}",
+    "tag": "Administration",
+    "summary": "Update a custom role",
+    "example": {
+      "Name": "Example",
+      "Active": true
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions",
+    "tag": "Administration",
+    "summary": "List a role's mapped permissions",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions/{permissionGuid}",
+    "tag": "Administration",
+    "summary": "Remove a custom role's permission mapping",
+    "example": null
+  },
+  {
+    "method": "PUT",
+    "path": "/v1.0/tenants/{tenantGuid}/permissions/{permissionGuid}",
+    "tag": "Administration",
+    "summary": "Update a custom permission",
+    "example": {
+      "Name": "Read models",
+      "ResourceTypes": [
+        "Model"
+      ],
+      "OperationTypes": [
+        "Read"
+      ],
+      "Effect": "Permit",
+      "Active": true
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/permissions/{permissionGuid}",
+    "tag": "Administration",
+    "summary": "Delete a custom permission",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments",
+    "tag": "Administration",
+    "summary": "List a credential's scope assignments",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments",
+    "tag": "Administration",
+    "summary": "Grant a role-scoped credential assignment",
+    "example": {
+      "RoleGuid": "role_id",
+      "ResourceScope": "Tenant",
+      "InheritsToChildren": true
+    }
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}",
+    "tag": "Administration",
+    "summary": "Revoke a credential scope assignment",
+    "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/sessions",
+    "tag": "Administration",
+    "summary": "List tenant sessions without token material",
+    "example": null
+  },
+  {
+    "method": "DELETE",
+    "path": "/v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}",
+    "tag": "Administration",
+    "summary": "Revoke a tenant session",
+    "example": null
+  }
+]

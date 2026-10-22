@@ -180,12 +180,12 @@ namespace SharpAI.Security
             bool inheritsToChildren)
         {
             UserRole role = ResolveRole(roleGuid, roleName, tenantGuid);
-            if (role == null || !role.Active) return;
+            if (role == null || !role.Active || (role.TenantGuid != null && role.TenantGuid != tenantGuid)) return;
 
             List<Permission> permissions = _Database.Permissions.GetForRole(role.Guid);
             foreach (Permission permission in permissions)
             {
-                if (!permission.Active) continue;
+                if (!permission.Active || (permission.TenantGuid != null && permission.TenantGuid != tenantGuid)) continue;
 
                 foreach (string resourceType in permission.ResourceTypes)
                 {

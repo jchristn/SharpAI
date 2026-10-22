@@ -32,7 +32,7 @@
     "Password": null
   },
   "HuggingFace": {
-    "ApiKey": "My HuggingFace API Key"
+    "ApiKey": null
   },
   "Rest": {
     "Hostname": "*",

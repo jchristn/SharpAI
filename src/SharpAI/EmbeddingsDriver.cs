@@ -1,4 +1,4 @@
-﻿namespace SharpAI
+namespace SharpAI
 {
     using SharpAI.Engines;
     using SharpAI.Serialization;
@@ -45,7 +45,7 @@
             _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _Models = models ?? throw new ArgumentNullException(nameof(models));
 
-            _Logging.Debug(_Header + "initialized");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "initialized");
         }
 
         #endregion

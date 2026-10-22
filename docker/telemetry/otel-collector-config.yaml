@@ -1,7 +1,6 @@
 # OpenTelemetry Collector configuration for SharpAI.
 #
-# Metrics + traces arrive over OTLP from the SharpAI server (via Radiant, once W17 is
-# wired). Logs are tailed from the server's rolling log files under /app/logs and shipped
+# Metrics + traces arrive over OTLP from the SharpAI server via Radiant. Logs are tailed from the server's rolling log files under /app/logs and shipped
 # to Loki over OTLP-HTTP. Metrics are re-exposed for Prometheus to scrape on :8889.
 
 receivers:

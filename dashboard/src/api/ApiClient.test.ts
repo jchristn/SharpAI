@@ -74,4 +74,11 @@ describe('ApiClient', () => {
     await expect(client.getSettings()).rejects.toBeInstanceOf(ApiError);
     await expect(client.getSettings()).rejects.toMatchObject({ status: 403, message: 'nope' });
   });
+  it('rejects a successful HTML fallback instead of treating it as API data', async () => {
+    mockFetch(200, '<!doctype html><html>Dashboard</html>');
+    const client = new ApiClient('http://localhost:3000');
+    await expect(client.getSettings()).rejects.toMatchObject({ status: 502, body: { code: 'invalid_api_response' } });
+    await expect(client.health()).rejects.toBeInstanceOf(ApiError);
+  });
+
 });

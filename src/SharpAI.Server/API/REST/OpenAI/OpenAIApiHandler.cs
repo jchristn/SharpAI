@@ -1,26 +1,27 @@
-﻿namespace SharpAI.Server.API.REST.OpenAI
+namespace SharpAI.Server.API.REST.OpenAI
 {
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using SharpAI.Engines;
     using SharpAI.Grammars;
     using SharpAI.Hosting;
-    using SharpAI.Telemetry;
     using SharpAI.Models;
     using SharpAI.Models.OpenAI;
+    using SharpAI.Operations;
     using SharpAI.Prompts;
     using SharpAI.Serialization;
     using SharpAI.Server.Classes.Settings;
     using SharpAI.Services;
+    using SharpAI.Telemetry;
     using SharpAI.Tools;
     using SyslogLogging;
     using WatsonWebserver.Core;
-
     using Constants = SharpAI.Constants;
 
     internal class OpenAIApiHandler
@@ -63,7 +64,7 @@
             _HuggingFaceClient = huggingFaceClient ?? throw new ArgumentNullException(nameof(huggingFaceClient));
             _Presets = presets;
 
-            _Logging.Debug(_Header + "initialized");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "initialized");
         }
 
         #endregion
@@ -95,7 +96,7 @@
 
             if (ger.Input == null)
             {
-                _Logging.Warn(_Header + "no input supplied in embeddings request");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "no input supplied in embeddings request");
 
                 req.Http.Response.StatusCode = 400;
 
@@ -123,7 +124,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(ger.Model);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + ger.Model + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + ger.Model + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -139,11 +140,11 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID));
 
             if (!engine.SupportsEmbeddings)
             {
-                _Logging.Warn(_Header + "model '" + ger.Model + "' does not support embeddings");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model '" + ger.Model + "' does not support embeddings");
 
                 req.Http.Response.StatusCode = 403;
 
@@ -165,7 +166,7 @@
 
                 if (String.IsNullOrEmpty(input))
                 {
-                    _Logging.Warn(_Header + "no input supplied in embeddings request");
+                    SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "no input supplied in embeddings request");
 
                     req.Http.Response.StatusCode = 400;
 
@@ -198,7 +199,7 @@
 
                 if (inputs == null || inputs.Length < 1)
                 {
-                    _Logging.Warn(_Header + "null or empty inputs supplied in embeddings request");
+                    SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "null or empty inputs supplied in embeddings request");
 
                     req.Http.Response.StatusCode = 400;
 
@@ -218,7 +219,7 @@
                 {
                     if (String.IsNullOrEmpty(inputs[i]))
                     {
-                        _Logging.Warn(_Header + "inputs contains null or invalid entries");
+                        SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "inputs contains null or invalid entries");
 
                         req.Http.Response.StatusCode = 400;
 
@@ -284,7 +285,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(effectiveModel);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + effectiveModel + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + effectiveModel + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -300,11 +301,15 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+            string enginePath = SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID);
+            bool wasLoaded = _ModelEngineService.GetLoadedModelPaths().Contains(Path.GetFullPath(enginePath));
+            LlamaSharpEngine engine = await _ModelEngineService.GetByModelFileAsync(enginePath, token).ConfigureAwait(false);
+            InferenceStatistics statistics = new InferenceStatistics(wasLoaded ? 0 : engine.LoadDurationNanoseconds);
+            SharpAI.Server.Classes.Runtime.RequestDiagnostics.Attach(req.Http, statistics);
 
             if (!engine.SupportsGeneration)
             {
-                _Logging.Warn(_Header + "model '" + gcr.Model + "' does not support completions");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model '" + gcr.Model + "' does not support completions");
 
                 req.Http.Response.StatusCode = 403;
 
@@ -320,234 +325,61 @@
                 };
             }
 
-            OpenAIGenerateCompletionResult ret = new OpenAIGenerateCompletionResult
+            string[] prompts = gcr.GetPrompts();
+            if (prompts == null || prompts.Length == 0 || prompts.Any(String.IsNullOrEmpty))
             {
-                Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                Object = "text_completion",
-                Created = ToUnixTimestamp(DateTime.UtcNow),
-                Model = gcr.Model,
-                Usage = null,
-                Choices = new List<OpenAICompletionChoice>()
+                req.Http.Response.StatusCode = 400;
+                return new OpenAIError { Error = new OpenAIErrorDetails { Message = "A non-empty prompt or prompt array is required.", Type = "invalid_request_error", Parameters = "prompt" } };
+            }
+            foreach (string renderedPrompt in prompts) engine.ValidateContext(renderedPrompt, gcr.MaxTokens ?? 128);
+            OpenAIGenerateCompletionResult result = new OpenAIGenerateCompletionResult
+            {
+                Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader), Object = "text_completion",
+                Created = ToUnixTimestamp(DateTime.UtcNow), Model = gcr.Model, Choices = new List<OpenAICompletionChoice>()
             };
-
-            if (gcr.Stream == null || !gcr.Stream.Value)
+            if (gcr.Stream != true)
             {
-                #region Non-Streaming
-
-                if (gcr.IsSinglePrompt())
+                for (int i = 0; i < prompts.Length; i++)
                 {
-                    #region Single-Prompt
-
-                    string response = await engine.GenerateTextAsync(
-                        gcr.GetPrompt(),
-                        gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
-                        gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                        NormalizeStop(gcr.Stop),
-                        token).ConfigureAwait(false);
-
-                    ret.Choices.Add(new OpenAICompletionChoice
-                    {
-                        Text = response,
-                        Index = 0
-                    });
-
-                    return ret;
-
-                    #endregion
+                    int before = statistics.CompletionTokens;
+                    string output = await engine.GenerateTextAsync(prompts[i], gcr.MaxTokens ?? 128, gcr.Temperature ?? 0.6f,
+                        NormalizeStop(gcr.Stop), null, token, statistics, new SharpAI.Models.Ollama.OllamaCompletionOptions { TopP = gcr.TopP, PresencePenalty = gcr.PresencePenalty, FrequencyPenalty = gcr.FrequencyPenalty, Seed = gcr.Seed }).ConfigureAwait(false);
+                    result.Choices.Add(new OpenAICompletionChoice { Text = output, Index = i,
+                        FinishReason = statistics.CompletionTokens - before >= (gcr.MaxTokens ?? 128) ? "length" : "stop" });
                 }
-                else
-                {
-                    #region Multiple-Prompts
-
-                    string[] prompts = gcr.GetPrompts();
-
-                    for (int i = 0; i < prompts.Length; i++)
-                    {
-                        string response = await engine.GenerateTextAsync(
-                            prompts[i],
-                            gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
-                            gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                            NormalizeStop(gcr.Stop),
-                            token).ConfigureAwait(false);
-
-                        ret.Choices.Add(new OpenAICompletionChoice
-                        {
-                            Text = response,
-                            Index = i
-                        });
-                    }
-
-                    return ret;
-
-                    #endregion
-                }
-
-                #endregion
+                result.Usage = statistics.ToUsage();
+                return result;
             }
-            else
+            req.Http.Response.ContentType = Constants.EventStreamContentType;
+            req.Http.Response.ServerSentEvents = true;
+            for (int i = 0; i < prompts.Length; i++)
             {
-                #region Streaming
-
-                string nextToken = null;
-                req.Http.Response.ContentType = Constants.EventStreamContentType;
-                req.Http.Response.ServerSentEvents = true;
-
-                if (gcr.IsSinglePrompt())
+                int before = statistics.CompletionTokens;
+                await foreach (string text in engine.GenerateTextStreamAsync(prompts[i], gcr.MaxTokens ?? 128, gcr.Temperature ?? 0.6f,
+                    NormalizeStop(gcr.Stop), null, token, statistics, new SharpAI.Models.Ollama.OllamaCompletionOptions { TopP = gcr.TopP, PresencePenalty = gcr.PresencePenalty, FrequencyPenalty = gcr.FrequencyPenalty, Seed = gcr.Seed }).ConfigureAwait(false))
                 {
-                    #region Single-Prompt
-
-                    await foreach (string curr in engine.GenerateTextStreamAsync(
-                        gcr.GetPrompt(),
-                        gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
-                        gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                        NormalizeStop(gcr.Stop),
-                        token).ConfigureAwait(false))
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = _Serializer.SerializeJson(new
                     {
-                        if (nextToken != null)
-                        {
-                            OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
-                            {
-                                Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                                Object = "text_completion",
-                                Created = ToUnixTimestamp(DateTime.UtcNow),
-                                Model = gcr.Model,
-                                Usage = null,
-                                Choices = new List<OpenAICompletionChoice>
-                                {
-                                    new OpenAICompletionChoice
-                                    {
-                                        Text = nextToken,
-                                        Index = 0
-                                    }
-                                }
-                            };
-
-                            string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                            await req.Http.Response.SendEvent(new ServerSentEvent
-                            {
-                                Data = currEventJson
-                            }, false, token).ConfigureAwait(false);
-                        }
-
-                        nextToken = curr;
-                    }
-
-                    if (nextToken != null)
-                    {
-                        OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
-                        {
-                            Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                            Object = "text_completion",
-                            Created = ToUnixTimestamp(DateTime.UtcNow),
-                            Model = gcr.Model,
-                            Usage = null,
-                            Choices = new List<OpenAICompletionChoice>
-                                {
-                                    new OpenAICompletionChoice
-                                    {
-                                        Text = nextToken,
-                                        Index = 0
-                                    }
-                                }
-                        };
-
-                        string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                        await req.Http.Response.SendEvent(new ServerSentEvent
-                        {
-                            Data = currEventJson
-                        }, false, token).ConfigureAwait(false);
-                    }
-
-                    await req.Http.Response.SendEvent(new ServerSentEvent
-                    {
-                        Data = "[DONE]"
-                    }, true, token).ConfigureAwait(false);
-                    return null;
-
-                    #endregion
+                        id = result.Id, @object = result.Object, created = result.Created, model = result.Model,
+                        choices = new object[] { new { text = text, index = i, finish_reason = (string)null } }, usage = (object)null
+                    }, false) }, false, token).ConfigureAwait(false);
                 }
-                else
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = _Serializer.SerializeJson(new
                 {
-                    #region Multiple-Prompts
-
-                    string[] prompts = gcr.GetPrompts();
-
-                    for (int i = 0; i < prompts.Length; i++)
-                    {
-                        await foreach (string curr in engine.GenerateTextStreamAsync(
-                            prompts[i],
-                            gcr.MaxTokens != null ? gcr.MaxTokens.Value : 128,
-                            gcr.Temperature != null ? gcr.Temperature.Value : 0.6f,
-                            NormalizeStop(gcr.Stop),
-                            token).ConfigureAwait(false))
-                        {
-                            if (nextToken != null)
-                            {
-                                OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
-                                {
-                                    Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                                    Object = "text_completion",
-                                    Created = ToUnixTimestamp(DateTime.UtcNow),
-                                    Model = gcr.Model,
-                                    Usage = null,
-                                    Choices = new List<OpenAICompletionChoice>
-                                    {
-                                        new OpenAICompletionChoice
-                                        {
-                                            Text = nextToken,
-                                            Index = i
-                                        }
-                                    }
-                                };
-
-                                string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                                await req.Http.Response.SendEvent(new ServerSentEvent
-                                {
-                                    Data = currEventJson
-                                }, false, token).ConfigureAwait(false);
-                            }
-
-                            nextToken = curr;
-                        }
-                    }
-
-                    if (nextToken != null)
-                    {
-                        OpenAIGenerateCompletionResult currEvent = new OpenAIGenerateCompletionResult
-                        {
-                            Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
-                            Object = "text_completion",
-                            Created = ToUnixTimestamp(DateTime.UtcNow),
-                            Model = gcr.Model,
-                            Usage = null,
-                            Choices = new List<OpenAICompletionChoice>
-                                {
-                                    new OpenAICompletionChoice
-                                    {
-                                        Text = nextToken,
-                                        Index = 0
-                                    }
-                                }
-                        };
-
-                        string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                        await req.Http.Response.SendEvent(new ServerSentEvent
-                        {
-                            Data = currEventJson
-                        }, false, token).ConfigureAwait(false);
-                    }
-
-                    await req.Http.Response.SendEvent(new ServerSentEvent
-                    {
-                        Data = "[DONE]"
-                    }, true, token).ConfigureAwait(false);
-                    return null;
-
-                    #endregion
-                }
-
-                #endregion
+                    id = result.Id, @object = result.Object, created = result.Created, model = result.Model,
+                    choices = new object[] { new { text = "", index = i, finish_reason = statistics.CompletionTokens - before >= (gcr.MaxTokens ?? 128) ? "length" : "stop" } }, usage = (object)null
+                }, false) }, false, token).ConfigureAwait(false);
             }
+            if (gcr.StreamOptions?.IncludeUsage == true)
+            {
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = _Serializer.SerializeJson(new
+                {
+                    id = result.Id, @object = result.Object, created = result.Created, model = result.Model,
+                    choices = Array.Empty<object>(), usage = statistics.ToUsage()
+                }, false) }, false, token).ConfigureAwait(false);
+            }
+            await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = "[DONE]" }, true, token).ConfigureAwait(false);
+            return null;
         }
 
         internal async Task<object> GenerateChatCompletion(
@@ -583,7 +415,7 @@
             ModelFile modelFile = _ModelFileService.GetByName(effectiveModel);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + effectiveModel + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + effectiveModel + " not found");
 
                 req.Http.Response.StatusCode = 404;
 
@@ -599,11 +431,15 @@
                 };
             }
 
-            LlamaSharpEngine engine = _ModelEngineService.GetByModelFile(Path.Combine(_Settings.Storage.ModelsDirectory, modelFile.GUID.ToString()));
+            string enginePath = SharpAI.Operations.GgufShards.Resolve(_Settings.Storage.ModelsDirectory, modelFile.GUID);
+            bool wasLoaded = _ModelEngineService.GetLoadedModelPaths().Contains(Path.GetFullPath(enginePath));
+            LlamaSharpEngine engine = await _ModelEngineService.GetByModelFileAsync(enginePath, token).ConfigureAwait(false);
+            InferenceStatistics statistics = new InferenceStatistics(wasLoaded ? 0 : engine.LoadDurationNanoseconds);
+            SharpAI.Server.Classes.Runtime.RequestDiagnostics.Attach(req.Http, statistics);
 
             if (!engine.SupportsGeneration)
             {
-                _Logging.Warn(_Header + "model '" + gcr.Model + "' does not support completions");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model '" + gcr.Model + "' does not support completions");
 
                 req.Http.Response.StatusCode = 403;
 
@@ -652,6 +488,8 @@
             ChatTemplateResult templateResult = ChatTemplateResolver.Resolve(engine, modelFile.Family, messages);
             string prompt = templateResult.Prompt;
 
+            engine.ValidateContext(prompt, effectiveMaxTokens);
+
             OpenAIGenerateChatCompletionResult ret = new OpenAIGenerateChatCompletionResult
             {
                 Id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
@@ -672,7 +510,7 @@
                     effectiveTemperature,
                     effectiveStop,
                     jsonGrammar,
-                    token).ConfigureAwait(false);
+                    token, statistics, new SharpAI.Models.Ollama.OllamaCompletionOptions { TopP = gcr.TopP, PresencePenalty = gcr.PresencePenalty, FrequencyPenalty = gcr.FrequencyPenalty, Seed = gcr.Seed }).ConfigureAwait(false);
 
                 List<ParsedToolCall> parsedCalls = toolsRequested ? ToolCallParser.Parse(response) : null;
                 if (parsedCalls != null && parsedCalls.Count > 0)
@@ -699,10 +537,11 @@
                             Role = "assistant",
                             Content = response
                         },
-                        FinishReason = "stop"
+                        FinishReason = statistics.CompletionTokens >= effectiveMaxTokens ? "length" : "stop"
                     });
                 }
 
+                ret.Usage = statistics.ToUsage();
                 return ret;
 
                 #endregion
@@ -727,7 +566,7 @@
                         effectiveMaxTokens,
                         effectiveTemperature,
                         effectiveStop,
-                        token).ConfigureAwait(false))
+                        null, token, statistics, new SharpAI.Models.Ollama.OllamaCompletionOptions { TopP = gcr.TopP, PresencePenalty = gcr.PresencePenalty, FrequencyPenalty = gcr.FrequencyPenalty, Seed = gcr.Seed }).ConfigureAwait(false))
                     {
                         buffered.Append(curr);
                     }
@@ -744,7 +583,7 @@
                         {
                             Index = 0,
                             Delta = new OpenAIChatMessage { Role = "assistant", Content = buffered.ToString().Trim() },
-                            FinishReason = "stop"
+                            FinishReason = statistics.CompletionTokens >= effectiveMaxTokens ? "length" : "stop"
                         };
 
                     OpenAIGenerateChatCompletionResult toolEvent = new OpenAIGenerateChatCompletionResult
@@ -757,12 +596,24 @@
                         Choices = new List<OpenAIChatChoice> { toolChoice }
                     };
 
-                    await req.Http.Response.SendEvent(new ServerSentEvent
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent
                     {
                         Data = _Serializer.SerializeJson(toolEvent, false)
                     }, false, token).ConfigureAwait(false);
 
-                    await req.Http.Response.SendEvent(new ServerSentEvent { Data = "[DONE]" }, true, token).ConfigureAwait(false);
+                    if (gcr.StreamOptions?.IncludeUsage == true)
+                {
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = _Serializer.SerializeJson(new
+                    {
+                        id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
+                        @object = "chat.completion.chunk",
+                        created = ToUnixTimestamp(DateTime.UtcNow), model = gcr.Model,
+                        choices = Array.Empty<object>(), usage = statistics.ToUsage()
+                    }, false) }, false, token).ConfigureAwait(false);
+                }
+
+
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = "[DONE]" }, true, token).ConfigureAwait(false);
                     return null;
                 }
 
@@ -772,7 +623,7 @@
                     effectiveTemperature,
                     effectiveStop,
                     jsonGrammar,
-                    token).ConfigureAwait(false))
+                    token, statistics, new SharpAI.Models.Ollama.OllamaCompletionOptions { TopP = gcr.TopP, PresencePenalty = gcr.PresencePenalty, FrequencyPenalty = gcr.FrequencyPenalty, Seed = gcr.Seed }).ConfigureAwait(false))
                 {
                     if (nextToken != null)
                     {
@@ -798,7 +649,7 @@
                         };
 
                         string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                        await req.Http.Response.SendEvent(new ServerSentEvent
+                        await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent
                         {
                             Data = currEventJson
                         }, false, token).ConfigureAwait(false);
@@ -831,13 +682,32 @@
                     };
 
                     string currEventJson = _Serializer.SerializeJson(currEvent, false);
-                    await req.Http.Response.SendEvent(new ServerSentEvent
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent
                     {
                         Data = currEventJson
                     }, false, token).ConfigureAwait(false);
                 }
 
-                await req.Http.Response.SendEvent(new ServerSentEvent
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = _Serializer.SerializeJson(new
+                {
+                    id = req.Http.Response.Headers.Get(Constants.RequestIdHeader), @object = "chat.completion.chunk",
+                    created = ToUnixTimestamp(DateTime.UtcNow), model = gcr.Model,
+                    choices = new object[] { new { index = 0, delta = new { }, finish_reason = statistics.CompletionTokens >= effectiveMaxTokens ? "length" : "stop" } }, usage = (object)null
+                }, false) }, false, token).ConfigureAwait(false);
+
+                if (gcr.StreamOptions?.IncludeUsage == true)
+                {
+                    await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent { Data = _Serializer.SerializeJson(new
+                    {
+                        id = req.Http.Response.Headers.Get(Constants.RequestIdHeader),
+                        @object = "chat.completion.chunk",
+                        created = ToUnixTimestamp(DateTime.UtcNow), model = gcr.Model,
+                        choices = Array.Empty<object>(), usage = statistics.ToUsage()
+                    }, false) }, false, token).ConfigureAwait(false);
+                }
+
+
+                await SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(req, new ServerSentEvent
                 {
                     Data = "[DONE]"
                 }, true, token).ConfigureAwait(false);

@@ -100,10 +100,24 @@
             Provides information about the native backend that was selected during initialization.
             </summary>
         </member>
+        <member name="P:SharpAI.Classes.Runtime.NativeBackendInfo.LlamaSharpVersion">
+            <summary>The pinned LlamaSharp package version, recorded by the build. The upstream assembly version is not its package version.</summary>
+        </member>
         <member name="P:SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend">
             <summary>
             Gets or sets the backend that was selected during initialization.
             </summary>
+        </member>
+        <member name="T:SharpAI.Classes.Runtime.NativeLibraryLoader">
+            <summary>Configures LLamaSharp native loading consistently on .NET 8 and .NET 10.</summary>
+        </member>
+        <member name="M:SharpAI.Classes.Runtime.NativeLibraryLoader.Configure(System.String)">
+            <summary>Select an explicit llama library before the first native call. No native library is loaded here.</summary>
+            <remarks>Concurrent configuration is serialized on .NET 8. Configure once during startup before other threads make native calls.</remarks>
+            <param name="libraryPath">Non-null, nonempty path to the selected backend library, resolved against the current directory.</param>
+            <exception cref="T:System.ArgumentException">The path is empty or whitespace.</exception>
+            <exception cref="T:System.ArgumentNullException">The path is null.</exception>
+            <exception cref="T:System.InvalidOperationException">The native backend has already loaded.</exception>
         </member>
         <member name="T:SharpAI.Classes.Runtime.SharpAIEnvironment">
             <summary>
@@ -693,6 +707,11 @@
             Data-access methods for authentication sessions. Handwritten, provider-aware SQL.
             </summary>
         </member>
+        <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Enumerate(System.String,SharpAI.Models.EnumerationQuery)">
+            <summary>Enumerate sessions within a tenant.</summary>
+            <param name="tenantGuid">Tenant identifier.</param><param name="query">Paging query.</param>
+            <returns>Session page, without bearer token material.</returns>
+        </member>
         <member name="M:SharpAI.Database.Interfaces.IAuthSessionMethods.Create(SharpAI.Security.AuthSession)">
             <summary>Create a session.</summary>
             <param name="session">Session.</param>
@@ -906,6 +925,10 @@
             <summary>Get the active permissions mapped to a role.</summary>
             <param name="roleGuid">Role identifier.</param>
             <returns>Permissions; never null.</returns>
+        </member>
+        <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.Update(SharpAI.Security.Permission)">
+            <summary>Update a custom permission.</summary>
+            <param name="permission">Permission.</param><returns>Updated permission.</returns>
         </member>
         <member name="M:SharpAI.Database.Interfaces.IPermissionMethods.Delete(System.String)">
             <summary>Delete a permission by identifier.</summary>
@@ -1457,6 +1480,12 @@
             Provides text generation, embeddings, and chat completion using the LlamaSharp library.
             </summary>
         </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.LoadDurationNanoseconds">
+            <summary>Cold model initialization duration in nanoseconds. Zero before load completes.</summary>
+        </member>
+        <member name="P:SharpAI.Engines.LlamaSharpEngine.ActiveGenerations">
+            <summary>Number of active generation calls currently holding a slot.</summary>
+        </member>
         <member name="P:SharpAI.Engines.LlamaSharpEngine.IsDisposed">
             <summary>
             Boolean indicating if the engine is disposed.
@@ -1587,6 +1616,13 @@
             <inheritdoc />
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>Generate text with optional grammar using the original binary-compatible overload.</summary>
+            <param name="prompt">Rendered prompt.</param><param name="maxTokens">Output budget.</param>
+            <param name="temperature">Sampling temperature.</param><param name="stopSequences">Optional stops.</param>
+            <param name="gbnfGrammar">Optional grammar.</param><param name="token">Cancellation token.</param>
+            <returns>Generated text or stream.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken,SharpAI.Operations.InferenceStatistics,SharpAI.Models.Ollama.OllamaCompletionOptions)">
             <summary>
             Generate text, optionally constrained by a GBNF grammar (JSON mode / structured outputs). When
             <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the grammar permits.
@@ -1597,12 +1633,21 @@
             <param name="stopSequences">Anti-prompt stop sequences.</param>
             <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
             <param name="token">Cancellation token.</param>
+            <param name="statistics">Optional caller-owned statistics accumulator; do not share concurrently.</param>
+            <param name="sampling">Optional request-scoped sampling controls.</param>
             <returns>The generated text.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>Generate text with optional grammar using the original binary-compatible overload.</summary>
+            <param name="prompt">Rendered prompt.</param><param name="maxTokens">Output budget.</param>
+            <param name="temperature">Sampling temperature.</param><param name="stopSequences">Optional stops.</param>
+            <param name="gbnfGrammar">Optional grammar.</param><param name="token">Cancellation token.</param>
+            <returns>Generated text or stream.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateTextStreamAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken,SharpAI.Operations.InferenceStatistics,SharpAI.Models.Ollama.OllamaCompletionOptions)">
             <summary>
             Stream text, optionally constrained by a GBNF grammar (JSON mode / structured outputs). When
             <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the grammar permits.
@@ -1613,12 +1658,21 @@
             <param name="stopSequences">Anti-prompt stop sequences.</param>
             <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
             <param name="token">Cancellation token.</param>
+            <param name="statistics">Optional caller-owned statistics accumulator; do not share concurrently.</param>
+            <param name="sampling">Optional request-scoped sampling controls.</param>
             <returns>An async stream of generated token strings.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>Generate text with optional grammar using the original binary-compatible overload.</summary>
+            <param name="prompt">Rendered prompt.</param><param name="maxTokens">Output budget.</param>
+            <param name="temperature">Sampling temperature.</param><param name="stopSequences">Optional stops.</param>
+            <param name="gbnfGrammar">Optional grammar.</param><param name="token">Cancellation token.</param>
+            <returns>Generated text or stream.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken,SharpAI.Operations.InferenceStatistics,SharpAI.Models.Ollama.OllamaCompletionOptions)">
             <summary>
             Generate a chat completion, optionally constrained by a GBNF grammar (JSON mode / structured
             outputs). When <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the
@@ -1630,12 +1684,21 @@
             <param name="stopSequences">Anti-prompt stop sequences.</param>
             <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
             <param name="token">Cancellation token.</param>
+            <param name="statistics">Optional caller-owned statistics accumulator; do not share concurrently.</param>
+            <param name="sampling">Optional request-scoped sampling controls.</param>
             <returns>The generated text.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken)">
+            <summary>Generate text with optional grammar using the original binary-compatible overload.</summary>
+            <param name="prompt">Rendered prompt.</param><param name="maxTokens">Output budget.</param>
+            <param name="temperature">Sampling temperature.</param><param name="stopSequences">Optional stops.</param>
+            <param name="gbnfGrammar">Optional grammar.</param><param name="token">Cancellation token.</param>
+            <returns>Generated text or stream.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GenerateChatCompletionStreamAsync(System.String,System.Int32,System.Single,System.String[],System.String,System.Threading.CancellationToken,SharpAI.Operations.InferenceStatistics,SharpAI.Models.Ollama.OllamaCompletionOptions)">
             <summary>
             Stream a chat completion, optionally constrained by a GBNF grammar (JSON mode / structured
             outputs). When <paramref name="gbnfGrammar"/> is non-null the model may only emit tokens the
@@ -1647,10 +1710,33 @@
             <param name="stopSequences">Anti-prompt stop sequences.</param>
             <param name="gbnfGrammar">GBNF grammar to constrain sampling, or null for unconstrained sampling.</param>
             <param name="token">Cancellation token.</param>
+            <param name="statistics">Optional caller-owned statistics accumulator; do not share concurrently.</param>
+            <param name="sampling">Optional request-scoped sampling controls.</param>
             <returns>An async stream of generated token strings.</returns>
         </member>
         <member name="M:SharpAI.Engines.LlamaSharpEngine.RenderEmbeddedChatPrompt(System.Collections.Generic.IReadOnlyList{SharpAI.Prompts.ChatMessage},System.Boolean)">
             <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.GetRuntimeSettings">
+            <summary>Snapshot of effective generation settings, rather than environment overrides.</summary>
+            <returns>Settings after initialization.</returns>
+        </member>
+        <member name="M:SharpAI.Engines.LlamaSharpEngine.ValidateContext(System.String,System.Int32)">
+            <summary>Validate the exact rendered prompt and reserve the requested output within effective context.</summary>
+            <param name="prompt">Rendered prompt.</param><param name="maxTokens">Requested output tokens.</param>
+        </member>
+        <member name="T:SharpAI.Exceptions.ContextLimitException">
+            <summary>A rendered prompt and requested generation cannot fit in the configured context.</summary>
+        </member>
+        <member name="M:SharpAI.Exceptions.ContextLimitException.#ctor(System.Int32,System.Int32,System.Int32)">
+            <summary>Create an overflow error with explicit token counts.</summary>
+            <param name="promptTokens">Rendered prompt tokens.</param><param name="outputTokens">Requested output tokens.</param>
+            <param name="limit">Effective context limit.</param>
+        </member>
+        <member name="M:SharpAI.Exceptions.ContextLimitException.Validate(System.Int32,System.Int32,System.Int32)">
+            <summary>Reject a request before streaming or native evaluation when its reservation exceeds context.</summary>
+            <param name="promptTokens">Rendered prompt tokens including special tokens.</param>
+            <param name="outputTokens">Requested generation budget.</param><param name="limit">Effective context.</param>
         </member>
         <member name="T:SharpAI.Exceptions.EngineBusyException">
             <summary>
@@ -1955,14 +2041,14 @@
         <member name="T:SharpAI.Helpers.GgufMetadataReader">
             <summary>
             Lightweight pure-C# reader for GGUF file metadata.
-            Reads only the header and key-value metadata section without loading tensor weights.
+            Reads the header, metadata, and tensor descriptors without loading tensor weights.
             Supports GGUF format versions 2 and 3.
             </summary>
         </member>
         <member name="M:SharpAI.Helpers.GgufMetadataReader.ReadMetadata(System.String)">
             <summary>
             Read all metadata key-value pairs from a GGUF file header.
-            Only the metadata section is read; tensor data is not touched.
+            Metadata and tensor descriptors are read; tensor weights are not touched. Derived parameter counts use the sharpai.tensor_parameter_count key.
             </summary>
             <param name="filePath">Path to the GGUF file.</param>
             <returns>Dictionary of metadata key-value pairs with string keys and object values.</returns>
@@ -2600,14 +2686,32 @@
             Client for interacting with HuggingFace model repositories to retrieve file information and download files.
             </summary>
         </member>
+        <member name="P:SharpAI.Hosting.HuggingFaceClient.ApiKey">
+            <summary>Repository token for newly created HTTP clients. Null or empty uses anonymous access.
+            String updates are atomic. In-flight downloads retain the credentials used when they started.</summary>
+        </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.#ctor(SyslogLogging.LoggingModule,System.String)">
+            <summary>Create a repository client using the public Hugging Face endpoint. Preserves the original constructor signature.</summary>
+            <param name="logging">Optional logger.</param><param name="apiKey">Optional token.</param>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.#ctor(SyslogLogging.LoggingModule,System.String,System.String)">
             <summary>
             Initializes a new instance of the HuggingFace client.
             </summary>
             <param name="logging">LoggingModule instance for logging operations.</param>
+            <param name="baseUrl">Repository API root; HTTPS except loopback test endpoints. Default https://huggingface.co.</param>
             <param name="apiKey">HuggingFace API token, or null/empty for anonymous access. A token is only
             required to download gated or private repositories; public repositories download without one
             (W5.T2). When supplied it is sent as a bearer token; when absent no Authorization header is set.</param>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.CreateDownloadClient">
+            <summary>Create a caller-owned client with repository authentication. Automatic redirects strip authorization across hosts.</summary>
+            <returns>HTTP client.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetRevisionDownloadUrl(System.String,System.String,System.String)">
+            <summary>Build a download URL pinned to a repository revision, never a file Git object ID.</summary>
+            <param name="name">Repository.</param><param name="revision">Commit.</param><param name="path">Repository-relative file.</param>
+            <returns>Immutable URL.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelMetadata(System.String,System.Threading.CancellationToken)">
             <summary>
@@ -2618,20 +2722,32 @@
             <returns>HuggingFaceModelMetadata.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String,System.Threading.CancellationToken)">
+            <summary>List repository files at main using the original binary-compatible signature.</summary>
+            <param name="modelName">Repository.</param><param name="token">Cancellation token.</param>
+            <returns>Repository files.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String,System.Threading.CancellationToken,System.String)">
             <summary>
             Retrieves all files from a HuggingFace model repository.
             </summary>
             <param name="modelName">The name of the model (e.g., "microsoft/DialoGPT-medium").</param>
             <param name="token">Cancellation token.</param>
+            <param name="revision">Repository commit or reference. Pulls use immutable commits; default main.</param>
             <returns>A list of HuggingFaceModelFile objects representing all files in the repository.</returns>
             <exception cref="T:System.Exception">Thrown when API request fails or JSON parsing fails.</exception>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesAsync(System.String,System.Threading.CancellationToken)">
+            <summary>List repository files at main using the original binary-compatible signature.</summary>
+            <param name="modelName">Repository.</param><param name="token">Cancellation token.</param>
+            <returns>Repository files.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesAsync(System.String,System.Threading.CancellationToken,System.String)">
             <summary>
             Retrieves only GGUF files from a HuggingFace model repository.
             </summary>
             <param name="modelName">The name of the model to search for GGUF files.</param>
             <param name="token">Cancellation token.</param>
+            <param name="revision">Repository commit or reference. Pulls use immutable commits; default main.</param>
             <returns>A list of GgufFileInfo objects containing only .gguf files with enhanced metadata.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetGgufFilesByQuantizationAsync(System.String,System.String,System.Threading.CancellationToken)">
@@ -2652,11 +2768,16 @@
             <returns>A sorted list of unique quantization type strings.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetDownloadUrls(System.String,SharpAI.Hosting.HuggingFaceModelFile)">
+            <summary>Build download URLs at main using the original binary-compatible signature.</summary>
+            <param name="modelName">Repository.</param><param name="file">Repository file.</param><returns>Download URLs.</returns>
+        </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetDownloadUrls(System.String,SharpAI.Hosting.HuggingFaceModelFile,System.String)">
             <summary>
             Gets the proper download URLs for a HuggingFace file, prioritizing the most reliable options.
             </summary>
             <param name="modelName">The model name (e.g., "microsoft/phi-2").</param>
             <param name="file">The HuggingFaceModelFile containing path and OID.</param>
+            <param name="revision">Repository revision; never the file Git object ID. Default main.</param>
             <returns>List of URLs to try in order of preference.</returns>
         </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.TestDownloadUrlAsync(System.String,System.Threading.CancellationToken)">
@@ -3209,6 +3330,30 @@
             Gets or sets example inputs for the widget.
             </summary>
         </member>
+        <member name="T:SharpAI.Logging.JsonLog">
+            <summary>Uniform JSON message bodies on console, file, syslog, and telemetry sinks.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Format(System.String,System.String)">
+            <summary>Format a message as one JSON document. Multiline exception text is escaped inside msg.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Emit(SyslogLogging.LoggingModule,SyslogLogging.Severity,System.String)">
+            <summary>Emit one logical JSON message, framing oversized records as reconstructable JSON chunks.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Debug(SyslogLogging.LoggingModule,System.String)">
+            <summary>Emit a debug event.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Info(SyslogLogging.LoggingModule,System.String)">
+            <summary>Emit an informational event.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Warn(SyslogLogging.LoggingModule,System.String)">
+            <summary>Emit a warning event.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Error(SyslogLogging.LoggingModule,System.String)">
+            <summary>Emit an error event.</summary>
+        </member>
+        <member name="M:SharpAI.Logging.JsonLog.Alert(SyslogLogging.LoggingModule,System.String)">
+            <summary>Emit an alert event.</summary>
+        </member>
         <member name="T:SharpAI.ModelDriver">
             <summary>
             Model driver.
@@ -3273,7 +3418,7 @@
         <member name="M:SharpAI.ModelDriver.ExistsByGuid(System.Guid)">
             <summary>
             Exists by GUID.
-            </summary>        
+            </summary>
             <param name="guid">GUID.</param>
             <returns>True if exists.</returns>
         </member>
@@ -6423,6 +6568,9 @@
             OpenAI generate chat completion request.
             </summary>
         </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.StreamOptions">
+            <summary>Optional streaming usage controls. Null preserves the default stream contract.</summary>
+        </member>
         <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateChatCompletionRequest.Model">
             <summary>
             ID of the model to use (required).
@@ -6610,6 +6758,9 @@
             OpenAI generate completion request.
             Note: The completions endpoint is legacy. Use chat completions for new applications.
             </summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.StreamOptions">
+            <summary>Optional streaming usage controls. Null preserves the default stream contract.</summary>
         </member>
         <member name="P:SharpAI.Models.OpenAI.OpenAIGenerateCompletionRequest.Model">
             <summary>
@@ -7117,6 +7268,12 @@
             OpenAI streaming completion result.
             </summary>
         </member>
+        <member name="T:SharpAI.Models.OpenAI.OpenAIStreamOptions">
+            <summary>Options for OpenAI-compatible streams.</summary>
+        </member>
+        <member name="P:SharpAI.Models.OpenAI.OpenAIStreamOptions.IncludeUsage">
+            <summary>Emit an aggregate usage chunk with empty choices immediately before DONE. Default false.</summary>
+        </member>
         <member name="T:SharpAI.Models.OpenAI.OpenAITool">
             <summary>
             OpenAI tool definition.
@@ -7415,6 +7572,54 @@
             UTC time the response was sent, if known.
             </summary>
         </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.ModelName">
+            <summary>Captured ModelName. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.IsStreaming">
+            <summary>Captured IsStreaming. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.InputTokens">
+            <summary>Captured InputTokens. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.OutputTokens">
+            <summary>Captured OutputTokens. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.CachedTokens">
+            <summary>Captured CachedTokens. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.TtftMs">
+            <summary>Captured TtftMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.StreamDurationMs">
+            <summary>Captured StreamDurationMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.QueueMs">
+            <summary>Captured QueueMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.LoadMs">
+            <summary>Captured LoadMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.PromptMs">
+            <summary>Captured PromptMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.GenerationMs">
+            <summary>Captured GenerationMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.EngineTotalMs">
+            <summary>Captured EngineTotalMs. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.Cancelled">
+            <summary>Captured Cancelled. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.PhaseTimingsApproximate">
+            <summary>Captured PhaseTimingsApproximate. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.TraceId">
+            <summary>Captured TraceId. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
+        <member name="P:SharpAI.Models.RequestHistoryEntry.SpanId">
+            <summary>Captured SpanId. Null means unavailable, including older records. Timing values use milliseconds.</summary>
+        </member>
         <member name="M:SharpAI.Models.RequestHistoryEntry.#ctor">
             <summary>
             Instantiate.
@@ -7497,7 +7702,7 @@
             <summary>
             Apply query-string overrides. Any non-empty query-string value replaces the corresponding value.
             </summary>
-            <param name="queryGetter">Function that retrieves a query-string value by key.</param>
+            <param name="queryGetter">Function that retrieves a raw, URL-encoded query-string value by key.</param>
         </member>
         <member name="T:SharpAI.Models.RequestHistorySummary">
             <summary>
@@ -7533,6 +7738,179 @@
             <summary>
             Instantiate.
             </summary>
+        </member>
+        <member name="T:SharpAI.Operations.BenchmarkMath">
+            <summary>Benchmark aggregation with sample-size guards. Thread-safe for immutable inputs.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.BenchmarkMath.Percentile(System.Collections.Generic.IEnumerable{System.Double},System.Int32)">
+            <summary>Nearest-rank percentile; returns null until enough observations exist for its tail probability.</summary>
+            <param name="values">Finite non-negative measurements.</param><param name="percentile">Percentile from 1 through 99.</param>
+            <returns>Percentile, or null when the sample is too small.</returns>
+        </member>
+        <member name="T:SharpAI.Operations.GgufShards">
+            <summary>Validates split GGUF sets and resolves legacy single-file or directory storage. Thread-safe.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.GgufShards.Select(System.Collections.Generic.IReadOnlyList{SharpAI.Hosting.HuggingFace.GgufFileInfo},SharpAI.Hosting.HuggingFace.GgufFileInfo)">
+            <summary>Select every shard of the chosen model, rejecting incomplete or ambiguous sets.</summary>
+            <param name="files">Repository files.</param><param name="selected">Selected model file.</param>
+            <returns>Ordered shard set, or a single unsplit file.</returns>
+        </member>
+        <member name="M:SharpAI.Operations.GgufShards.Resolve(System.String,System.Guid)">
+            <summary>Resolve the entry file for registered storage and verify shard completeness.</summary>
+            <param name="directory">Model storage root.</param><param name="id">Registry identifier.</param>
+            <returns>Legacy GUID path or first shard.</returns>
+        </member>
+        <member name="M:SharpAI.Operations.GgufShards.Files(System.String)">
+            <summary>List and validate the files belonging to an entry path.</summary>
+            <param name="path">Entry file.</param><returns>Ordered model files.</returns>
+        </member>
+        <member name="M:SharpAI.Operations.GgufShards.Delete(System.String,System.Guid)">
+            <summary>Delete all registered files after unloading the model.</summary>
+            <param name="directory">Storage root.</param><param name="id">Registry identifier.</param>
+        </member>
+        <member name="T:SharpAI.Operations.InferenceStatistics">
+            <summary>Per-call inference statistics, measured before output filtering. Caller-owned; do not share between concurrent calls.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.PromptTokens">
+            <summary>Measured PromptTokens. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.CompletionTokens">
+            <summary>Measured CompletionTokens. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.TotalDurationNanoseconds">
+            <summary>Measured TotalDurationNanoseconds. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.QueueDurationNanoseconds">
+            <summary>Measured QueueDurationNanoseconds. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.LoadDurationNanoseconds">
+            <summary>Measured LoadDurationNanoseconds. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.PromptDurationNanoseconds">
+            <summary>Measured PromptDurationNanoseconds. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.GenerationDurationNanoseconds">
+            <summary>Measured GenerationDurationNanoseconds. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.FirstTokenDurationNanoseconds">
+            <summary>Measured FirstTokenDurationNanoseconds. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.Cancelled">
+            <summary>Measured Cancelled. Durations use nanoseconds; unavailable timings are zero.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.InferenceStatistics.PhaseTimingsApproximate">
+            <summary>True when native counters are unavailable and measured backend-step wall times are used.
+            Prompt time then includes inference-context creation and first sampling; consumer/network waits are excluded.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.InferenceStatistics.#ctor(System.Int64)">
+            <summary>Create a request accumulator, optionally including cold model load time.</summary>
+            <param name="loadDurationNanoseconds">Load time, zero for an already resident model.</param>
+        </member>
+        <member name="M:SharpAI.Operations.InferenceStatistics.ToUsage">
+            <summary>Convert aggregate token counts to the compatible usage envelope.</summary>
+            <returns>Usage for all completed calls accumulated here.</returns>
+        </member>
+        <member name="T:SharpAI.Operations.ModelInspection">
+            <summary>Metadata-only preflight and conservative peak allocation estimate. Observed memory is not implied.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Architecture">
+            <summary>Architecture; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.WeightsBytes">
+            <summary>WeightsBytes; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.KvBytesPerSlot">
+            <summary>KvBytesPerSlot; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.BuffersBytes">
+            <summary>BuffersBytes; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.HeadroomBytes">
+            <summary>HeadroomBytes; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.TotalBytes">
+            <summary>TotalBytes; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.HostBytes">
+            <summary>HostBytes; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.DeviceBytes">
+            <summary>DeviceBytes; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.TrainedContext">
+            <summary>TrainedContext; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.EffectiveContext">
+            <summary>EffectiveContext; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Slots">
+            <summary>Slots; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Layers">
+            <summary>Layers; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Heads">
+            <summary>Heads; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.KvHeads">
+            <summary>KvHeads; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.ParameterCount">
+            <summary>ParameterCount; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.QuantizationType">
+            <summary>QuantizationType; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Supported">
+            <summary>Supported; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.EstimateAvailable">
+            <summary>EstimateAvailable; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Assumptions">
+            <summary>Assumptions; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelInspection.Files">
+            <summary>Files; zero or null means unavailable. Memory values use bytes.</summary>
+        </member>
+        <member name="T:SharpAI.Operations.ModelInspector">
+            <summary>Reads metadata without native model loading. Estimates standard attention caches only; unsupported layouts are explicit.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.ModelInspector.Inspect(System.String)">
+            <summary>Inspect a complete GGUF set using the runtime configuration currently in effect.</summary>
+            <param name="path">Entry file.</param><returns>Inspection and allocation assumptions.</returns>
+        </member>
+        <member name="T:SharpAI.Operations.ModelPullService">
+            <summary>Shared verified pull pipeline for the library and server. Serializes pulls per storage/name.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.ModelPullService.PullAsync(SharpAI.Hosting.HuggingFaceClient,SharpAI.Services.ModelFileService,System.String,System.String,System.Collections.Generic.Dictionary{System.String,System.Int32},System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
+            <summary>Pull an immutable, complete, verified model set and register it only after publication.
+            Missing upstream hashes fail closed. Cancellation preserves resumable staging files.</summary>
+            <param name="client">Repository client.</param><param name="registry">Registry facade.</param>
+            <param name="storage">Storage directory.</param><param name="name">Repository name.</param>
+            <param name="priority">Optional quantization preferences.</param><param name="progress">Optional progress.</param>
+            <param name="token">Cancellation token.</param><returns>Registered model.</returns>
+        </member>
+        <member name="T:SharpAI.Operations.VerifiedDownload">
+            <summary>Verified, resumable transfers. The caller must serialize writes to each destination.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.VerifiedDownload.DownloadAsync(System.Net.Http.HttpClient,System.String,System.String,System.String,System.Int64,System.Action{System.String,System.Int64,System.Decimal},System.Threading.CancellationToken)">
+            <summary>Download to a partial file, validate size and SHA-256, then atomically publish.
+            A missing or malformed expected hash is rejected. Interrupted transfers retain their partial;
+            corrupted transfers are discarded. A resumed transfer rehashes the existing prefix.</summary>
+            <param name="client">Caller-owned HTTP client.</param>
+            <param name="url">Immutable revision URL.</param>
+            <param name="destination">Final path.</param>
+            <param name="sha256">Expected upstream SHA-256, optionally prefixed with sha256:.</param>
+            <param name="size">Expected positive size.</param>
+            <param name="progress">Optional progress callback.</param>
+            <param name="token">Cancellation token.</param>
+            <returns>Verified uppercase digest.</returns>
+        </member>
+        <member name="M:SharpAI.Operations.VerifiedDownload.NormalizeHash(System.String)">
+            <summary>Validate and normalize an upstream digest. Missing digests fail closed.</summary>
+            <param name="value">Hexadecimal SHA-256.</param>
+            <returns>Uppercase digest.</returns>
         </member>
         <member name="T:SharpAI.Prompts.ChatFormatEnum">
             <summary>
@@ -9642,6 +10020,12 @@
             Size of the model file in bytes, used for memory-budget admission.
             </summary>
         </member>
+        <member name="P:SharpAI.Services.ModelEngineEntry.HostBytes">
+            <summary>Conservative host pool reservation.</summary>
+        </member>
+        <member name="P:SharpAI.Services.ModelEngineEntry.DeviceBytes">
+            <summary>Conservative device pool reservation; overlaps total reservation.</summary>
+        </member>
         <member name="P:SharpAI.Services.ModelEngineEntry.LoadedUtc">
             <summary>
             UTC time this entry was created.
@@ -9653,13 +10037,15 @@
             to select idle and least-recently-used models for eviction.
             </summary>
         </member>
-        <member name="M:SharpAI.Services.ModelEngineEntry.#ctor(System.Lazy{System.Threading.Tasks.Task{SharpAI.Engines.LlamaSharpEngine}},System.Int64,System.DateTime)">
+        <member name="M:SharpAI.Services.ModelEngineEntry.#ctor(System.Lazy{System.Threading.Tasks.Task{SharpAI.Engines.LlamaSharpEngine}},System.Int64,System.DateTime,System.Int64,System.Int64)">
             <summary>
             Instantiate.
             </summary>
             <param name="lazy">Deferred initialization task.</param>
             <param name="fileSizeBytes">Model file size in bytes.</param>
             <param name="nowUtc">Current UTC time.</param>
+            <param name="hostBytes">Host memory reservation.</param>
+            <param name="deviceBytes">Device memory reservation.</param>
         </member>
         <member name="T:SharpAI.Services.ModelEngineService">
             <summary>
@@ -9681,7 +10067,7 @@
         </member>
         <member name="P:SharpAI.Services.ModelEngineService.ModelMemoryBudgetBytes">
             <summary>
-            Total model-memory budget in bytes (sum of resident model file sizes). 0 means unlimited.
+            Total conservative peak model-memory budget in bytes (weights, KV, buffers, and headroom). 0 means unlimited.
             </summary>
         </member>
         <member name="M:SharpAI.Services.ModelEngineService.#ctor(SyslogLogging.LoggingModule)">
@@ -9860,6 +10246,22 @@
             Activity source used to create inference spans. Never null.
             </summary>
         </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.RecordLoad(System.String,System.Double,System.Int32)">
+            <summary>Record cold initialization and configured slot capacity.</summary>
+            <param name="model">Model label.</param><param name="seconds">Load duration.</param><param name="slots">Configured slots.</param>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.ChangeBusySlots(System.String,System.Int32)">
+            <summary>Update occupied slots after acquisition or release.</summary>
+            <param name="model">Model label.</param><param name="delta">Positive or negative change.</param>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.RemoveSlots(System.String)">
+            <summary>Remove an unloaded model from slot gauges.</summary>
+            <param name="model">Model label.</param>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.RecordDetails(System.String,SharpAI.Operations.InferenceStatistics)">
+            <summary>Record per-call phase timings. No prompt or response text is retained.</summary>
+            <param name="model">Model label.</param><param name="statistics">Measured request statistics.</param>
+        </member>
         <member name="M:SharpAI.Telemetry.SharpAITelemetry.SetResidentModelCountProvider(System.Func{System.Int32})">
             <summary>
             Register a callback that reports the number of models currently resident in memory. The most
@@ -9875,6 +10277,15 @@
             <param name="operation">Operation name, for example "chat" or "completion".</param>
             <param name="model">Model identifier, or null.</param>
             <returns>Started activity, or null when nothing is sampling.</returns>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.CompleteInference(System.Diagnostics.Activity,SharpAI.Operations.InferenceStatistics,System.Boolean)">
+            <summary>Attach measured engine phases and outcome to the sampled inference span.</summary>
+            <param name="activity">Optional sampled activity.</param><param name="statistics">Request measurements.</param><param name="success">Whether generation completed.</param>
+        </member>
+        <member name="M:SharpAI.Telemetry.SharpAITelemetry.FormatCompletion(System.Diagnostics.Activity,System.String,System.String,SharpAI.Operations.InferenceStatistics,System.Boolean)">
+            <summary>Structured completion record for the existing rolling log/Loki pipeline. Contains no request text.</summary>
+            <param name="activity">Optional trace context.</param><param name="operation">Operation type.</param><param name="model">Model label.</param><param name="statistics">Request measurements.</param><param name="success">Whether generation completed.</param>
+            <returns>Single-line JSON, including trace identifiers when sampled.</returns>
         </member>
         <member name="M:SharpAI.Telemetry.SharpAITelemetry.RecordInference(System.String,System.String,System.Double,System.Int64,System.Boolean)">
             <summary>

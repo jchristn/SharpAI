@@ -7,7 +7,6 @@ namespace Test.Server
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-
     using Touchstone.Core;
 
     /// <summary>
@@ -38,6 +37,8 @@ namespace Test.Server
                     {
                         HttpResponseMessage r = await Send(client, HttpMethod.Get, root + "/v1.0/tenants", null, null, ct);
                         Assert.Status(r, 401);
+                        foreach (string path in new[] { "/api/diagnostics/runtime", "/api/diagnostics/memory" })
+                            Assert.Status(await Send(client, HttpMethod.Get, root + path, null, null, ct), 401);
                     }),
 
                 new TestCaseDescriptor("ServerAuth", "Anonymous_Open", "Health and OpenAPI stay open with auth on",
@@ -55,6 +56,8 @@ namespace Test.Server
                         HttpResponseMessage r = await Send(client, HttpMethod.Get, root + "/v1.0/tenants",
                             new Dictionary<string, string> { { "x-api-key", AdminKey } }, null, ct);
                         Assert.Status(r, 200);
+                        foreach (string path in new[] { "/api/diagnostics/runtime", "/api/diagnostics/memory" })
+                            Assert.Status(await Send(client, HttpMethod.Get, root + path, new Dictionary<string, string> { { "x-api-key", AdminKey } }, null, ct), 200);
                         Assert.Contains(await r.Content.ReadAsStringAsync(ct), "default");
                     }),
 
@@ -97,6 +100,8 @@ namespace Test.Server
                         // The unprivileged user is authenticated but not authorized for a platform-admin route.
                         HttpResponseMessage deniedResp = await Send(client, HttpMethod.Get, root + "/v1.0/tenants", bearer, null, ct);
                         Assert.Status(deniedResp, 403);
+                        foreach (string path in new[] { "/api/diagnostics/runtime", "/api/diagnostics/memory" })
+                            Assert.Status(await Send(client, HttpMethod.Get, root + path, bearer, null, ct), 403);
                     })
             };
 

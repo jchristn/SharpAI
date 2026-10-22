@@ -51,6 +51,13 @@ namespace SharpAI.Database.Implementations
             return list;
         }
 
+        public Permission Update(Permission permission)
+        {
+            permission.LastUpdateUtc = DateTime.UtcNow;
+            _Db.NonQuery("UPDATE permissions SET name=@name, resourcetypes=@resourcetypes, operationtypes=@operationtypes, permissiontype=@permissiontype, active=@active, lastupdateutc=@lastupdateutc WHERE guid=@guid", Params(permission));
+            return permission;
+        }
+
         public void Delete(string guid)
         {
             if (String.IsNullOrEmpty(guid)) throw new ArgumentNullException(nameof(guid));

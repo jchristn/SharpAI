@@ -60,9 +60,9 @@ namespace Test.Shared
         // them here before constructing and clear them immediately after (the ctor snapshots them).
         private static ModelEngineService NewService(int keepAliveSeconds = 0, int maxResidentModels = 0, int memoryBudgetMb = 0)
         {
-            string prevKeepAlive = Environment.GetEnvironmentVariable("SHARPAI_KEEP_ALIVE_SECONDS");
-            string prevMaxResident = Environment.GetEnvironmentVariable("SHARPAI_MAX_RESIDENT_MODELS");
-            string prevBudget = Environment.GetEnvironmentVariable("SHARPAI_MODEL_MEMORY_BUDGET_MB");
+            string? prevKeepAlive = Environment.GetEnvironmentVariable("SHARPAI_KEEP_ALIVE_SECONDS");
+            string? prevMaxResident = Environment.GetEnvironmentVariable("SHARPAI_MAX_RESIDENT_MODELS");
+            string? prevBudget = Environment.GetEnvironmentVariable("SHARPAI_MODEL_MEMORY_BUDGET_MB");
 
             Environment.SetEnvironmentVariable("SHARPAI_KEEP_ALIVE_SECONDS", keepAliveSeconds.ToString());
             Environment.SetEnvironmentVariable("SHARPAI_MAX_RESIDENT_MODELS", maxResidentModels.ToString());
@@ -195,7 +195,7 @@ namespace Test.Shared
         // complete without error.
         private static async Task ExecuteParallelSlots(CancellationToken token)
         {
-            string prev = Environment.GetEnvironmentVariable("SHARPAI_MAX_CONCURRENT_GENERATIONS");
+            string? prev = Environment.GetEnvironmentVariable("SHARPAI_MAX_CONCURRENT_GENERATIONS");
             Environment.SetEnvironmentVariable("SHARPAI_MAX_CONCURRENT_GENERATIONS", "3");
 
             LlamaSharpEngine engine = new LlamaSharpEngine();

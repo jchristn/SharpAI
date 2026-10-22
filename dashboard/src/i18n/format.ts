@@ -9,10 +9,10 @@ export function formatPercent(fraction: number, locale: string): string {
   return new Intl.NumberFormat(locale, { style: 'percent', maximumFractionDigits: 0 }).format(fraction);
 }
 
-export function formatDateTime(value: string | number | Date, locale: string): string {
+export function formatDateTime(value: string | number | Date, locale: string, timeZone?: string): string {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(date);
 }
 
 export function formatDurationMs(ms: number, locale: string): string {

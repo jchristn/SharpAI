@@ -3,7 +3,6 @@ namespace SharpAI.Services
     using System;
     using System.Collections.Generic;
     using System.IO;
-
     using SharpAI.Database.Interfaces;
     using SharpAI.Models;
     using SyslogLogging;
@@ -86,7 +85,7 @@ namespace SharpAI.Services
             ModelFile modelFile = GetByName(name);
             if (modelFile == null) throw new KeyNotFoundException("The specified model file was not found.");
 
-            return Path.Combine(_StorageDirectory, modelFile.Name);
+            return SharpAI.Operations.GgufShards.Resolve(_StorageDirectory, modelFile.GUID);
         }
 
         /// <summary>

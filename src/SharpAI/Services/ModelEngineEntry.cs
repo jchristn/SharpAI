@@ -2,7 +2,6 @@ namespace SharpAI.Services
 {
     using System;
     using System.Threading.Tasks;
-
     using SharpAI.Engines;
 
     /// <summary>
@@ -20,6 +19,12 @@ namespace SharpAI.Services
         /// Size of the model file in bytes, used for memory-budget admission.
         /// </summary>
         public long FileSizeBytes { get; }
+        /// <summary>Conservative host pool reservation.</summary>
+        public long HostBytes { get { return _HostBytes; } }
+        private readonly long _HostBytes;
+        /// <summary>Conservative device pool reservation; overlaps total reservation.</summary>
+        public long DeviceBytes { get { return _DeviceBytes; } }
+        private readonly long _DeviceBytes;
 
         /// <summary>
         /// UTC time this entry was created.
@@ -38,10 +43,14 @@ namespace SharpAI.Services
         /// <param name="lazy">Deferred initialization task.</param>
         /// <param name="fileSizeBytes">Model file size in bytes.</param>
         /// <param name="nowUtc">Current UTC time.</param>
-        public ModelEngineEntry(Lazy<Task<LlamaSharpEngine>> lazy, long fileSizeBytes, DateTime nowUtc)
+        /// <param name="hostBytes">Host memory reservation.</param>
+        /// <param name="deviceBytes">Device memory reservation.</param>
+        public ModelEngineEntry(Lazy<Task<LlamaSharpEngine>> lazy, long fileSizeBytes, DateTime nowUtc, long hostBytes = 0, long deviceBytes = 0)
         {
             Lazy = lazy ?? throw new ArgumentNullException(nameof(lazy));
             FileSizeBytes = fileSizeBytes;
+            _HostBytes = hostBytes;
+            _DeviceBytes = deviceBytes;
             LoadedUtc = nowUtc;
             LastAccessUtc = nowUtc;
         }

@@ -1,5 +1,7 @@
 # SharpAI — Improvement Plan (v5.0.0, enterprise track)
 
+> Historical implementation record. Current deployment documentation targets **v4.0.1**; versions below retain their original historical meaning.
+
 This document is the working plan to take SharpAI from a competent LlamaSharp wrapper to a
 viable, correct, **enterprise-ready** alternative to Ollama and OpenAI-compatible model runners —
 one that is at least as reliable as Ollama and observable enough to operate a fleet in production.

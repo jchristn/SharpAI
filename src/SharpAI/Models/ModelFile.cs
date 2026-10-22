@@ -150,7 +150,7 @@ namespace SharpAI.Models
             {
                 name = Name,
                 model = Name,
-                modified_at = ModelCreationUtc != null ? ModelCreationUtc.Value.ToString(_TimestampFormat) : DateTime.UtcNow.ToString(_TimestampFormat),
+                modified_at = ModelCreationUtc != null ? ModelCreationUtc.Value.ToString(_TimestampFormat) : CreatedUtc.ToString(_TimestampFormat),
                 size = ContentLength,
                 digest = SHA256Hash,
                 details = new

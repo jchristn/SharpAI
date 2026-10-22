@@ -1,4 +1,5 @@
 import '../theme/tokens.css';
+import { ControlHelp } from './ControlHelp';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './AuthProvider';
 import { AppShell } from './AppShell';
@@ -10,6 +11,8 @@ import { ObservabilityView } from './pages/ObservabilityView';
 import { PlaygroundView } from './pages/PlaygroundView';
 import { RequestHistoryView } from './pages/RequestHistoryView';
 import { InferenceHistoryView } from './pages/InferenceHistoryView';
+import { AdministrationProvider } from './AdministrationProvider';
+import { AccessView } from './pages/AccessView';
 import { SettingsView } from './pages/SettingsView';
 
 const NAV: NavItem[] = [
@@ -20,6 +23,7 @@ const NAV: NavItem[] = [
   { path: '/inference-history', labelKey: 'nav.inferenceHistory', group: 'operations' },
   { path: '/api-explorer', labelKey: 'nav.apiExplorer', group: 'operations' },
   { path: '/observability', labelKey: 'nav.observability', group: 'operations' },
+  {path:'/access',labelKey:'nav.access',group:'system'},
   { path: '/settings', labelKey: 'nav.settings', group: 'system' },
 ];
 
@@ -33,12 +37,12 @@ export interface NewAppProps {
  * React Router 7 BrowserRouter, with the AppShell hosting the routed views. Deep links and browser
  * back/forward work; the nginx SPA fallback serves index.html for client-side routes.
  */
-export function NewApp({ baseUrl, version = '2.0.0' }: NewAppProps): JSX.Element {
+export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element {
   const resolvedBaseUrl = baseUrl ?? (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8000');
 
   return (
     <AuthProvider baseUrl={resolvedBaseUrl}>
-      <BrowserRouter>
+      <AdministrationProvider><BrowserRouter><ControlHelp/>
         <AppShell nav={NAV} serverUrl={resolvedBaseUrl} version={version}>
           <Routes>
             <Route path="/" element={<HomeView />} />
@@ -48,11 +52,14 @@ export function NewApp({ baseUrl, version = '2.0.0' }: NewAppProps): JSX.Element
             <Route path="/inference-history" element={<InferenceHistoryView />} />
             <Route path="/api-explorer" element={<ApiExplorerView />} />
             <Route path="/observability" element={<ObservabilityView />} />
+            {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] as const).map(section=><Route key={section} path={`/${section}`} element={<AccessView section={section}/>}/>)}
+            <Route path="/access" element={<AccessView/>}/>
+            {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] as const).map(section=><Route key={section} path={`/access/${section}`} element={<AccessView section={section}/>}/>)}
             <Route path="/settings" element={<SettingsView />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>
-      </BrowserRouter>
+      </BrowserRouter></AdministrationProvider>
     </AuthProvider>
   );
 }

@@ -1,0 +1,34 @@
+import type { ReactNode } from 'react';
+const paths: Record<string, ReactNode> = {
+  '/': <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
+  '/models': <><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 16l9 5 9-5"/></>,
+  '/playground': <><path d="m8 3 1 6-6 3 6 2 3 7 2-7 7-2-7-3-2-6Z"/></>,
+  '/request-history': <><path d="M4 5h16M4 12h16M4 19h10"/><circle cx="19" cy="19" r="2"/></>,
+  '/inference-history': <><path d="M3 12h4l3-8 4 16 3-8h4"/></>,
+  '/api-explorer': <><path d="m8 6-6 6 6 6m8-12 6 6-6 6m-3-15-2 18"/></>,
+  '/observability': <><path d="M3 3v18h18M7 16l4-5 4 2 5-7"/></>,
+  '/settings': <><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></>,
+  '/tenants': <><path d="M3 21V5h12v16M15 9h6v12M6 8h2m3 0h1M6 12h2m3 0h1M7 21v-5h4v5"/></>,
+  '/users': <><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 5a3 3 0 0 1 0 6m2 3a5 5 0 0 1 2 4v3"/></>,
+  '/credentials': <><circle cx="7" cy="8" r="4"/><path d="m10 11 10 10m-4-4 3-3m-6 0 3-3"/></>,
+  '/roles': <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></>,
+  '/permissions': <><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></>,
+  '/assignments': <><path d="M3 6h8m-8 6h8m-8 6h8m4-6h6m-3-3 3 3-3 3"/></>,
+  '/sessions': <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></>,
+  '/audit': <><path d="M5 3h14v18H5zM8 7h8m-8 5h8m-8 5h5"/></>,
+  refresh: <><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></>,
+  download: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></>,
+  copy: <><rect x="8" y="8" width="13" height="13" rx="1"/><path d="M16 8V3H3v13h5"/></>,
+  check: <path d="m5 12 4 4L19 6"/>,
+  trash: <><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></>,
+  info: <><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10v1"/></>,
+  '/access': <><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></>,
+  more: <><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></>,
+  menu: <path d="M4 6h16M4 12h16M4 18h16"/>,
+  moon: <path d="M21 13a9 9 0 0 1-10-10A9 9 0 1 0 21 13Z"/>,
+  sun: <><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></>,
+  github: <path d="M9 19c-4 1-4-2-6-2m12 5v-4c0-1-.3-2-1-2 3-.4 6-1.5 6-6 0-1.3-.5-2.5-1.3-3.4.1-.9.1-2-.4-3.1 0 0-1.2-.4-3.5 1.3a12 12 0 0 0-6.6 0C6 3.1 4.8 3.5 4.8 3.5c-.5 1.1-.5 2.2-.4 3.1A5 5 0 0 0 3 10c0 4.5 3 5.6 6 6-.7.5-1 1.3-1 2v4"/>,
+};
+export function Icon({ name }: { name: string }): JSX.Element {
+  return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths['/']}</svg>;
+}

@@ -1,5 +1,7 @@
 # Apple Metal GPU Support — Implementation Plan
 
+> Historical implementation record. Current deployment documentation targets **v4.0.1**; versions below retain their original historical meaning.
+
 This document is an actionable implementation plan for adding Apple Metal (MPS) GPU acceleration to SharpAI on Apple Silicon (M1/M2/M3/M4) Macs. Each task has a checkbox for tracking progress and completion.
 
 ---

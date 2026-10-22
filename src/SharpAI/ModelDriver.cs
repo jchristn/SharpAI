@@ -1,14 +1,5 @@
-﻿namespace SharpAI
+namespace SharpAI
 {
-    using CommunityToolkit.HighPerformance;
-    using SharpAI.Engines;
-    using SharpAI.Helpers;
-    using SharpAI.Hosting;
-    using SharpAI.Hosting.HuggingFace;
-    using SharpAI.Models;
-    using SharpAI.Serialization;
-    using SharpAI.Services;
-    using SyslogLogging;
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -19,7 +10,16 @@
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using CommunityToolkit.HighPerformance;
     using SharpAI.Database;
+    using SharpAI.Engines;
+    using SharpAI.Helpers;
+    using SharpAI.Hosting;
+    using SharpAI.Hosting.HuggingFace;
+    using SharpAI.Models;
+    using SharpAI.Serialization;
+    using SharpAI.Services;
+    using SyslogLogging;
 
     /// <summary>
     /// Model driver.
@@ -64,7 +64,6 @@
         private ModelFileService _ModelFiles = null;
         private HuggingFaceClient _HuggingFace = null;
 
-        private ConcurrentDictionary<string, bool> _Pulls = new ConcurrentDictionary<string, bool>(StringComparer.InvariantCultureIgnoreCase);
 
         #endregion
 
@@ -85,7 +84,6 @@
             string huggingFaceApiKey,
             string modelDirectory = "./models/")
         {
-            if (String.IsNullOrEmpty(huggingFaceApiKey)) throw new ArgumentNullException(nameof(huggingFaceApiKey));
             if (String.IsNullOrEmpty(modelDirectory)) throw new ArgumentNullException(nameof(modelDirectory));
 
             modelDirectory = DirectoryHelper.NormalizeDirectory(modelDirectory);
@@ -99,7 +97,7 @@
             _ModelFiles = new ModelFileService(_Logging, _Database.Models, _ModelDirectory);
             _HuggingFace = new HuggingFaceClient(_Logging, HuggingFaceApiKey);
 
-            _Logging.Debug(_Header + "initialized");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "initialized");
         }
 
         #endregion
@@ -159,7 +157,7 @@
 
         /// <summary>
         /// Exists by GUID.
-        /// </summary>        
+        /// </summary>
         /// <param name="guid">GUID.</param>
         /// <returns>True if exists.</returns>
         public bool ExistsByGuid(Guid guid)
@@ -181,198 +179,8 @@
             Action<string, long, decimal> progressCallback,
             CancellationToken token = default)
         {
-            if (String.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
-            bool success = false;
-            string filename = null;
-            string successUrl = null;
-
-            try
-            {
-                #region Hold-Concurrent-Pulls
-
-                int heldCount = 0;
-
-                while (_Pulls.ContainsKey(name))
-                {
-                    if (heldCount % 10 == 0)
-                        _Logging.Debug(_Header + "holding pull request for " + name + " due to an existing pull");
-
-                    heldCount++;
-                    await Task.Delay(1000, token).ConfigureAwait(false);
-                }
-
-                _Pulls.TryAdd(name, true);
-
-                #endregion
-
-                #region Check-for-Existing
-
-                ModelFile existing = _ModelFiles.GetByName(name);
-                if (existing != null)
-                {
-                    _Logging.Debug(_Header + "model " + name + " already exists");
-                    return existing;
-                }
-
-                #endregion
-
-                #region Retrieve-Metadata-and-GGUF-Files
-
-                HuggingFaceModelMetadata md = await _HuggingFace.GetModelMetadata(name, token).ConfigureAwait(false);
-                if (md == null)
-                {
-                    _Logging.Warn(_Header + "unable to retrieve metadata for " + name);
-                    throw new Exception("Unable to retrieve metadata for model '" + name + "'.");
-                }
-                else
-                {
-                    _Logging.Debug(_Header + "model metadata for " + name + Environment.NewLine + _Serializer.SerializeJson(md, true));
-                }
-
-                List<GgufFileInfo> ggufFiles = await _HuggingFace.GetGgufFilesAsync(name, token).ConfigureAwait(false);
-                if (ggufFiles == null || ggufFiles.Count < 1)
-                {
-                    _Logging.Warn(_Header + "no GGUF files found for model " + name);
-                    throw new Exception("No GGUF files found for model '" + name + "'.");
-                }
-
-                GgufFileInfo preferred = null;
-
-                if (quantizationPriority == null || quantizationPriority.Count < 1)
-                    preferred = GgufSelector.SortByOllamaPreference(ggufFiles).First();
-                else
-                    preferred = GgufSelector.SortByPreference(ggufFiles, quantizationPriority).First();
-
-                _Logging.Debug(_Header + "using GGUF file " + preferred.Path + " as the preferred file for model " + name);
-
-                #endregion
-
-                #region Generate-Download-URLs
-
-                List<string> urls = _HuggingFace.GetDownloadUrls(name, preferred);
-                if (urls == null || urls.Count < 1)
-                {
-                    _Logging.Warn("no download URLs found for model " + name);
-                    throw new Exception("No download URLs found for model " + name + ".");
-                }
-
-                string msg = _Header + "attempting download of model " + name + " from the following URLs:";
-                foreach (string url in urls)
-                {
-                    msg += Environment.NewLine + "| " + url;
-                }
-
-                #endregion
-
-                #region Process
-
-                ModelFile modelFile = new ModelFile
-                {
-                    Name = name
-                };
-
-                foreach (string url in urls)
-                {
-                    filename = Path.Combine(_ModelDirectory, modelFile.GUID.ToString());
-                    _Logging.Debug(_Header + "attempting download of model " + name + " using URL " + url + " to file " + modelFile.GUID.ToString());
-
-                    Action<string, long, decimal> progressCallbackInternal = (url, bytesDownloaded, percentComplete) =>
-                    {
-                        if (percentComplete == -1)
-                        {
-                            // Filter out download failure notifications (-1) - these are handled internally
-                            return;
-                        }
-
-                        else if (percentComplete >= 1.0m)
-                        {
-                            // Completion is handled after successful validation in ModelDriver
-                            return;
-                        }
-
-                        else
-                        {
-                            // Pass through progress updates and cancellation notifications (-3)
-                            progressCallback?.Invoke(filename, bytesDownloaded, percentComplete);
-                        }
-                    };
-
-                    success = await _HuggingFace.TryDownloadFileAsync(url, filename, progressCallbackInternal, token).ConfigureAwait(false);
-                    if (success && File.Exists(filename) && new FileInfo(filename).Length == preferred.Size)
-                    {
-                        progressCallback?.Invoke(filename, preferred.Size.Value, 1.0m);
-                        _Logging.Info(_Header + "successfully downloaded model " + name + " using URL " + url + " to file " + filename);
-                        successUrl = url;
-                        success = true;
-                        break;
-                    }
-                    else
-                    {
-                        // Don't send -1 for individual URL failures - only when ALL URLs fail
-                        success = false;
-                        _Logging.Debug(_Header + "download failed for URL " + url);
-                    }
-                }
-
-                if (!success || String.IsNullOrEmpty(filename))
-                {
-                    _Logging.Warn(_Header + "unable to download model " + name + " using " + urls.Count + " URL(s)");
-                    // Now send -1 because ALL URLs have failed
-                    progressCallback?.Invoke(filename, 0, -1);
-                    throw new Exception("Unable to download model " + name + " using " + urls.Count + " URL(s).");
-                }
-
-                _Logging.Info(_Header + "downloaded GGUF file for " + name);
-
-                using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
-                {
-                    (byte[] md5, byte[] sha1, byte[] sha256) = HashHelper.ComputeAllHashes(fs);
-
-                    ModelFile created = _ModelFiles.Add(new ModelFile
-                    {
-                        GUID = modelFile.GUID,
-                        Name = name,
-                        ContentLength = preferred.Size != null ? preferred.Size.Value : 0,
-                        ParameterCount = md.SafeTensors != null ? md.SafeTensors.Total : 0,
-                        MD5Hash = Convert.ToHexString(md5),
-                        SHA1Hash = Convert.ToHexString(sha1),
-                        SHA256Hash = Convert.ToHexString(sha256),
-                        Quantization = preferred.QuantizationType,
-                        Embeddings = _HuggingFace.IsEmbeddingModel(md),
-                        Completions = _HuggingFace.IsCompletionModel(md),
-                        SourceUrl = successUrl,
-                        ModelCreationUtc = preferred.LastModified,
-                        CreatedUtc = DateTime.UtcNow
-                    });
-
-                    _Logging.Info(_Header + "successfully added model " + name + " using GUID " + created.GUID);
-                    return created;
-                }
-
-                #endregion
-            }
-            catch (TaskCanceledException)
-            {
-                _Logging.Info(_Header + "download of model " + name + " was cancelled by user");
-                progressCallback?.Invoke(filename, 0, -3);
-                return null;
-            }
-            catch (OperationCanceledException)
-            {
-                _Logging.Info(_Header + "download of model " + name + " was cancelled by user");
-                progressCallback?.Invoke(filename, 0, -3);
-                return null;
-            }
-            catch (Exception ex)
-            {
-                _Logging.Warn(_Header + "exception during download of model " + name + ": " + Environment.NewLine + ex.ToString());
-                progressCallback?.Invoke(filename, 0, -1);
-                throw;
-            }
-            finally
-            {
-                _Pulls.TryRemove(name, out _);
-            }
+            return await SharpAI.Operations.ModelPullService.PullAsync(_HuggingFace, _ModelFiles, _ModelDirectory,
+                name, quantizationPriority, progressCallback, token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -386,14 +194,15 @@
             ModelFile modelFile = _ModelFiles.GetByName(name);
             if (modelFile == null)
             {
-                _Logging.Warn(_Header + "model " + name + " not found");
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "model " + name + " not found");
                 throw new KeyNotFoundException("Model " + name + " was not found.");
             }
             else
             {
                 _ModelFiles.Delete(modelFile.GUID);
-                File.Delete(Path.Combine(_ModelDirectory, modelFile.GUID.ToString()));
-                _Logging.Info(_Header + "successfully deleted model " + name + " in GUID " + modelFile.GUID);
+                _ModelEngines.UnloadModel(SharpAI.Operations.GgufShards.Resolve(_ModelDirectory, modelFile.GUID));
+                SharpAI.Operations.GgufShards.Delete(_ModelDirectory, modelFile.GUID);
+                SharpAI.Logging.JsonLog.Info(_Logging, _Header + "successfully deleted model " + name + " in GUID " + modelFile.GUID);
             }
         }
 
@@ -410,7 +219,7 @@
             ModelFile modelFile = _ModelFiles.GetByName(name);
             if (modelFile == null) throw new KeyNotFoundException($"Model '{name}' was not found.");
 
-            string modelFilePath = Path.Combine(_ModelDirectory, modelFile.GUID.ToString());
+            string modelFilePath = SharpAI.Operations.GgufShards.Resolve(_ModelDirectory, modelFile.GUID);
             return _ModelEngines.GetByModelFile(modelFilePath);
         }
 

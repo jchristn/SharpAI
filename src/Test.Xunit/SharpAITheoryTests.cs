@@ -2,11 +2,8 @@ namespace Test.Xunit
 {
     using System.Threading;
     using System.Threading.Tasks;
-
     using Test.Shared;
-
     using Touchstone.Core;
-
     using Xunit;
 
     /// <summary>
@@ -19,15 +16,15 @@ namespace Test.Xunit
         /// All non-skipped test cases as theory data.
         /// </summary>
         /// <returns>Theory data of test case descriptors.</returns>
-        public static TheoryData<TestCaseDescriptor> TestCases()
+        public static TheoryData<TestSuiteDescriptor, TestCaseDescriptor> TestCases()
         {
-            TheoryData<TestCaseDescriptor> data = new TheoryData<TestCaseDescriptor>();
+            TheoryData<TestSuiteDescriptor, TestCaseDescriptor> data = new TheoryData<TestSuiteDescriptor, TestCaseDescriptor>();
 
             foreach (TestSuiteDescriptor suite in SharpAISuites.All)
             {
                 foreach (TestCaseDescriptor testCase in suite.Cases)
                 {
-                    if (!testCase.Skip) data.Add(testCase);
+                    if (!testCase.Skip) data.Add(suite, testCase);
                 }
             }
 
@@ -37,14 +34,23 @@ namespace Test.Xunit
         /// <summary>
         /// Execute a single descriptor.
         /// </summary>
+        /// <param name="suite">Suite containing setup and teardown hooks.</param>
         /// <param name="testCase">Test case to execute.</param>
         /// <returns>Task.</returns>
         [Theory]
         [MemberData(nameof(TestCases))]
-        public async Task RunCase(TestCaseDescriptor testCase)
+        public async Task RunCase(TestSuiteDescriptor suite, TestCaseDescriptor testCase)
         {
             // xUnit analyzer xUnit1030: test methods must not ConfigureAwait(false).
-            await testCase.ExecuteAsync(CancellationToken.None);
+            try
+            {
+                if (suite.BeforeSuiteAsync != null) await suite.BeforeSuiteAsync(CancellationToken.None);
+                await testCase.ExecuteAsync(CancellationToken.None);
+            }
+            finally
+            {
+                if (suite.AfterSuiteAsync != null) await suite.AfterSuiteAsync(CancellationToken.None);
+            }
         }
     }
 }

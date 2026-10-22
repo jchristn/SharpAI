@@ -15,7 +15,7 @@ namespace Test.Shared
         /// <param name="condition">Condition expected to be true.</param>
         /// <param name="message">Message describing the expectation.</param>
         /// <exception cref="InvalidOperationException">Thrown when the condition is false.</exception>
-        public static void True(bool condition, string message)
+        public static void True([System.Diagnostics.CodeAnalysis.DoesNotReturnIf(false)] bool condition, string message)
         {
             if (!condition) throw new InvalidOperationException("Assertion failed: " + message);
         }

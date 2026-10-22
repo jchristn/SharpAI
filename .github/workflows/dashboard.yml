@@ -2,14 +2,7 @@ name: Dashboard
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'dashboard/**'
-      - '.github/workflows/dashboard.yml'
   pull_request:
-    paths:
-      - 'dashboard/**'
-      - '.github/workflows/dashboard.yml'
   workflow_dispatch:
 
 defaults:
@@ -42,4 +35,34 @@ jobs:
       # `npm test` runs the Vitest suite, which includes the i18n orphaned-translation-key gate
       # (src/i18n/i18n.test.ts) and the pseudo-locale/RTL checks.
       - name: Test (unit + i18n key gate)
-        run: npm test
+        run: npm test -- --reporter=default --reporter=junit --outputFile=test-results/unit.xml
+
+      - name: Upload unit and i18n evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-unit-i18n-results
+          path: dashboard/test-results/unit.xml
+          if-no-files-found: ignore
+
+  deployed-proxy:
+    name: Real server and nginx routing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build and test the deployed dashboard proxy
+        working-directory: .
+        run: scripts/test-dashboard-deployment-ci.sh
+      - name: Tenant isolation, credentials, RBAC and session lifecycle
+        working-directory: .
+        run: python3 scripts/test-administration.py --server-dll src/SharpAI.Server/bin/Release/net10.0/SharpAI.Server.dll
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-deployment-results
+          path: dashboard/test-results/deployment
+          if-no-files-found: ignore

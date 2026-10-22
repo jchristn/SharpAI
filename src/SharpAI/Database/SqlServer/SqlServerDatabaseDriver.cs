@@ -138,6 +138,25 @@ namespace SharpAI.Database.SqlServer
                     {
                         "IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'model_presets') CREATE TABLE model_presets (guid NVARCHAR(64) PRIMARY KEY, name NVARCHAR(256), modelname NVARCHAR(256), systemprompt NVARCHAR(MAX), temperature NVARCHAR(32), maxtokens INT, topp NVARCHAR(32), templateoverride NVARCHAR(MAX), stopjson NVARCHAR(MAX), createdutc NVARCHAR(64) NOT NULL, lastupdateutc NVARCHAR(64) NOT NULL)",
                         "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_model_presets_name') CREATE INDEX idx_model_presets_name ON model_presets (name)"
+                    }),
+                    new SchemaMigration(6, "Durable inference diagnostics", new List<string>
+                    {
+                        "ALTER TABLE request_history ADD modelname NVARCHAR(512) NULL",
+                        "ALTER TABLE request_history ADD isstreaming INT NULL",
+                        "ALTER TABLE request_history ADD inputtokens INT NULL",
+                        "ALTER TABLE request_history ADD outputtokens INT NULL",
+                        "ALTER TABLE request_history ADD cachedtokens INT NULL",
+                        "ALTER TABLE request_history ADD ttftms FLOAT NULL",
+                        "ALTER TABLE request_history ADD streamdurationms FLOAT NULL",
+                        "ALTER TABLE request_history ADD queuems FLOAT NULL",
+                        "ALTER TABLE request_history ADD loadms FLOAT NULL",
+                        "ALTER TABLE request_history ADD promptms FLOAT NULL",
+                        "ALTER TABLE request_history ADD generationms FLOAT NULL",
+                        "ALTER TABLE request_history ADD enginetotalms FLOAT NULL",
+                        "ALTER TABLE request_history ADD cancelled INT NULL",
+                        "ALTER TABLE request_history ADD phasetimingsapproximate INT NULL",
+                        "ALTER TABLE request_history ADD traceid NVARCHAR(512) NULL",
+                        "ALTER TABLE request_history ADD spanid NVARCHAR(512) NULL"
                     })
                 };
             }

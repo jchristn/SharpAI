@@ -1,6 +1,8 @@
 namespace SharpAI.Server.Classes.Runtime
 {
     using System;
+    using System.Text.Json.Nodes;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Text;
@@ -18,8 +20,7 @@ namespace SharpAI.Server.Classes.Runtime
     /// Captures a durable record of each HTTP request and its response. The entry is built synchronously
     /// from the request context (so request state is not lost) and written on a background task so capture
     /// never blocks the response. Secrets in headers are redacted and bodies are truncated to the
-    /// configured limits. Response bodies are not retained by the current routing layer, so only response
-    /// metadata and headers are captured.
+    /// configured limits. Response content is bounded, redacted, and retained along with measured engine phases.
     /// </summary>
     public class RequestHistoryCaptureService
     {
@@ -76,13 +77,13 @@ namespace SharpAI.Server.Classes.Runtime
                     }
                     catch (Exception ex)
                     {
-                        _Logging.Warn(_Header + "failed to persist request history:" + Environment.NewLine + ex.ToString());
+                        SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "failed to persist request history:" + Environment.NewLine + ex.ToString());
                     }
                 });
             }
             catch (Exception ex)
             {
-                _Logging.Warn(_Header + "failed to build request history entry:" + Environment.NewLine + ex.ToString());
+                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "failed to build request history entry:" + Environment.NewLine + ex.ToString());
             }
         }
 
@@ -111,6 +112,40 @@ namespace SharpAI.Server.Classes.Runtime
                 CompletedUtc = ctx.Timestamp.End
             };
 
+            SharpAI.Security.RequestContext principal = ctx.Metadata as SharpAI.Security.RequestContext;
+            entry.TenantId = principal?.TenantGuid;
+            entry.UserId = principal?.OwnerUserGuid ?? principal?.PrincipalGuid;
+            entry.PrincipalName = principal?.PrincipalType.ToString();
+            entry.TraceId = System.Diagnostics.Activity.Current?.TraceId.ToString();
+            entry.SpanId = System.Diagnostics.Activity.Current?.SpanId.ToString();
+            RequestDiagnosticsState diagnostics = RequestDiagnostics.Read(ctx);
+            SharpAI.Operations.InferenceStatistics stats = diagnostics?.Statistics;
+            entry.IsStreaming = ctx.Response.ChunkedTransfer || ctx.Response.ServerSentEvents;
+            try { entry.ModelName = JsonNode.Parse(ctx.Request.DataAsString ?? "{}")?["model"]?.ToString(); }
+            catch (System.Text.Json.JsonException) { }
+            if (stats != null)
+            {
+                entry.InputTokens = stats.PromptTokens;
+                entry.OutputTokens = stats.CompletionTokens;
+                // The engine does not expose cached-token counts. Null is not a measured zero.
+                entry.TtftMs = stats.FirstTokenDurationNanoseconds > 0 ? stats.FirstTokenDurationNanoseconds / 1e6 : null;
+                entry.QueueMs = stats.QueueDurationNanoseconds / 1e6;
+                entry.LoadMs = stats.LoadDurationNanoseconds / 1e6;
+                entry.PromptMs = stats.PromptDurationNanoseconds / 1e6;
+                entry.GenerationMs = stats.GenerationDurationNanoseconds / 1e6;
+                entry.EngineTotalMs = stats.TotalDurationNanoseconds / 1e6;
+                entry.StreamDurationMs = entry.IsStreaming == true && entry.TtftMs.HasValue ? Math.Max(0, entry.DurationMs - entry.TtftMs.Value) : null;
+                entry.Cancelled = stats.Cancelled;
+                entry.PhaseTimingsApproximate = stats.PhaseTimingsApproximate;
+            }
+            string response = diagnostics?.ResponseBytes > 0 ? diagnostics.ResponseBody : ctx.Response.DataAsString;
+            if (!String.IsNullOrEmpty(response))
+            {
+                entry.ResponseBodyBytes = diagnostics?.ResponseBytes > 0 ? diagnostics.ResponseBytes : Encoding.UTF8.GetByteCount(response);
+                byte[] bytes = Encoding.UTF8.GetBytes(RedactBody(response, path));
+                entry.ResponseBodyTruncated = diagnostics?.Truncated == true || bytes.Length > _Settings.MaxResponseBodyBytes;
+                entry.ResponseBody = _Settings.MaxResponseBodyBytes == 0 ? null : Encoding.UTF8.GetString(bytes, 0, Math.Min(bytes.Length, _Settings.MaxResponseBodyBytes));
+            }
             CaptureRequestBody(ctx, entry);
             return entry;
         }
@@ -125,6 +160,7 @@ namespace SharpAI.Server.Classes.Runtime
                 if (String.IsNullOrEmpty(body)) return;
 
                 long originalBytes = Encoding.UTF8.GetByteCount(body);
+                body = RedactBody(body, entry.Path);
                 entry.RequestBodyBytes = originalBytes;
 
                 if (_Settings.MaxRequestBodyBytes <= 0)
@@ -134,10 +170,10 @@ namespace SharpAI.Server.Classes.Runtime
                     return;
                 }
 
-                if (originalBytes > _Settings.MaxRequestBodyBytes)
+                if (Encoding.UTF8.GetByteCount(body) > _Settings.MaxRequestBodyBytes)
                 {
-                    int keep = Math.Min(body.Length, _Settings.MaxRequestBodyBytes);
-                    entry.RequestBody = body.Substring(0, keep);
+                    byte[] retained = Encoding.UTF8.GetBytes(body);
+                    entry.RequestBody = Encoding.UTF8.GetString(retained, 0, Math.Min(retained.Length, _Settings.MaxRequestBodyBytes));
                     entry.RequestBodyTruncated = true;
                 }
                 else
@@ -149,6 +185,34 @@ namespace SharpAI.Server.Classes.Runtime
             {
                 // Body not available (streaming/chunked); leave it unset.
             }
+        }
+
+        private static string RedactBody(string body, string path)
+        {
+                // Never retain passwords, signing keys, or credential secrets in request history.
+                try
+                {
+                    JsonNode json = JsonNode.Parse(body);
+                    void Redact(JsonNode node)
+                    {
+                        if (node is JsonObject obj)
+                        {
+                            foreach (string key in System.Linq.Enumerable.ToArray(obj.Select(pair => pair.Key)))
+                            {
+                                string normalized = key.Replace("_", String.Empty).Replace("-", String.Empty).ToLowerInvariant();
+                                if (normalized.Contains("password") || normalized.Contains("secret") || (normalized == "token" || normalized == "tokensigningkey" || normalized == "accesstoken" || normalized == "refreshtoken" || normalized == "bearertoken") || normalized.Contains("apikey") || normalized == "authorization") obj[key] = "[redacted]";
+                                else Redact(obj[key]);
+                            }
+                        }
+                        else if (node is JsonArray array) foreach (JsonNode child in array) Redact(child);
+                    }
+                    Redact(json); body = json?.ToJsonString() ?? body;
+                }
+                catch
+                {
+                    if (path.StartsWith("/v1.0/", StringComparison.Ordinal) || path == "/api/settings") body = "[redacted body]";
+                }
+            return body;
         }
 
         private Dictionary<string, string> ToHeaderDictionary(NameValueCollection headers)
@@ -169,7 +233,7 @@ namespace SharpAI.Server.Classes.Runtime
         {
             if (_RedactExact.Contains(name)) return true;
             string lower = name.ToLowerInvariant();
-            return lower.Contains("api-key") || lower.Contains("token");
+            return lower.Contains("api-key") || lower.Contains("token") || lower.Contains("password") || lower.Contains("secret");
         }
 
         #endregion

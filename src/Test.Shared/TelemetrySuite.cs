@@ -56,7 +56,7 @@ namespace Test.Shared
                 new TestCaseDescriptor("Telemetry", "Span_Produced_WithListener", "A span is produced and tagged when a listener samples",
                     ct =>
                     {
-                        Activity started = null;
+                        Activity? started = null;
                         using (ActivityListener listener = new ActivityListener())
                         {
                             listener.ShouldListenTo = source => source.Name == SharpAITelemetry.ActivitySourceName;

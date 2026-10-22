@@ -122,7 +122,7 @@
         /// <summary>
         /// HuggingFace API key.
         /// </summary>
-        public static string DefaultHuggingFaceApiKey = "My HuggingFace API Key";
+        public static string DefaultHuggingFaceApiKey = null;
 
         /// <summary>
         /// SharpAI request ID header.

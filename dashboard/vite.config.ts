@@ -1,13 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
+  plugins: [react()],
   server: {
     port: 3000,
     strictPort: false,
+    proxy: { '/engine-metrics': { target: 'http://localhost:8889', changeOrigin: true, rewrite: () => '/metrics' }, '^/(api(/|$)|v1(\\.0)?(/|$)|health$|ready$|metrics$|openapi\\.json$)': { target: 'http://localhost:8000', changeOrigin: true } },
   },
   preview: {
     port: 3000,
@@ -17,6 +17,7 @@ export default defineConfig({
     sourcemap: true,
   },
   resolve: {
+    tsconfigPaths: true,
     alias: {
       "#": "/src",
     },

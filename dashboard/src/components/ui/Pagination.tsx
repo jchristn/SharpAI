@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import { formatNumber } from '../../i18n/format';
 import './ui.css';
 
 /** Mandated page-size options; default 25 (DASHBOARD_STYLE_AND_USABILITY). */
@@ -20,6 +22,7 @@ export function Pagination({
   onPageChange,
   onPageSizeChange,
 }: PaginationProps): JSX.Element {
+  const { t, i18n } = useTranslation();
   const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
   const clampedPage = Math.min(Math.max(1, pageNumber), totalPages);
   const first = totalRecords === 0 ? 0 : (clampedPage - 1) * pageSize + 1;
@@ -28,15 +31,15 @@ export function Pagination({
   return (
     <div className="sa-pagination">
       <span>
-        {first}–{last} of {totalRecords}
+        {t('pagination.range',{first:formatNumber(first,i18n.language),last:formatNumber(last,i18n.language),total:formatNumber(totalRecords,i18n.language)})}
       </span>
       <div className="sa-pagination__controls">
         <label>
-          Rows{' '}
+          {t('text.rows')}{' '}
           <select
             value={pageSize}
             onChange={(event) => onPageSizeChange(Number(event.target.value))}
-            aria-label="Rows per page"
+            aria-label={t('text.rowsPerPage')}
           >
             {PAGE_SIZES.map((size) => (
               <option key={size} value={size}>
@@ -50,10 +53,9 @@ export function Pagination({
           className="sa-btn"
           disabled={clampedPage <= 1}
           onClick={() => onPageChange(clampedPage - 1)}
-          aria-label="Previous page"
+          aria-label={t('text.previousPage')}
         >
-          Prev
-        </button>
+          {t('text.prev')}</button>
         <span>
           {clampedPage} / {totalPages}
         </span>
@@ -62,10 +64,9 @@ export function Pagination({
           className="sa-btn"
           disabled={clampedPage >= totalPages}
           onClick={() => onPageChange(clampedPage + 1)}
-          aria-label="Next page"
+          aria-label={t('text.nextPage')}
         >
-          Next
-        </button>
+          {t('text.next')}</button>
       </div>
     </div>
   );

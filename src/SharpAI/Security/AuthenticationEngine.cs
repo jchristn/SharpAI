@@ -132,6 +132,8 @@ namespace SharpAI.Security
             string resolvedTenantGuid = ResolveTenantGuid(tenantGuid);
             if (String.IsNullOrEmpty(resolvedTenantGuid)) return null;
 
+            Tenant tenant = _Database.Tenants.Read(resolvedTenantGuid);
+            if (tenant == null || !tenant.Active) return null;
             User user = _Database.Users.GetByEmail(resolvedTenantGuid, email);
             if (user == null || !user.Active) return null;
             if (!PasswordHasher.Verify(password, user.PasswordSha256)) return null;
@@ -167,6 +169,9 @@ namespace SharpAI.Security
             AuthSession session = _Database.Sessions.Read(sessionId);
             if (session == null || !session.Active) return null;
             if (session.ExpiresUtc <= DateTime.UtcNow) return null;
+            User owner = _Database.Users.Read(session.UserGuid);
+            Tenant tenant = _Database.Tenants.Read(session.TenantGuid);
+            if (owner == null || !owner.Active || owner.TenantGuid != session.TenantGuid || tenant == null || !tenant.Active) return null;
 
             return session;
         }
@@ -211,6 +216,9 @@ namespace SharpAI.Security
             if (credential == null || !credential.Active) return null;
             if (credential.ExpiresUtc.HasValue && credential.ExpiresUtc.Value <= DateTime.UtcNow) return null;
             if (!PasswordHasher.Verify(secretKey, credential.SecretSha256)) return null;
+            User owner = _Database.Users.Read(credential.UserGuid);
+            Tenant tenant = _Database.Tenants.Read(credential.TenantGuid);
+            if (owner == null || !owner.Active || owner.TenantGuid != credential.TenantGuid || tenant == null || !tenant.Active) return null;
 
             // The principal IS the credential (least privilege); the owning user is carried only for the
             // RBAC owner-ceiling. A credential does not inherit its owner's admin bypass.

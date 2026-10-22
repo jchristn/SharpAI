@@ -1,9 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-// The sidebar (brand + navigation) collapses below ~820px; those checks run only on wide viewports.
-const WIDE = 900;
-
 test.describe('dashboard shell', () => {
   test('renders semantic landmarks', async ({ page }) => {
     await page.goto('/');
@@ -12,15 +9,17 @@ test.describe('dashboard shell', () => {
     await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
   });
 
-  test('navigates between routes via the sidebar', async ({ page }, testInfo) => {
-    test.skip((testInfo.project.use.viewport?.width ?? 0) < WIDE, 'sidebar hidden on small viewports');
+  test('navigates between routes via the sidebar', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('SharpAI').first()).toBeVisible();
+    const menu = page.getByRole('button', { name: 'Toggle navigation' });
+    if (await menu.isVisible()) await menu.click();
+    await expect(page.getByRole('link', { name: 'SharpAI Inference workspace', exact: true })).toBeVisible();
 
     await page.getByRole('link', { name: 'Request History' }).click();
     await expect(page).toHaveURL(/\/request-history$/);
     await expect(page.getByRole('heading', { name: 'Request History' })).toBeVisible();
 
+    if (await menu.isVisible()) await menu.click();
     await page.getByRole('link', { name: 'Settings' }).click();
     await expect(page).toHaveURL(/\/settings$/);
   });

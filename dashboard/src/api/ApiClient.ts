@@ -2,6 +2,8 @@
 // carries auth, builds URLs, serializes JSON, and normalizes errors into ApiError. Every rebuilt
 // dashboard view depends on this rather than calling fetch directly.
 
+import i18n from '../i18n/config';
+
 import type {
   Credentials,
   CreatedCredential,
@@ -87,7 +89,7 @@ export class ApiClient {
   private async request<T>(
     method: string,
     path: string,
-    options?: { query?: Record<string, QueryValue>; body?: unknown; headers?: Record<string, string> },
+    options?: { query?: Record<string, QueryValue>; body?: unknown; headers?: Record<string, string>; signal?:AbortSignal },
   ): Promise<T> {
     const headers: Record<string, string> = { ...this.localeHeader(), ...this.authHeaders(), ...(options?.headers ?? {}) };
     let body: string | undefined;
@@ -96,9 +98,14 @@ export class ApiClient {
       body = JSON.stringify(options.body);
     }
 
-    const response = await fetch(this.buildUrl(path, options?.query), { method, headers, body });
+    const response = await fetch(this.buildUrl(path, options?.query), { method, headers, body, signal:options?.signal });
     const text = await response.text();
-    const parsed: unknown = text.length > 0 ? safeJsonParse(text) : undefined;
+    let parsed: unknown;
+    try {
+      parsed = text.length > 0 ? JSON.parse(text) : undefined;
+    } catch {
+      throw new ApiError(response.ok ? 502 : response.status, i18n.t('settings.invalidResponse'), { code: 'invalid_api_response' });
+    }
 
     if (!response.ok) {
       throw new ApiError(response.status, extractError(parsed) ?? response.statusText, parsed);
@@ -149,8 +156,14 @@ export class ApiClient {
       const text = await response.text();
       throw new ApiError(response.status, extractError(safeJsonParse(text)) ?? response.statusText, text);
     }
+    if (response.headers?.get('content-type')?.includes('text/html')) throw new ApiError(502, i18n.t('settings.invalidResponse'), null);
     const reader = response.body?.getReader();
     if (!reader) return;
+    const report = (line: string): void => {
+      const event = safeJsonParse(line) as { error?: string };
+      if (event && typeof event.error === 'string') throw new ApiError(502, event.error, event);
+      onLine(line);
+    };
     const decoder = new TextDecoder();
     let buffer = '';
     for (;;) {
@@ -161,11 +174,11 @@ export class ApiClient {
       while (index >= 0) {
         const line = buffer.slice(0, index).trim();
         buffer = buffer.slice(index + 1);
-        if (line) onLine(line);
+        if (line) report(line);
         index = buffer.indexOf('\n');
       }
     }
-    if (buffer.trim()) onLine(buffer.trim());
+    if (buffer.trim()) report(buffer.trim());
   }
 
   openapi(): Promise<unknown> {
@@ -194,7 +207,7 @@ export class ApiClient {
 
   /** Fetch the Prometheus text exposition from /metrics (raw text, not JSON). */
   async metrics(): Promise<string> {
-    const response = await fetch(this.buildUrl('/metrics'), {
+    const response = await fetch(this.buildUrl('/engine-metrics'), {
       headers: { ...this.localeHeader(), ...this.authHeaders() },
     });
     if (!response.ok) {
@@ -213,21 +226,23 @@ export class ApiClient {
 
   // ---- inference ----
 
-  chat(body: unknown): Promise<unknown> {
-    return this.request<unknown>('POST', '/api/chat', { body });
+  chat(body: unknown, signal?:AbortSignal): Promise<unknown> {
+    return this.request<unknown>('POST', '/api/chat', { body, signal });
   }
 
   /** Stream a chat completion, invoking onEvent with each parsed newline-delimited JSON chunk. */
-  async chatStream(body: Record<string, unknown>, onEvent: (event: unknown) => void): Promise<void> {
+  async chatStream(body: Record<string, unknown>, onEvent: (event: unknown) => void, signal?: AbortSignal): Promise<void> {
     const response = await fetch(this.buildUrl('/api/chat'), {
       method: 'POST',
       headers: { ...this.localeHeader(), ...this.authHeaders(), 'content-type': 'application/json' },
       body: JSON.stringify({ ...body, stream: true }),
+      signal,
     });
     if (!response.ok) {
       const text = await response.text();
       throw new ApiError(response.status, extractError(safeJsonParse(text)) ?? response.statusText, text);
     }
+    if (response.headers?.get('content-type')?.includes('text/html')) throw new ApiError(502, i18n.t('settings.invalidResponse'), null);
     const reader = response.body?.getReader();
     if (!reader) return;
     const decoder = new TextDecoder();
@@ -251,8 +266,8 @@ export class ApiClient {
     return this.request<unknown>('POST', '/api/generate', { body });
   }
 
-  embeddings(body: unknown): Promise<unknown> {
-    return this.request<unknown>('POST', '/api/embed', { body });
+  embeddings(body: unknown, signal?:AbortSignal): Promise<unknown> {
+    return this.request<unknown>('POST', '/api/embed', { body, signal });
   }
 
   // ---- request history ----
@@ -290,6 +305,15 @@ export class ApiClient {
   }
 
   // ---- management (RBAC) ----
+
+  administrationContext(): Promise<import('./administration').AdministrationContext> {
+    return this.request('GET','/v1.0/auth/context');
+  }
+
+  administration<T=unknown>(method:string, tenant:string|null, section:string, body?:unknown, query?:Record<string,QueryValue>):Promise<T> {
+    const path=(section==='tenants' || section.startsWith('tenants/')) ? `/v1.0/${section}` : section==='audit' ? '/v1.0/api/audit' : `/v1.0/tenants/${encodeURIComponent(tenant ?? '')}/${section}`;
+    return this.request<T>(method,path,{body,query});
+  }
 
   listTenants(query?: EnumerationQuery & Record<string, QueryValue>): Promise<EnumerationResult<Tenant>> {
     return this.request<EnumerationResult<Tenant>>('GET', '/v1.0/tenants', { query });
@@ -355,6 +379,7 @@ function extractError(parsed: unknown): string | undefined {
       if (typeof message === 'string') return message;
     }
     if (typeof record.message === 'string') return record.message;
+    if (typeof record.Message === 'string') return record.Message;
   }
   return undefined;
 }

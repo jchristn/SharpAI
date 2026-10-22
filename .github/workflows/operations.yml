@@ -1,0 +1,41 @@
+name: Inference operations
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'sdk/python/**', 'sdk/csharp/**', 'postman/**', 'scripts/**', '.config/dotnet-tools.json', 'docker/telemetry/**', 'docker/compose.yaml', '.github/workflows/operations.yml']
+  pull_request:
+    paths: ['src/**', 'sdk/python/**', 'sdk/csharp/**', 'postman/**', 'scripts/**', '.config/dotnet-tools.json', 'docker/telemetry/**', 'docker/compose.yaml', '.github/workflows/operations.yml']
+  workflow_dispatch:
+
+jobs:
+  operations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Postman CLI (local simulation only)
+        run: npm install -g postman-cli@1.75.0
+      - name: Fetch and verify small inference fixture
+        run: |
+          curl --fail --location --retry 3 'https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f212d81/tinyllamas/stories15M-q4_0.gguf' -o "$RUNNER_TEMP/stories15M-q4_0.gguf"
+          echo "66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739  $RUNNER_TEMP/stories15M-q4_0.gguf" | sha256sum --check
+      - name: Test both frameworks with simulation, native inference, HTTP contracts, and coverage gate
+        env:
+          SHARPAI_TEST_MODEL_GGUF: ${{ runner.temp }}/stories15M-q4_0.gguf
+          SHARPAI_TEST_OBSERVABILITY: "1"
+        run: scripts/test-operations.sh "$RUNNER_TEMP/operations-results"
+      - name: Upload test, simulation, and coverage evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: operations-results
+          path: ${{ runner.temp }}/operations-results

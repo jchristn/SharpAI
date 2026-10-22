@@ -1,11 +1,17 @@
 namespace Test.Shared
 {
     using System;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
+    using System.Runtime.InteropServices;
+    using System.Security.Cryptography;
     using System.Threading;
     using System.Threading.Tasks;
-
     using SharpAI.Engines;
+    using SharpAI.Operations;
 
     /// <summary>
     /// A throughput/latency benchmark (W2.T5) that measures single-request vs N-concurrent generation against
@@ -34,7 +40,10 @@ namespace Test.Shared
         {
             if (String.IsNullOrEmpty(modelPath)) throw new ArgumentNullException(nameof(modelPath));
 
-            string prevSlots = Environment.GetEnvironmentVariable("SHARPAI_MAX_CONCURRENT_GENERATIONS");
+            if (iterations < 1) throw new ArgumentOutOfRangeException(nameof(iterations));
+            if (concurrency < 1) throw new ArgumentOutOfRangeException(nameof(concurrency));
+            if (maxTokens < 1) throw new ArgumentOutOfRangeException(nameof(maxTokens));
+            string? prevSlots = Environment.GetEnvironmentVariable("SHARPAI_MAX_CONCURRENT_GENERATIONS");
             Environment.SetEnvironmentVariable("SHARPAI_MAX_CONCURRENT_GENERATIONS", concurrency.ToString());
 
             LlamaSharpEngine engine = new LlamaSharpEngine();
@@ -50,31 +59,55 @@ namespace Test.Shared
                 // Sequential phase.
                 Stopwatch seqWatch = Stopwatch.StartNew();
                 long seqTokens = 0;
+                ConcurrentDictionary<InferenceStatistics, string> failures = new ConcurrentDictionary<InferenceStatistics, string>();
+                List<InferenceStatistics> sequential = new List<InferenceStatistics>();
                 for (int i = 0; i < iterations; i++)
                 {
-                    string output = await engine.GenerateTextAsync(prompt, maxTokens, 0.2f, null, token).ConfigureAwait(false);
-                    seqTokens += engine.CountTokens(output, false, false);
+                    InferenceStatistics sample = new InferenceStatistics();
+                    await RunSampleAsync(engine, prompt, maxTokens, sample, failures, token).ConfigureAwait(false);
+                    sequential.Add(sample);
+                    if (!failures.ContainsKey(sample)) seqTokens += sample.CompletionTokens;
                 }
                 seqWatch.Stop();
 
                 // Concurrent phase.
                 Stopwatch conWatch = Stopwatch.StartNew();
                 Task<string>[] tasks = new Task<string>[iterations];
+                InferenceStatistics[] concurrent = new InferenceStatistics[iterations];
                 for (int i = 0; i < iterations; i++)
                 {
-                    tasks[i] = engine.GenerateTextAsync(prompt, maxTokens, 0.2f, null, token);
+                    concurrent[i] = new InferenceStatistics();
+                    tasks[i] = RunSampleAsync(engine, prompt, maxTokens, concurrent[i], failures, token);
                 }
                 string[] outputs = await Task.WhenAll(tasks).ConfigureAwait(false);
                 conWatch.Stop();
 
                 long conTokens = 0;
-                foreach (string o in outputs) conTokens += engine.CountTokens(o, false, false);
+                foreach (InferenceStatistics sample in concurrent) if (!failures.ContainsKey(sample)) conTokens += sample.CompletionTokens;
 
                 double seqSeconds = seqWatch.Elapsed.TotalSeconds;
                 double conSeconds = conWatch.Elapsed.TotalSeconds;
 
                 return new BenchmarkResult
                 {
+                    Receipt = new
+                    {
+                        schema_version = 1, created_utc = DateTime.UtcNow,
+                        sharpai_version = typeof(LlamaSharpEngine).Assembly.GetName().Version?.ToString(),
+                        llamasharp_version = SharpAI.Classes.Runtime.NativeBackendInfo.LlamaSharpVersion,
+                        backend_selected = SharpAI.Classes.Runtime.NativeBackendInfo.SelectedBackend,
+                        native_build = (string?)null,
+                        native_build_note = "Native build identifier unavailable; LlamaSharp package version is recorded separately.",
+                        hardware = new { os = RuntimeInformation.OSDescription, architecture = RuntimeInformation.ProcessArchitecture.ToString(), processors = Environment.ProcessorCount, available_memory_bytes = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes },
+                        model_files = GgufShards.Files(modelPath).Select(path => { using FileStream stream = File.OpenRead(path); return new { file = Path.GetFileName(path), sha256 = Convert.ToHexString(SHA256.HashData(stream)) }; }).ToArray(),
+                        settings = engine.GetRuntimeSettings(),
+                        workload_id = Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(prompt))),
+                        warm_state = "one warmup generation", iterations = iterations, concurrency = concurrency, max_output_tokens = maxTokens,
+                        failure_count = failures.Count, failures = failures.Values.ToArray(),
+                        sequential = Summarize(sequential, failures), concurrent = Summarize(concurrent, failures),
+                        percentile_note = "Nearest rank; p95 requires 20 samples, p99 requires 100. Missing tails are null. Token counts precede text filtering."
+                    },
+                    FailureCount = failures.Count,
                     Iterations = iterations,
                     Concurrency = concurrency,
                     MaxTokens = maxTokens,
@@ -93,6 +126,26 @@ namespace Test.Shared
             }
         }
 
+        private static async Task<string> RunSampleAsync(LlamaSharpEngine engine, string prompt, int maxTokens, InferenceStatistics statistics,
+            ConcurrentDictionary<InferenceStatistics, string> failures, CancellationToken token)
+        {
+            try { return await engine.GenerateTextAsync(prompt, maxTokens, 0.2f, null, null, token, statistics).ConfigureAwait(false); }
+            catch (OperationCanceledException) when (token.IsCancellationRequested) { throw; }
+            catch (Exception ex) { failures[statistics] = ex.GetType().Name + ": " + ex.Message; return String.Empty; }
+        }
+
+        private static object Summarize(IEnumerable<InferenceStatistics> samples, ConcurrentDictionary<InferenceStatistics, string> failures)
+        {
+            InferenceStatistics[] all = samples.ToArray();
+            InferenceStatistics[] successful = all.Where(sample => !failures.ContainsKey(sample)).ToArray();
+            return new
+            {
+                sample_count = all.Length, samples = all.Select(sample => new { statistics = sample, success = !failures.ContainsKey(sample), error = failures.TryGetValue(sample, out string? error) ? error : null }).ToArray(),
+                latency_ms = new { p50 = BenchmarkMath.Percentile(successful.Select(s => s.TotalDurationNanoseconds / 1e6), 50), p95 = BenchmarkMath.Percentile(successful.Select(s => s.TotalDurationNanoseconds / 1e6), 95), p99 = BenchmarkMath.Percentile(successful.Select(s => s.TotalDurationNanoseconds / 1e6), 99) },
+                ttft_ms = new { p50 = BenchmarkMath.Percentile(successful.Where(s => s.FirstTokenDurationNanoseconds > 0).Select(s => s.FirstTokenDurationNanoseconds / 1e6), 50), p95 = BenchmarkMath.Percentile(successful.Where(s => s.FirstTokenDurationNanoseconds > 0).Select(s => s.FirstTokenDurationNanoseconds / 1e6), 95), p99 = BenchmarkMath.Percentile(successful.Where(s => s.FirstTokenDurationNanoseconds > 0).Select(s => s.FirstTokenDurationNanoseconds / 1e6), 99) }
+            };
+        }
+
         #endregion
 
         #region Public-Types
@@ -102,6 +155,12 @@ namespace Test.Shared
         /// </summary>
         public class BenchmarkResult
         {
+            /// <summary>Portable versioned receipt; null before a successful benchmark.</summary>
+            public object? Receipt { get { return _Receipt; } set { _Receipt = value; } }
+            private object? _Receipt;
+            /// <summary>Number of failed measured requests; failed runs still produce a receipt.</summary>
+            public int FailureCount { get { return _FailureCount; } set { _FailureCount = value; } }
+            private int _FailureCount;
             /// <summary>Generations per phase.</summary>
             public int Iterations { get; set; }
 

@@ -4,6 +4,55 @@
         <name>SharpAI.Server</name>
     </assembly>
     <members>
+        <member name="T:SharpAI.Server.API.REST.Routes.AdministrationRoutes">
+            <summary>Tenant-scoped administration workflows and dashboard authorization context.</summary>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AdministrationRoutes.Register(SharpAI.Server.API.REST.Routes.RouteContext,SharpAI.Security.RbacEngine)">
+            <summary>Register administration endpoints.</summary>
+            <param name="ctx">Route dependencies.</param><param name="rbac">Permission evaluator.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AdministrationRoutes.ValidateAssignment(SharpAI.Database.DatabaseDriverBase,System.String,System.String,System.String,SharpAI.Security.ResourceScopeEnum,System.String)">
+            <summary>Validate referenced role ownership and resource scope before publishing a grant.</summary>
+            <param name="db">Database.</param><param name="tenant">Tenant.</param><param name="roleGuid">Role ID.</param>
+            <param name="roleName">Built-in role name fallback.</param><param name="scope">Scope.</param><param name="resource">Resource ID.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AdministrationRoutes.ValidatePermission(SharpAI.Security.Permission)">
+            <summary>Validate supported operations and permission effects.</summary>
+            <param name="permission">Requested permission.</param>
+        </member>
+        <member name="T:SharpAI.Server.API.REST.Routes.UpdateRequest">
+            <summary>Editable metadata only. Immutable IDs and protection flags are never accepted.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.Name">
+            <summary>Display name.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.Email">
+            <summary>Email address.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.FirstName">
+            <summary>First name.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.LastName">
+            <summary>Last name.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.Password">
+            <summary>New password, used only by the password reset route.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.IsAdmin">
+            <summary>Platform administrator flag.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.IsTenantAdmin">
+            <summary>Tenant administrator flag.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.Active">
+            <summary>Whether the record is active.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.ExpiresUtc">
+            <summary>Credential expiration.</summary>
+        </member>
+        <member name="P:SharpAI.Server.API.REST.Routes.UpdateRequest.ClearExpiration">
+            <summary>Explicitly clear a credential expiration.</summary>
+        </member>
         <member name="T:SharpAI.Server.API.REST.Routes.AuthorizationGate">
             <summary>
             Centralized RBAC enforcement for route handlers, extracted from the composition root so per-feature
@@ -40,6 +89,14 @@
             <param name="tenantGuid">Tenant scope.</param>
             <param name="principalType">Principal type being inspected.</param>
             <param name="principalGuid">Principal GUID being inspected.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.RequireTenant(WatsonWebserver.Core.ApiRequest,System.String)">
+            <summary>Reject and audit conflicting tenant scopes before reading tenant data.</summary>
+            <param name="req">Request.</param><param name="tenantGuid">Requested tenant.</param>
+        </member>
+        <member name="M:SharpAI.Server.API.REST.Routes.AuthorizationGate.RequirePlatformAdministrator(WatsonWebserver.Core.ApiRequest)">
+            <summary>Require a platform administrator, excluding tenant administrator bypasses.</summary>
+            <param name="req">Request.</param>
         </member>
         <member name="T:SharpAI.Server.API.REST.Routes.GeneralRoutes">
             <summary>
@@ -510,13 +567,51 @@
             <param name="settings">Server settings containing backend configuration.</param>
             <param name="logging">Logging module.</param>
         </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.RequestDiagnostics">
+            <summary>Request-scoped diagnostics. Weak keys release buffers after the HTTP context is collected.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnostics.Begin(WatsonWebserver.Core.HttpContextBase,System.Int32)">
+            <summary>Initialize bounded capture before routing. Zero disables retained response content.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnostics.Attach(WatsonWebserver.Core.HttpContextBase,SharpAI.Operations.InferenceStatistics)">
+            <summary>Attach live caller-owned engine statistics to this request.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnostics.Read(WatsonWebserver.Core.HttpContextBase)">
+            <summary>Read recorded diagnostics, or null when capture was not initialized.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendChunk(WatsonWebserver.Core.ApiRequest,System.Byte[],System.Boolean,System.Threading.CancellationToken)">
+            <summary>Send an Ollama chunk and retain a bounded diagnostic copy after a successful write.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnostics.SendEvent(WatsonWebserver.Core.ApiRequest,WatsonWebserver.Core.ServerSentEvent,System.Boolean,System.Threading.CancellationToken)">
+            <summary>Send an OpenAI event and retain its data for structured history inspection.</summary>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState">
+            <summary>Single-request diagnostic state. Routing owns writes; post-routing reads after completion.</summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState.Statistics">
+            <summary>Engine measurements, null until an engine is acquired.</summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState.ResponseBytes">
+            <summary>Original response byte count, including bytes omitted from the diagnostic copy.</summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState.ResponseBody">
+            <summary>Bounded retained response text.</summary>
+        </member>
+        <member name="P:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState.Truncated">
+            <summary>Whether diagnostic content was omitted.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState.#ctor(System.Int32)">
+            <summary>Create a bounded capture. Maximum is clamped to 0 through 1 MiB.</summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.RequestDiagnosticsState.Append(System.Byte[])">
+            <summary>Append successfully emitted response bytes without retaining unbounded model output.</summary>
+        </member>
         <member name="T:SharpAI.Server.Classes.Runtime.RequestHistoryCaptureService">
             <summary>
             Captures a durable record of each HTTP request and its response. The entry is built synchronously
             from the request context (so request state is not lost) and written on a background task so capture
             never blocks the response. Secrets in headers are redacted and bodies are truncated to the
-            configured limits. Response bodies are not retained by the current routing layer, so only response
-            metadata and headers are captured.
+            configured limits. Response content is bounded, redacted, and retained along with measured engine phases.
             </summary>
         </member>
         <member name="M:SharpAI.Server.Classes.Runtime.RequestHistoryCaptureService.#ctor(SharpAI.Database.DatabaseDriverBase,SharpAI.Server.Classes.Settings.RequestHistorySettings,SyslogLogging.LoggingModule)">
@@ -622,7 +717,7 @@
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.HuggingFaceSettings.ApiKey">
             <summary>
-            API key.
+            Optional API key. Null or empty permits public repository access.
             </summary>
         </member>
         <member name="M:SharpAI.Server.Classes.Settings.HuggingFaceSettings.#ctor">

@@ -1,4 +1,4 @@
-﻿namespace SharpAI
+namespace SharpAI
 {
     using System;
     using System.Collections.Concurrent;
@@ -85,7 +85,7 @@
             _Serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
             _Models = models ?? throw new ArgumentNullException(nameof(models));
 
-            _Logging.Debug(_Header + "initialized");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "initialized");
         }
 
         #endregion
@@ -177,7 +177,7 @@
                 optimizedDoc = string.Join("\n\n", docChunks);
                 optimizedDoc = optimizedDoc.Length > 0 ? LightCompress(optimizedDoc) : optimizedDoc;
                 optimizedDoc = TrimToTokens(optimizedDoc, allowedPromptTokens, engine);
-                _Logging.Debug($"{_Header}DOC_EXTRACT: chunks={docChunks.Count}, final≈{CountTokensFast(engine, optimizedDoc)}t (budget={allowedPromptTokens}t)");
+                SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}DOC_EXTRACT: chunks={docChunks.Count}, final≈{CountTokensFast(engine, optimizedDoc)}t (budget={allowedPromptTokens}t)");
             }
 
             string optimizedVec = vectorHitsRaw;
@@ -187,7 +187,7 @@
                 optimizedVec = string.Join("\n\n", vecChunks);
                 optimizedVec = optimizedVec.Length > 0 ? LightCompress(optimizedVec) : optimizedVec;
                 optimizedVec = TrimToTokens(optimizedVec, allowedPromptTokens, engine);
-                _Logging.Debug($"{_Header}VECTOR_HITS: chunks={vecChunks.Count}, final≈{CountTokensFast(engine, optimizedVec)}t (budget={allowedPromptTokens}t)");
+                SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}VECTOR_HITS: chunks={vecChunks.Count}, final≈{CountTokensFast(engine, optimizedVec)}t (budget={allowedPromptTokens}t)");
             }
 
             string processed = prompt;
@@ -299,7 +299,7 @@
             if (promptTokens + maxGenTokens + safety <= nCtxUsable)
             {
                 if (promptTokens > nCtxUsable * 0.8)
-                    _Logging.Debug($"{_Header}prompt near token limit: ~{promptTokens} tokens (limit: {nCtxUsable})");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}prompt near token limit: ~{promptTokens} tokens (limit: {nCtxUsable})");
                 return prompt;
             }
 
@@ -307,7 +307,7 @@
             string shrunk = TruncatePromptByTokens(prompt, allowedPromptTokens, engine);
 
             int shrunkTokens = CountTokensFast(engine, shrunk);
-            _Logging.Warn($"{_Header}prompt truncated token-aware: ~{shrunkTokens} tokens (from ~{promptTokens}, limit: {nCtxUsable})");
+            SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}prompt truncated token-aware: ~{shrunkTokens} tokens (from ~{promptTokens}, limit: {nCtxUsable})");
             return shrunk;
         }
 
@@ -361,18 +361,18 @@
                 if (contextSize > 0)
                 {
                     int maxTokens = (int)(contextSize * _ContextUtilizationRatio);
-                    _Logging.Debug($"{_Header}model '{model}' context size: {contextSize}, using {maxTokens} tokens ({_ContextUtilizationRatio:P0} utilization)");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}model '{model}' context size: {contextSize}, using {maxTokens} tokens ({_ContextUtilizationRatio:P0} utilization)");
                     return maxTokens;
                 }
                 else
                 {
-                    _Logging.Debug($"{_Header}model '{model}' context size not available, using default: {_DefaultContextTokens} tokens");
+                    SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}model '{model}' context size not available, using default: {_DefaultContextTokens} tokens");
                     return _DefaultContextTokens;
                 }
             }
             catch (Exception ex)
             {
-                _Logging.Warn($"{_Header}Error getting context size for model '{model}', using default: {ex.Message}");
+                SharpAI.Logging.JsonLog.Warn(_Logging, $"{_Header}Error getting context size for model '{model}', using default: {ex.Message}");
                 return _DefaultContextTokens;
             }
         }
@@ -438,7 +438,7 @@
                 result = chunks.Take(5).ToList();
             }
 
-            _Logging.Debug($"{_Header}selected {result.Count} relevant chunks from {chunks.Count} total chunks");
+            SharpAI.Logging.JsonLog.Debug(_Logging, $"{_Header}selected {result.Count} relevant chunks from {chunks.Count} total chunks");
             return result;
         }
 

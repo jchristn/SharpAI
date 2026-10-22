@@ -1,4 +1,4 @@
-﻿namespace SharpAI
+namespace SharpAI
 {
     using System;
     using System.Collections.Generic;
@@ -111,7 +111,7 @@
             _Completion = new CompletionDriver(_Logging, _Serializer, _Models);
             _Chat = new ChatDriver(_Logging, _Serializer, _Models);
 
-            _Logging.Debug(_Header + "initialized");
+            SharpAI.Logging.JsonLog.Debug(_Logging, _Header + "initialized");
         }
 
         #endregion

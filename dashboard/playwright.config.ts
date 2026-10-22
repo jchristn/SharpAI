@@ -13,12 +13,12 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:3017',
   },
   webServer: {
-    command: 'npm run build && npm run start',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run build && npm run preview -- --port 3017 --strictPort',
+    url: 'http://localhost:3017',
+    reuseExistingServer: false,
     timeout: 120_000,
   },
   projects: [

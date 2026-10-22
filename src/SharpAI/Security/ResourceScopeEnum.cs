@@ -3,6 +3,7 @@ namespace SharpAI.Security
     /// <summary>
     /// The breadth of a role assignment or permission grant.
     /// </summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     public enum ResourceScopeEnum
     {
         /// <summary>

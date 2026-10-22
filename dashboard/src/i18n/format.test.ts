@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, formatDurationMs, formatList, formatNumber, formatPercent } from './format';
+import { formatBytes, formatDateTime, formatDurationMs, formatList, formatNumber, formatPercent } from './format';
 import { isSupportedLocale, localeMeta } from './locales';
 
 describe('locale-aware formatters', () => {
@@ -12,6 +12,10 @@ describe('locale-aware formatters', () => {
     expect(formatBytes(1536, 'en-US')).toBe('1.5 KB');
     expect(formatDurationMs(500, 'en-US')).toBe('500 ms');
     expect(formatDurationMs(1500, 'en-US')).toBe('1.5 s');
+  });
+
+  it('honors an explicit UTC zone for UTC-labeled table columns', () => {
+    expect(formatDateTime('2026-10-21T12:00:00Z', 'en-US', 'UTC')).toBe('Oct 21, 2026, 12:00 PM');
   });
 
   it('joins lists with Intl.ListFormat', () => {

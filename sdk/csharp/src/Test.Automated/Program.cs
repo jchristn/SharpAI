@@ -20,7 +20,7 @@ namespace Test.Automated
          * 
          */
 
-        private static string _Line = new string('-', Console.WindowWidth - 1);
+        private static string _Line = new string('-', Math.Max(1, Console.WindowWidth - 1));
 
         /// <summary>
         /// Entry point.
@@ -29,6 +29,12 @@ namespace Test.Automated
         /// <returns>Task.</returns>
         public static async Task Main(string[] args)
         {
+            if (args.Length == 2 && args[0] == "--contracts")
+            {
+                await OperationsContracts.RunAsync(args[1]);
+                return;
+            }
+
             #region Welcome
 
             Console.WriteLine();

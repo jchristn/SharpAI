@@ -129,6 +129,25 @@ namespace SharpAI.Database.Sqlite
                     {
                         "CREATE TABLE IF NOT EXISTS model_presets (guid TEXT PRIMARY KEY, name TEXT, modelname TEXT, systemprompt TEXT, temperature TEXT, maxtokens INTEGER, topp TEXT, templateoverride TEXT, stopjson TEXT, createdutc TEXT NOT NULL, lastupdateutc TEXT NOT NULL)",
                         "CREATE INDEX IF NOT EXISTS idx_model_presets_name ON model_presets (name)"
+                    }),
+                    new SchemaMigration(6, "Durable inference diagnostics", new List<string>
+                    {
+                        "ALTER TABLE request_history ADD modelname TEXT NULL",
+                        "ALTER TABLE request_history ADD isstreaming INTEGER NULL",
+                        "ALTER TABLE request_history ADD inputtokens INTEGER NULL",
+                        "ALTER TABLE request_history ADD outputtokens INTEGER NULL",
+                        "ALTER TABLE request_history ADD cachedtokens INTEGER NULL",
+                        "ALTER TABLE request_history ADD ttftms REAL NULL",
+                        "ALTER TABLE request_history ADD streamdurationms REAL NULL",
+                        "ALTER TABLE request_history ADD queuems REAL NULL",
+                        "ALTER TABLE request_history ADD loadms REAL NULL",
+                        "ALTER TABLE request_history ADD promptms REAL NULL",
+                        "ALTER TABLE request_history ADD generationms REAL NULL",
+                        "ALTER TABLE request_history ADD enginetotalms REAL NULL",
+                        "ALTER TABLE request_history ADD cancelled INTEGER NULL",
+                        "ALTER TABLE request_history ADD phasetimingsapproximate INTEGER NULL",
+                        "ALTER TABLE request_history ADD traceid TEXT NULL",
+                        "ALTER TABLE request_history ADD spanid TEXT NULL"
                     })
                 };
             }

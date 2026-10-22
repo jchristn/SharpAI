@@ -624,7 +624,31 @@ namespace SharpAI.Sdk
                             if (LogResponses)
                                 Log("DEBUG", $"Success from {url}: {resp.StatusCode}, {resp.ContentLength ?? 0} bytes");
 
-                            if (resp.ChunkedTransferEncoding)
+                            if (resp.ServerSentEvents)
+                            {
+                                // RestWrapper owns SSE framing, including events spanning HTTP chunks.
+                                ServerSentEvent? evt;
+                                while ((evt = await resp.ReadEventAsync(cancellationToken).ConfigureAwait(false)) != null)
+                                {
+                                    if (string.IsNullOrWhiteSpace(evt.Data)) continue;
+                                    string payload = processLine?.Invoke("data: " + evt.Data) ?? evt.Data;
+                                    if (string.IsNullOrWhiteSpace(payload)) continue;
+                                    if (payload.Trim() == "[DONE]") yield break;
+                                    T? result;
+                                    try { result = JsonSerializer.Deserialize<T>(payload, _JsonOptions); }
+                                    catch (JsonException ex)
+                                    {
+                                        Log("DEBUG", $"Failed to parse SSE event: {ex.Message}");
+                                        continue;
+                                    }
+                                    if (result != null)
+                                    {
+                                        yield return result;
+                                        if (shouldStop?.Invoke(result) == true) yield break;
+                                    }
+                                }
+                            }
+                            else if (resp.ChunkedTransferEncoding)
                             {
                                 Log("DEBUG", "reading chunked response from " + url);
 

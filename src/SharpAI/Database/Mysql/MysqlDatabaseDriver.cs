@@ -133,6 +133,25 @@ namespace SharpAI.Database.Mysql
                     {
                         "CREATE TABLE IF NOT EXISTS model_presets (guid VARCHAR(64) PRIMARY KEY, name VARCHAR(256), modelname VARCHAR(256), systemprompt TEXT, temperature VARCHAR(32), maxtokens INT, topp VARCHAR(32), templateoverride TEXT, stopjson TEXT, createdutc VARCHAR(64) NOT NULL, lastupdateutc VARCHAR(64) NOT NULL)",
                         "CREATE INDEX idx_model_presets_name ON model_presets (name)"
+                    }),
+                    new SchemaMigration(6, "Durable inference diagnostics", new List<string>
+                    {
+                        "ALTER TABLE request_history ADD modelname TEXT NULL",
+                        "ALTER TABLE request_history ADD isstreaming INTEGER NULL",
+                        "ALTER TABLE request_history ADD inputtokens INTEGER NULL",
+                        "ALTER TABLE request_history ADD outputtokens INTEGER NULL",
+                        "ALTER TABLE request_history ADD cachedtokens INTEGER NULL",
+                        "ALTER TABLE request_history ADD ttftms DOUBLE NULL",
+                        "ALTER TABLE request_history ADD streamdurationms DOUBLE NULL",
+                        "ALTER TABLE request_history ADD queuems DOUBLE NULL",
+                        "ALTER TABLE request_history ADD loadms DOUBLE NULL",
+                        "ALTER TABLE request_history ADD promptms DOUBLE NULL",
+                        "ALTER TABLE request_history ADD generationms DOUBLE NULL",
+                        "ALTER TABLE request_history ADD enginetotalms DOUBLE NULL",
+                        "ALTER TABLE request_history ADD cancelled INTEGER NULL",
+                        "ALTER TABLE request_history ADD phasetimingsapproximate INTEGER NULL",
+                        "ALTER TABLE request_history ADD traceid TEXT NULL",
+                        "ALTER TABLE request_history ADD spanid TEXT NULL"
                     })
                 };
             }

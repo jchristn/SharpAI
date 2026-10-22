@@ -381,3 +381,6 @@ docker/models/
 docker/sharpai.db
 # Loki/Tempo/Prometheus keep no named volumes; nothing else to ignore for telemetry.
 test-models/
+
+# Local planning notes
+TENSORFOLD_LEARNINGS.md
