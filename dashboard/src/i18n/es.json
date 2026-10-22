@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "Parámetros reutilizables de generación, muestreo, formato y streaming. Los prompts se gestionan aparte.",
     "PUT /v1.0/model-configurations/{id}": "Editar · Configuraciones del modelo",
     "POST /v1.0/model-configurations/{id}/duplicate": "Crea una copia editable sin cambiar el origen; por defecto es personal al iniciar sesión. · Configuraciones del modelo",
-    "DELETE /v1.0/model-configurations/{id}": "Eliminar · Configuraciones del modelo"
+    "DELETE /v1.0/model-configurations/{id}": "Eliminar · Configuraciones del modelo",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Revelar token Bearer",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "¿Regenerar este token? El anterior dejará de funcionar inmediatamente. Actualice las integraciones que lo utilizan."
   },
   "apiGroups": {
     "General": "Generalidades",
@@ -717,7 +719,7 @@
     "noPermissions": "No hay reglas políticas explícitas.",
     "credentialCreated": "Credencial creada",
     "savedSecret": "He guardado el secreto",
-    "secretOnce": "Copie este token ahora. Solo se muestra una vez y se borra al cerrar este diálogo.",
+    "secretOnce": "Copie este token. Los administradores autorizados pueden revelarlo de nuevo en Credenciales.",
     "deleteConfirm": "¿Confirmar la eliminación de {{name}}?",
     "deleteUserHelp": "Esto también elimina las credenciales del usuario y las asignaciones de roles. Las sesiones existentes dejan de funcionar.",
     "deleteTenantHelp": "Se detiene todo acceso a este inquilino. Los registros asociados con el inquilino pueden permanecer en la base de datos.",
@@ -784,7 +786,13 @@
     "effectiveHelp": "Estas son reglas de política asignadas. Los administradores de plataformas eluden las comprobaciones de permisos; Los administradores de inquilinos eluden los controles dentro de su inquilino. El acceso a las credenciales también está limitado por los permisos del usuario propietario.",
     "id": "ID",
     "bearerToken": "Token de portador de API",
-    "copyBearerToken": "Copiar el token completo para la cabecera Authorization"
+    "copyBearerToken": "Copiar el token completo para la cabecera Authorization",
+    "revealToken": "Revelar token Bearer",
+    "hideToken": "Ocultar token Bearer",
+    "regenerateToken": "Regenerar token Bearer",
+    "regenerateTokenConfirm": "¿Regenerar este token? El anterior dejará de funcionar inmediatamente. Actualice las integraciones que lo utilizan.",
+    "tokenUnavailable": "Este token antiguo no se conservó. Regenérelo para poder revelarlo.",
+    "tokenFailed": "No se pudo obtener el token. Compruebe permisos y conexión."
   },
   "help": {
     "refresh": "Recarga los datos sin borrar los filtros ni el tenant seleccionado.",

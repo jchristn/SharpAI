@@ -64,6 +64,12 @@
         <member name="M:SharpAI.Sdk.Implementations.AdminMethods.CreateCredentialAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.RevealCredentialTokenAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SharpAI.Sdk.Implementations.AdminMethods.RegenerateCredentialTokenAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
         <member name="M:SharpAI.Sdk.Implementations.AdminMethods.ListRolesAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
             <inheritdoc />
         </member>
@@ -210,7 +216,13 @@
             <summary>List credentials within a tenant.</summary>
         </member>
         <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.CreateCredentialAsync(System.String,System.String,System.String,System.Threading.CancellationToken)">
-            <summary>Create a credential; the plaintext secret key is returned once.</summary>
+            <summary>Create a bearer credential; authorized administrators can reveal its retained token later.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.RevealCredentialTokenAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Reveal a retained bearer token with Credential Admin permission. Legacy hash-only tokens return 409.</summary>
+        </member>
+        <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.RegenerateCredentialTokenAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Regenerate a bearer token, immediately invalidating its previous value while preserving grants and status.</summary>
         </member>
         <member name="M:SharpAI.Sdk.Interfaces.IAdminMethods.ListRolesAsync(System.String,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
             <summary>List roles visible to a tenant (its own plus built-ins).</summary>
@@ -429,7 +441,7 @@
         </member>
         <member name="T:SharpAI.Sdk.Models.Admin.CreatedCredential">
             <summary>
-            The one-time credential creation response, including the plaintext bearer token (shown only once).
+            Credential creation response, including a bearer token that authorized administrators may reveal later.
             </summary>
         </member>
         <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.Guid">
@@ -454,7 +466,7 @@
         </member>
         <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.Token">
             <summary>
-            Opaque bearer token, returned only once.
+            Initial opaque bearer token. Treat as secret.
             </summary>
         </member>
         <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.TokenType">

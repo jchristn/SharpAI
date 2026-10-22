@@ -236,6 +236,14 @@ class SharpAIClient:
     def create_credential(self, tenant_guid: str, user_guid: str, name: str) -> Any:
         return self._request("POST", f"/v1.0/tenants/{tenant_guid}/credentials", body={"UserGuid": user_guid, "Name": name})
 
+    def reveal_credential_token(self, tenant_guid: str, credential_guid: str) -> Any:
+        """Reveal a retained token. Requires Credential Admin permission; legacy hash-only tokens return 409."""
+        return self._request("GET", f"/v1.0/tenants/{urllib.parse.quote(tenant_guid, safe='')}/credentials/{urllib.parse.quote(credential_guid, safe='')}/token")
+
+    def regenerate_credential_token(self, tenant_guid: str, credential_guid: str) -> Any:
+        """Invalidate the previous token and retain an encrypted replacement; permissions and status persist."""
+        return self._request("POST", f"/v1.0/tenants/{urllib.parse.quote(tenant_guid, safe='')}/credentials/{urllib.parse.quote(credential_guid, safe='')}/token/rotate")
+
     def list_roles(self, tenant_guid: str, **query: Any) -> Any:
         return self._request("GET", f"/v1.0/tenants/{tenant_guid}/roles", query=query)
 

@@ -20,6 +20,8 @@ const paths: Record<string, ReactNode> = {
   '/model-configurations': <><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></>,
   edit: <><path d="m15 4 5 5-10 10-6 1 1-6L15 4Z"/><path d="m13 6 5 5"/></>,
   stop: <rect x="6" y="6" width="12" height="12" fill="currentColor" stroke="none"/>,
+  eye: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></>,
+  'eye-off': <><path d="m3 3 18 18M10 5a12 12 0 0 1 12 7s-1 3-4 5M6 6c-3 2-4 6-4 6s3 7 10 7c2 0 3 0 4-1"/></>,
   refresh: <><path d="M3 11a9 9 0 0 1 15.5-6.5L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.5 6.5L3 17M7 17H3v4"/></>,
   download: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></>,
   copy: <><rect x="8" y="8" width="13" height="13" rx="1"/><path d="M16 8V3H3v13h5"/></>,

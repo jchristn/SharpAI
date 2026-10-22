@@ -118,6 +118,14 @@ namespace SharpAI.Sdk.Implementations
             => _Sdk.SendAsync<CreatedCredential>(HttpMethod.Post, Url($"/v1.0/tenants/{tenantGuid}/credentials"), new { UserGuid = userGuid, Name = name }, null, cancellationToken);
 
         /// <inheritdoc />
+        public Task<JsonElement?> RevealCredentialTokenAsync(string tenantGuid, string credentialGuid, CancellationToken cancellationToken = default)
+            => _Sdk.SendAsync<JsonElement?>(HttpMethod.Get, Url($"/v1.0/tenants/{Uri.EscapeDataString(tenantGuid)}/credentials/{Uri.EscapeDataString(credentialGuid)}/token"), null, null, cancellationToken);
+
+        /// <inheritdoc />
+        public Task<JsonElement?> RegenerateCredentialTokenAsync(string tenantGuid, string credentialGuid, CancellationToken cancellationToken = default)
+            => _Sdk.SendAsync<JsonElement?>(HttpMethod.Post, Url($"/v1.0/tenants/{Uri.EscapeDataString(tenantGuid)}/credentials/{Uri.EscapeDataString(credentialGuid)}/token/rotate"), null, null, cancellationToken);
+
+        /// <inheritdoc />
         public Task<JsonElement?> ListRolesAsync(string tenantGuid, IDictionary<string, string>? query = null, CancellationToken cancellationToken = default)
             => _Sdk.SendAsync<JsonElement?>(HttpMethod.Get, Url($"/v1.0/tenants/{tenantGuid}/roles", query), null, null, cancellationToken);
 

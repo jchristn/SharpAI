@@ -536,7 +536,23 @@ control plane:
 
 ```csharp
 JsonElement? page = await sdk.Admin.RequestHistoryAsync(new Dictionary<string, string> { ["pageSize"] = "25" });
-CreatedCredential? cred = await sdk.Admin.CreateCredentialAsync("ten_...", "usr_...", "CI key"); // Token shown once
+CreatedCredential? cred = await sdk.Admin.CreateCredentialAsync("ten_...", "usr_...", "CI key"); // Token can be revealed by authorized administrators
 ```
 
 Read methods return the parsed `JsonElement` (or null on a non-success status).
+
+## Bearer token reveal and regeneration
+
+These methods require Credential Admin permission within the addressed tenant. Reveal returns `token` and
+`tokenType`; ordinary credential reads omit token values. Legacy hash-only credentials return HTTP 409 until
+regenerated. Regeneration immediately invalidates the previous token and preserves grants, active status and expiry.
+The SDK uses its normal non-success response behavior; do not log returned token objects.
+
+```csharp
+JsonElement? token = await sdk.Admin.RevealCredentialTokenAsync("default", "crd_...");
+JsonElement? replacement = await sdk.Admin.RegenerateCredentialTokenAsync("default", "crd_...");
+```
+
+See [API contract and encrypted storage](../../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for authentication, caching, auditing, backup and legacy-token details.
+
+Run SDK HTTP transport and secret-log regression tests with `dotnet test tests/SharpAI.Sdk.Tests -c Release` from this directory.

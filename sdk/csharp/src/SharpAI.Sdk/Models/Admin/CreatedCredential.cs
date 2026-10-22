@@ -1,7 +1,7 @@
 namespace SharpAI.Sdk.Models.Admin
 {
     /// <summary>
-    /// The one-time credential creation response, including the plaintext bearer token (shown only once).
+    /// Credential creation response, including a bearer token that authorized administrators may reveal later.
     /// </summary>
     public class CreatedCredential
     {
@@ -28,7 +28,7 @@ namespace SharpAI.Sdk.Models.Admin
         public string? Name { get; set; }
 
         /// <summary>
-        /// Opaque bearer token, returned only once.
+        /// Initial opaque bearer token. Treat as secret.
         /// </summary>
         public string? Token { get { return _Token; } set { _Token = value; } }
 

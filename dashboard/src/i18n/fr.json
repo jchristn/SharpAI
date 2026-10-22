@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "Paramètres de génération réutilisables : échantillonnage, format et streaming. Les prompts sont gérés séparément.",
     "PUT /v1.0/model-configurations/{id}": "Modifier · Configurations du modèle",
     "POST /v1.0/model-configurations/{id}/duplicate": "Crée une copie modifiable sans changer la source ; personnelle par défaut après connexion. · Configurations du modèle",
-    "DELETE /v1.0/model-configurations/{id}": "Supprimer · Configurations du modèle"
+    "DELETE /v1.0/model-configurations/{id}": "Supprimer · Configurations du modèle",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Afficher le jeton Bearer",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "Régénérer ce jeton ? L’ancien cessera immédiatement de fonctionner. Mettez à jour les intégrations qui l’utilisent."
   },
   "apiGroups": {
     "General": "Général",
@@ -717,7 +719,7 @@
     "noPermissions": "Aucune règle de politique explicite.",
     "credentialCreated": "Identifiant créé",
     "savedSecret": "J'ai gardé le secret",
-    "secretOnce": "Copiez ce jeton maintenant. Il est affiché une seule fois et effacé à la fermeture.",
+    "secretOnce": "Copiez ce jeton. Les administrateurs autorisés peuvent le réafficher dans Identifiants.",
     "deleteConfirm": "Confirmer la suppression de {{name}} ?",
     "deleteUserHelp": "Cela supprime également les informations d’identification et les attributions de rôles de l’utilisateur. Les sessions existantes cessent de fonctionner.",
     "deleteTenantHelp": "Tout accès à ce locataire s'arrête. Les enregistrements associés au locataire peuvent rester dans la base de données.",
@@ -784,7 +786,13 @@
     "effectiveHelp": "Ce sont des règles de politique qui leur sont attribuées. Les administrateurs de plate-forme contournent les contrôles d'autorisation ; les administrateurs de locataires contournent les contrôles au sein de leur locataire. L’accès aux informations d’identification est également limité par les autorisations de son utilisateur propriétaire.",
     "id": "ID",
     "bearerToken": "Jeton Bearer API",
-    "copyBearerToken": "Copier le jeton complet pour l’en-tête Authorization"
+    "copyBearerToken": "Copier le jeton complet pour l’en-tête Authorization",
+    "revealToken": "Afficher le jeton Bearer",
+    "hideToken": "Masquer le jeton Bearer",
+    "regenerateToken": "Régénérer le jeton Bearer",
+    "regenerateTokenConfirm": "Régénérer ce jeton ? L’ancien cessera immédiatement de fonctionner. Mettez à jour les intégrations qui l’utilisent.",
+    "tokenUnavailable": "Cet ancien jeton n’a pas été conservé. Régénérez-le pour pouvoir l’afficher.",
+    "tokenFailed": "Impossible de récupérer le jeton. Vérifiez vos droits et la connexion."
   },
   "help": {
     "refresh": "Actualise les données sans effacer les filtres ni le tenant choisi.",

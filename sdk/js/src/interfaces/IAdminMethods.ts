@@ -39,7 +39,7 @@ export interface CreateAssignmentRequest {
 }
 
 /**
- * The one-time credential creation response (includes the plaintext bearer token, shown only once).
+ * Credential creation response. Later token reveal requires Credential Admin permission.
  */
 export interface CreatedCredential {
   guid: string;
@@ -75,6 +75,11 @@ export interface IAdminMethods {
   deleteUser(tenantGuid: string, userGuid: string, signal?: AbortSignal): Promise<unknown | null>;
   listCredentials(tenantGuid: string, query?: QueryParams, signal?: AbortSignal): Promise<unknown | null>;
   createCredential(tenantGuid: string, userGuid: string, name: string, signal?: AbortSignal): Promise<CreatedCredential | null>;
+  /** Reveal a retained token; requires Credential Admin permission. Legacy hash-only tokens return 409. */
+  revealCredentialToken(tenantGuid:string,credentialGuid:string,signal?:AbortSignal):Promise<Pick<CreatedCredential,'token'|'tokenType'>|null>;
+  /** Immediately invalidate the old token and retain an encrypted replacement. */
+  regenerateCredentialToken(tenantGuid:string,credentialGuid:string,signal?:AbortSignal):Promise<Pick<CreatedCredential,'token'|'tokenType'>|null>;
+
   listRoles(tenantGuid: string, query?: QueryParams, signal?: AbortSignal): Promise<unknown | null>;
   createAssignment(tenantGuid: string, request: CreateAssignmentRequest, signal?: AbortSignal): Promise<unknown | null>;
   userPermissions(tenantGuid: string, userGuid: string, signal?: AbortSignal): Promise<unknown | null>;

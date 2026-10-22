@@ -58,8 +58,14 @@ namespace SharpAI.Sdk.Interfaces
         /// <summary>List credentials within a tenant.</summary>
         Task<JsonElement?> ListCredentialsAsync(string tenantGuid, IDictionary<string, string>? query = null, CancellationToken cancellationToken = default);
 
-        /// <summary>Create a credential; the plaintext secret key is returned once.</summary>
+        /// <summary>Create a bearer credential; authorized administrators can reveal its retained token later.</summary>
         Task<CreatedCredential?> CreateCredentialAsync(string tenantGuid, string userGuid, string name, CancellationToken cancellationToken = default);
+
+        /// <summary>Reveal a retained bearer token with Credential Admin permission. Legacy hash-only tokens return 409.</summary>
+        Task<JsonElement?> RevealCredentialTokenAsync(string tenantGuid, string credentialGuid, CancellationToken cancellationToken = default);
+
+        /// <summary>Regenerate a bearer token, immediately invalidating its previous value while preserving grants and status.</summary>
+        Task<JsonElement?> RegenerateCredentialTokenAsync(string tenantGuid, string credentialGuid, CancellationToken cancellationToken = default);
 
         /// <summary>List roles visible to a tenant (its own plus built-ins).</summary>
         Task<JsonElement?> ListRolesAsync(string tenantGuid, IDictionary<string, string>? query = null, CancellationToken cancellationToken = default);

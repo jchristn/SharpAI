@@ -22,7 +22,7 @@ describe('AdminMethods', () => {
     const fetchMock = mockFetch(200, {});
     const sdk = new SharpAISdk('http://127.0.0.1:8000', { token: 'abc' });
     await sdk.admin.session();
-    const [, init] = fetchMock.mock.calls[0];
+    const init = fetchMock.mock.calls[0]![1];
     expect((init as RequestInit).headers).toMatchObject({ Authorization: 'Bearer abc' });
   });
 
@@ -30,7 +30,8 @@ describe('AdminMethods', () => {
     const fetchMock = mockFetch(200, { token: 'tok123', sessionId: 's', tenantId: 'ten', userId: 'usr', expiresUtc: 'z' });
     const sdk = new SharpAISdk('http://127.0.0.1:8000');
     const result = await sdk.admin.login('a@b.c', 'pw', 'ten_1');
-    const [url, init] = fetchMock.mock.calls[0];
+    const call = fetchMock.mock.calls[0]!;
+    const url = call[0]; const init = call[1];
     expect(url).toBe('http://127.0.0.1:8000/v1.0/token');
     expect((init as RequestInit).headers).toMatchObject({ 'x-email': 'a@b.c', 'x-password': 'pw', 'x-tenant-guid': 'ten_1' });
     expect(result?.token).toBe('tok123');
@@ -41,7 +42,7 @@ describe('AdminMethods', () => {
     const fetchMock = mockFetch(200, { Objects: [], TotalRecords: 0 });
     const sdk = new SharpAISdk('http://127.0.0.1:8000');
     await sdk.admin.requestHistory({ pageSize: 25, method: 'GET' });
-    const url = fetchMock.mock.calls[0][0] as string;
+    const url = fetchMock.mock.calls[0]![0] as string;
     expect(url).toContain('/v1.0/api/request-history?');
     expect(url).toContain('pageSize=25');
     expect(url).toContain('method=GET');
@@ -51,10 +52,21 @@ describe('AdminMethods', () => {
     const fetchMock = mockFetch(200, { Guid: 'ten_1', Name: 'acme' });
     const sdk = new SharpAISdk('http://127.0.0.1:8000', { apiKey: 'key' });
     await sdk.admin.createTenant('acme');
-    const [url, init] = fetchMock.mock.calls[0];
+    const call = fetchMock.mock.calls[0]!;
+    const url = call[0]; const init = call[1];
     expect(url).toBe('http://127.0.0.1:8000/v1.0/tenants');
     expect((init as RequestInit).method).toBe('POST');
     expect(JSON.parse((init as RequestInit).body as string)).toEqual({ Name: 'acme' });
     expect((init as RequestInit).headers).toMatchObject({ 'x-api-key': 'key' });
   });
+  it('reveals and regenerates tokens through scoped administrative routes', async () => {
+    const fetchMock=mockFetch(200,{token:'sharpai_fixture',tokenType:'Bearer'});
+    const sdk=new SharpAISdk('http://127.0.0.1:8000',{token:'admin-session'});
+    expect((await sdk.admin.revealCredentialToken('tenant-a','credential-a'))?.token).toBe('sharpai_fixture');
+    expect(fetchMock.mock.calls[0]![0]).toBe('http://127.0.0.1:8000/v1.0/tenants/tenant-a/credentials/credential-a/token');
+    await sdk.admin.regenerateCredentialToken('tenant-a','credential-a');
+    expect(fetchMock.mock.calls[1]![0]).toBe('http://127.0.0.1:8000/v1.0/tenants/tenant-a/credentials/credential-a/token/rotate');
+    expect(fetchMock.mock.calls[1]![1].method).toBe('POST');
+  });
+
 });

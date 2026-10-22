@@ -12,7 +12,7 @@ Platform administrators can choose any tenant. Other principals are bound to the
 | --- | --- | --- |
 | `/access/tenants` | List, create, edit, deactivate, delete unprotected tenants | `/v1.0/tenants` |
 | `/access/users` | List, create, edit account details/status, reset passwords, inspect effective permissions | `/v1.0/tenants/{tenant}/users` |
-| `/access/credentials` | List, create with one-time bearer token, edit status/expiration, revoke, inspect permissions | `/v1.0/tenants/{tenant}/credentials` |
+| `/access/credentials` | List, create, reveal/copy/hide bearer tokens, regenerate, edit status/expiration, revoke, inspect permissions | `/v1.0/tenants/{tenant}/credentials` |
 | `/access/roles` | List built-in/custom roles, create/rename/delete custom roles, manage permission mappings | `/v1.0/tenants/{tenant}/roles` |
 | `/access/permissions` | List, create permit/deny rules, delete custom permissions | `/v1.0/tenants/{tenant}/permissions` |
 | `/access/assignments` | Grant/revoke user roles and credential scopes at tenant/resource scope | User and credential assignment APIs |
@@ -24,8 +24,8 @@ Legacy routes such as `/users` remain available. Access tabs preserve the select
 All routes use the shared API client, tables, pagination, form dialogs, confirmation dialogs, and localized
 copy. Lists have explicit loading, empty, access-denied, and failure states. Row actions respect protected
 and built-in records. Raw passwords/hashes are never displayed in record details. A newly issued credential
-secret exists only in the creation-result dialog, with a copy control; it is cleared when the dialog closes
-or the tenant changes. Passwords are accepted by a separate reset form and are never read back.
+token is shown in the creation-result dialog and can be revealed later with Credential Admin permission.
+Revealed values are cleared when hidden, when navigating away, or when tenant/permission context changes. Passwords are accepted by a separate reset form and are never read back.
 
 Server authorization remains authoritative. The dashboard obtains identity and per-resource capabilities
 from `/v1.0/auth/context`; restricted actions are hidden/disabled, and direct API calls re-enforce the rules.
@@ -44,8 +44,8 @@ Armada's tenant-isolation and RBAC patterns; the Agents authentication and dashb
    the browser tab and is checked against the caller's accessible tenants after sign-in or refresh.
 3. Open **Users** to add accounts, edit active/admin flags, or reset passwords. A reset revokes all of
    the user's current sessions. Disabling a user or tenant also blocks existing sessions and credentials.
-4. Open **Credentials**, choose an owning user, and create a named integration key. Save its one-time
-   bearer token. API calls require `Authorization: Bearer <token>`; these are separate from dashboard passwords.
+4. Open **Credentials**, choose an owning user, and create a named integration key. Reveal, hide, copy or regenerate its
+   bearer token using the icons in its token column. API calls require `Authorization: Bearer <token>`; these are separate from dashboard passwords.
 5. In **Permissions**, define resource/operation rules with Permit or Deny. In **Roles**, create a custom
    role and use **Role permissions** to map rules. Built-in roles and permissions are read-only.
 6. In **Assignments**, choose Users or Credentials and the principal, then grant a role over the entire
@@ -62,10 +62,12 @@ select the new tenant and add its first account on Users.
 
 `python3 scripts/test-administration.py` starts its own temporary, authenticated server and SQLite database;
 it never modifies a running deployment. It verifies tenant isolation, admin escalation prevention, built-in
-immutability, role mappings, permission effects, credential owner ceilings, one-time bearer token redaction,
+immutability, role mappings, permission effects, credential owner ceilings, bearer token reveal, regeneration and redaction,
 account/tenant deactivation, password resets, and session revocation. Build the server first or pass
 `--server-dll /absolute/path/to/SharpAI.Server.dll`. This test also runs in dashboard CI.
 
 Dashboard browser coverage is in `dashboard/e2e/administration.spec.ts`, including all routes at desktop,
 tablet and mobile sizes, accessibility, tenant switches and stale responses, typed forms, credential secret
 lifetime, readonly controls, role permission mappings, and exact credential resource scopes.
+
+See [reveal and regeneration contracts](../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for permissions, error codes, legacy credential recovery and encrypted token backups.

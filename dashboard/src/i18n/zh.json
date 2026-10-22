@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "可重复使用的生成设置，包括采样、输出格式和流式响应；系统提示词单独管理。",
     "PUT /v1.0/model-configurations/{id}": "编辑 · 模型配置",
     "POST /v1.0/model-configurations/{id}/duplicate": "创建可编辑副本且不改变原件；登录后默认保存为个人项目。 · 模型配置",
-    "DELETE /v1.0/model-configurations/{id}": "删除 · 模型配置"
+    "DELETE /v1.0/model-configurations/{id}": "删除 · 模型配置",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "显示 Bearer 令牌",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "重新生成此令牌？旧令牌将立即失效。请更新使用它的集成。"
   },
   "apiGroups": {
     "General": "概述",
@@ -717,7 +719,7 @@
     "noPermissions": "没有明确的政策规则。",
     "credentialCreated": "凭证已创建",
     "savedSecret": "我已经保存了这个秘密",
-    "secretOnce": "请立即复制此令牌。它仅显示一次，关闭对话框后将被清除。",
+    "secretOnce": "请复制此令牌。获授权的管理员可在凭据页面再次显示。",
     "deleteConfirm": "确认删除{{name}}？",
     "deleteUserHelp": "这也删除了用户的凭证和角色分配。现有会话停止工作。",
     "deleteTenantHelp": "对该租户的所有访问停止。与租户相关联的记录可以保留在数据库中。",
@@ -784,7 +786,13 @@
     "effectiveHelp": "这些是指定的策略规则。平台管理员绕过权限检查；租户管理员绕过租户内的检查。凭证访问也受到其所属用户的权限的限制。",
     "id": "ID",
     "bearerToken": "API 持有者令牌",
-    "copyBearerToken": "复制用于 Authorization 请求头的完整令牌"
+    "copyBearerToken": "复制用于 Authorization 请求头的完整令牌",
+    "revealToken": "显示 Bearer 令牌",
+    "hideToken": "隐藏 Bearer 令牌",
+    "regenerateToken": "重新生成 Bearer 令牌",
+    "regenerateTokenConfirm": "重新生成此令牌？旧令牌将立即失效。请更新使用它的集成。",
+    "tokenUnavailable": "此旧令牌未保留。重新生成后即可显示。",
+    "tokenFailed": "无法获取令牌。请检查权限和连接。"
   },
   "help": {
     "refresh": "重新加载服务器数据，保留当前筛选条件和租户。",

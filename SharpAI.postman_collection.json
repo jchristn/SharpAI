@@ -4,7 +4,7 @@
 		"name": "SharpAI",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "720438",
-		"description": "SharpAI v4.0.1 requires Authorization: Bearer {{bearerToken}} for API requests. Use the private auth/default-bearer-token bootstrap file for model/inference access, or POST /v1.0/token with x-email, x-password and x-tenant-guid for an interactive session. Access keys and x-api-key are not accepted by the server."
+		"description": "SharpAI v4.0.1 requires Authorization: Bearer {{bearerToken}} for API requests. Use the private auth/default-bearer-token bootstrap file for model/inference access, or POST /v1.0/token with x-email, x-password and x-tenant-guid for an interactive session. Access keys and x-api-key are not accepted by the server. Credential administrators can reveal retained AES-GCM encrypted tokens or regenerate legacy hash-only credentials. Both actions are audited and return no-store responses; ordinary lists omit token values. See the Credential token management folder."
 	},
 	"item": [
 		{
@@ -561,6 +561,66 @@
 								"exec": [
 									"pm.test('Bearer credential authorizes metric scraping', () => pm.response.to.have.status(200));",
 									"pm.test('HTTP instruments are exposed', () => pm.expect(pm.response.text()).to.include('# TYPE')); "
+								]
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Credential token management",
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{adminBearerToken}}",
+						"type": "string"
+					}
+				]
+			},
+			"description": "Requires Credential Admin permission in tenantGuid. Keep adminBearerToken in a private environment. Regeneration immediately invalidates the old token; execute only when intended. Legacy hash-only reveal returns 409; inactive/expired credentials remain inactive/expired after regeneration.",
+			"item": [
+				{
+					"name": "Reveal credential bearer token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/tenants/{{tenantGuid}}/credentials/{{credentialGuid}}/token",
+						"description": "200: {token,tokenType}; 401: missing/invalid bearer; 403: insufficient permission/tenant scope; 404: credential not in tenant; 409: legacy token not retained. Response is no-store; token is redacted from request history."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Reveal succeeds', () => pm.response.to.have.status(200));",
+									"pm.test('Secret responses must not be cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+									"pm.test('Response contains a bearer token', () => { pm.expect(pm.response.json().tokenType).to.eql('Bearer'); pm.expect(pm.response.json().token).to.match(/^sharpai_[a-f0-9]{64}$/); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Regenerate credential bearer token (invalidates old token)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/tenants/{{tenantGuid}}/credentials/{{credentialGuid}}/token/rotate",
+						"description": "No body. Immediately invalidates the previous token; preserves credential ID, scopes, active flag and expiry. 200 replacement; 401 unauthenticated; 403 insufficient permission, wrong tenant or protected credential; 404 not found."
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Regeneration succeeds', () => pm.response.to.have.status(200));",
+									"pm.test('Secret responses must not be cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+									"if (pm.response.code === 200) pm.environment.set('revealedBearerToken', pm.response.json().token);"
 								]
 							}
 						}

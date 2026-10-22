@@ -442,3 +442,23 @@ test('Access consolidates navigation and tabs preserve tenant scope',async({page
 
 // Every protected workflow starts with a validated sign-in.
 test.beforeEach(async ({page}) => authenticatedPage(page));
+
+test('credential tokens reveal, hide, copy and regenerate only after explicit actions',async({page})=>{
+ let reveals=0;let rotations=0;
+ await page.route('**/credentials/cred-a/token',route=>{reveals++;return route.fulfill({json:{token:rotations?'sharpai_replacement':'sharpai_retained',tokenType:'Bearer'}});});
+ await page.route('**/credentials/cred-a/token/rotate',route=>{rotations++;return route.fulfill({json:{token:'sharpai_replacement',tokenType:'Bearer'}});});
+ await page.goto('/access/credentials');
+ const row=page.locator('tbody tr').first();await expect(row.getByText('CI',{exact:true})).toBeVisible();expect(reveals).toBe(0);
+ await row.getByRole('button',{name:'Reveal bearer token',exact:true}).click();await expect(row.getByText('sharpai_retained',{exact:true})).toBeVisible();
+ await row.getByRole('button',{name:'Copy the complete bearer token for the Authorization header',exact:true}).click();await expect(row.getByRole('button',{name:'Copied',exact:true})).toBeVisible();
+ await row.getByRole('button',{name:'Hide bearer token',exact:true}).click();await expect(page.getByText('sharpai_retained',{exact:true})).toHaveCount(0);
+ await row.getByRole('button',{name:'Regenerate bearer token',exact:true}).click();expect(rotations).toBe(0);await page.getByRole('dialog').getByRole('button',{name:'Regenerate bearer token',exact:true}).click();await expect(row.getByText('sharpai_replacement',{exact:true})).toBeVisible();expect(rotations).toBe(1);
+ await page.getByRole('combobox',{name:'Selected tenant',exact:true}).selectOption('tenant-b');await expect(page.getByText('sharpai_replacement',{exact:true})).toHaveCount(0);
+});
+
+test('legacy hash-only credentials explain regeneration and read-only viewers cannot reveal',async({page})=>{
+ await page.route('**/credentials/cred-a/token',route=>route.fulfill({status:409,json:{Message:'Token was not retained'}}));
+ await page.goto('/access/credentials');await page.getByRole('button',{name:'Reveal bearer token',exact:true}).click();await expect(page.getByRole('alert')).toContainText('Regenerate it to enable reveal');
+ await page.route('**/v1.0/auth/context',route=>route.fulfill({json:{...context,isAdmin:false,isTenantAdmin:false,capabilities:{Credential:{read:true,write:false}}}}));
+ await page.reload();await expect(page.getByRole('button',{name:'Reveal bearer token',exact:true})).toHaveCount(0);
+});

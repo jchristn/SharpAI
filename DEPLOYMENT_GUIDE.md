@@ -610,19 +610,19 @@ On first startup, SharpAI provisions **Default API bearer token** for the defaul
 allow model reads and inference execution; it cannot administer settings, tenants, or accounts. The
 256-bit random token is written to `auth/default-bearer-token` in the server working directory, with
 owner-only permissions on Unix. Docker Compose persists it at `docker/auth/default-bearer-token`.
-Only digests are stored in the database. Never commit or share this directory. Override its location with
+Only digests are stored in the database. Revealable tokens are stored as AES-GCM ciphertext in the private auth directory, alongside a separate durable encryption key. Never commit or share this directory. Override its location with
 `SHARPAI_AUTH_DIRECTORY` when running the server directly; preserve it alongside database backups.
 
 Send the token as `Authorization: Bearer <token>` for both Ollama and OpenAI endpoints. For example,
 from the repository root:
 
 ```bash
-SHARPAI_BEARER_TOKEN="$(cat docker/auth/default-bearer-token)"
+export SHARPAI_BEARER_TOKEN="$(cat docker/auth/default-bearer-token)"
 curl -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/v1/models
 ```
 
 Administrators can create additional bearer credentials in **Access → Credentials**, assign their
-permissions in **Assignments**, and copy the token from its creation result. It is shown once. Deactivate,
+permissions in **Assignments**, and copy the token from its creation result. Credential administrators can use the eye icon to reveal it again. Deactivate,
 expire, or delete credentials to revoke access. Startup does not reactivate or recreate a revoked/deleted
 bootstrap credential. The original private bootstrap file remains for provisioning/auditing and stops
 working when revoked. Interactive session tokens from `POST /v1.0/token` also work as bearer credentials
@@ -631,6 +631,42 @@ with the signed-in user's permissions.
 The bundled Prometheus service reads the private bootstrap token through a read-only mount for `/metrics`.
 If you revoke that token, configure a replacement token file for Prometheus. Health/readiness probes
 continue to work without a token. API documentation, Swagger, and metrics require authentication.
+
+### Reveal and regenerate API bearer tokens
+
+Use the eye icon in **Access → Credentials** to reveal or hide a token and its copy icon to copy the complete value.
+The refresh icon in the token column regenerates it after confirmation, immediately invalidating the previous token.
+Both operations require **Credential Admin** permission for the target tenant. Resource-scoped grants and explicit denies are evaluated against the addressed credential ID. Credential Read permission alone
+cannot reveal a secret; tenant administrators are limited to their own tenant, and platform administrators can
+manage any tenant. Reveal does not activate disabled or expired credentials.
+
+| Method | Route | Behavior |
+| --- | --- | --- |
+| GET | `/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token` | Return `{ "token": "sharpai_...", "tokenType": "Bearer" }` with `Cache-Control: no-store`. |
+| POST | `/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate` | No request body. Return a new token, preserving credential ID, grants, active status and expiration. |
+
+Both endpoints require `Authorization: Bearer <administrator-session-or-authorized-credential>`. They return
+401 for missing/invalid authentication, 403 for insufficient permission or prohibited tenant access, and 404
+when the credential does not belong to the addressed tenant. Reveal returns 409 for a token that was never
+retained. Regeneration returns 403 for protected credentials. Regular lists and detail reads never return tokens.
+Reveals and regeneration are audited; request history redacts their token values. Do not store raw reveal
+responses in application logs or browser storage.
+
+Earlier hash-only credentials cannot be reconstructed. The default bootstrap token is imported from its existing
+private file at startup, preserving its value. Regenerate other legacy credentials to enable reveal and update
+clients using their old token. Regenerating the default credential also updates the bootstrap token file and its
+restricted Prometheus mirror so the bundled scraper follows the replacement automatically.
+
+Back up the **entire auth directory together with the database**. Files named `credential-*.token` contain
+nonce, authentication tag and ciphertext; `credential-encryption.key` contains the private 256-bit encryption key.
+Losing the key prevents reveal of existing ciphertext, although digest-based authentication remains independent
+of this key. Restore the matching key/files backup. The Prometheus container mounts only `auth/metrics/` and
+cannot read the encryption key or other tenants' encrypted credentials. Session token signing keys remain separate.
+
+The live OpenAPI document includes these endpoints. The Postman collection has a **Credential token management**
+folder using private `adminBearerToken`, `tenantGuid` and `credentialGuid` environment variables. Its regeneration
+request is deliberately mutating; run it only for a credential you intend to replace. It stores the replacement in
+the environment variable `revealedBearerToken`, never in a checked-in collection.
 
 ### Dashboard & observability
 
@@ -749,14 +785,14 @@ Once running, SharpAI is accessible at `http://localhost:8000`
 
 **Embeddings:**
 ```bash
-curl -X POST http://localhost:8000/api/pull \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/pull \
   -H "Content-Type: application/json" \
   -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF"}'
 ```
 
 **Completions:**
 ```bash
-curl -X POST http://localhost:8000/api/pull \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/pull \
   -H "Content-Type: application/json" \
   -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF"}'
 ```
@@ -766,7 +802,7 @@ curl -X POST http://localhost:8000/api/pull \
 ### Generate Embeddings
 
 ```bash
-curl -X POST http://localhost:8000/api/embed \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/embed \
   -H "Content-Type: application/json" \
   -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF","input":"Hello, World!"}'
 ```
@@ -774,7 +810,7 @@ curl -X POST http://localhost:8000/api/embed \
 ### Generate Text
 
 ```bash
-curl -X POST http://localhost:8000/api/generate \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/generate \
   -H "Content-Type: application/json" \
   -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF","prompt":"Once upon a time","stream":false}'
 ```
@@ -782,7 +818,7 @@ curl -X POST http://localhost:8000/api/generate \
 ### Chat Completion
 
 ```bash
-curl -X POST http://localhost:8000/api/chat \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
     "model":"QuantFactory/Qwen2.5-3B-GGUF",
@@ -796,13 +832,13 @@ curl -X POST http://localhost:8000/api/chat \
 ### List Models
 
 ```bash
-curl http://localhost:8000/api/tags
+curl -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/tags
 ```
 
 ### Delete a Model
 
 ```bash
-curl -X DELETE http://localhost:8000/api/delete \
+curl -X DELETE -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/delete \
   -H "Content-Type: application/json" \
   -d '{"name":"leliuga/all-MiniLM-L6-v2-GGUF"}'
 ```
@@ -820,22 +856,22 @@ After installation, verify everything works:
 curl http://localhost:8000/health
 
 # 2. Pull test model
-curl -X POST http://localhost:8000/api/pull \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/pull \
   -H "Content-Type: application/json" \
   -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF"}'
 
 # 3. Test embeddings
-curl -X POST http://localhost:8000/api/embed \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/embed \
   -H "Content-Type: application/json" \
   -d '{"model":"leliuga/all-MiniLM-L6-v2-GGUF","input":"test"}'
 
 # 4. Pull completion model
-curl -X POST http://localhost:8000/api/pull \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/pull \
   -H "Content-Type: application/json" \
   -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF"}'
 
 # 5. Test completions
-curl -X POST http://localhost:8000/api/generate \
+curl -X POST -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/generate \
   -H "Content-Type: application/json" \
   -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF","prompt":"Hello","stream":false}'
 ```

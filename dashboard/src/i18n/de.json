@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "Gespeicherte Generierungseinstellungen für Sampling, Ausgabeformat und Streaming. System-Prompts werden separat verwaltet.",
     "PUT /v1.0/model-configurations/{id}": "Bearbeiten · Modellkonfigurationen",
     "POST /v1.0/model-configurations/{id}/duplicate": "Erstellt eine bearbeitbare Kopie ohne Quelländerung; angemeldet standardmäßig persönlich. · Modellkonfigurationen",
-    "DELETE /v1.0/model-configurations/{id}": "Löschen · Modellkonfigurationen"
+    "DELETE /v1.0/model-configurations/{id}": "Löschen · Modellkonfigurationen",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Bearer-Token anzeigen",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "Dieses Token erneuern? Das bisherige Token wird sofort ungültig. Aktualisieren Sie alle betroffenen Integrationen."
   },
   "apiGroups": {
     "General": "Allgemein",
@@ -717,7 +719,7 @@
     "noPermissions": "Keine expliziten Richtlinienregeln.",
     "credentialCreated": "Berechtigungsnachweis erstellt",
     "savedSecret": "Ich habe das Geheimnis gespeichert",
-    "secretOnce": "Dieses Token jetzt kopieren. Es wird nur einmal angezeigt und beim Schließen gelöscht.",
+    "secretOnce": "Kopieren Sie dieses Token. Berechtigte Administratoren können es unter Zugangsdaten erneut anzeigen.",
     "deleteConfirm": "Entfernen von {{name}} bestätigen?",
     "deleteUserHelp": "Dadurch werden auch die Anmeldeinformationen und Rollenzuweisungen des Benutzers entfernt. Vorhandene Sitzungen funktionieren nicht mehr.",
     "deleteTenantHelp": "Jeglicher Zugriff auf diesen Mandanten wird gestoppt. Mit dem Mandanten verknüpfte Datensätze können in der Datenbank verbleiben.",
@@ -784,7 +786,13 @@
     "effectiveHelp": "Hierbei handelt es sich um zugewiesene Richtlinienregeln. Plattformadministratoren umgehen Berechtigungsprüfungen; Mandantenadministratoren umgehen Prüfungen innerhalb ihres Mandanten. Der Zugriff auf Anmeldeinformationen wird auch durch die Berechtigungen des besitzenden Benutzers eingeschränkt.",
     "id": "ID",
     "bearerToken": "API-Bearer-Token",
-    "copyBearerToken": "Vollständiges Token für den Authorization-Header kopieren"
+    "copyBearerToken": "Vollständiges Token für den Authorization-Header kopieren",
+    "revealToken": "Bearer-Token anzeigen",
+    "hideToken": "Bearer-Token verbergen",
+    "regenerateToken": "Bearer-Token erneuern",
+    "regenerateTokenConfirm": "Dieses Token erneuern? Das bisherige Token wird sofort ungültig. Aktualisieren Sie alle betroffenen Integrationen.",
+    "tokenUnavailable": "Dieses ältere Token wurde nicht aufbewahrt. Erneuern Sie es, um es anzeigen zu können.",
+    "tokenFailed": "Token konnte nicht geladen werden. Prüfen Sie Berechtigungen und Verbindung."
   },
   "help": {
     "refresh": "Lädt Serverdaten neu, ohne Filter oder Mandant zu ändern.",

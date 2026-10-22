@@ -707,13 +707,13 @@ Operational endpoints:
 
 4. Download a model using the API (GGUF format required):
    ```bash
-   curl http://localhost:8000/api/pull \
+   curl -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/pull \
      -d '{"model":"QuantFactory/Qwen2.5-3B-GGUF"}'
    ```
 
 5. Generate text:
    ```bash
-   curl http://localhost:8000/api/generate \
+   curl -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/api/generate \
      -d '{
        "model": "QuantFactory/Qwen2.5-3B-GGUF",
        "prompt": "Why is the sky blue?",
@@ -850,3 +850,9 @@ Dashboard access requires a validated session. All API calls require `Authorizat
 only health/readiness probes and login are anonymous. The default model/inference bearer token is
 provisioned at `docker/auth/default-bearer-token` for Compose installations. Manage additional tokens
 and permissions under **Access**. See [authentication setup](DEPLOYMENT_GUIDE.md#api-bearer-credentials).
+
+Credential administrators can reveal, hide, copy and regenerate API bearer tokens under **Access → Credentials**.
+See [token management API](DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for the endpoints and migration behavior.
+
+API curl examples use `SHARPAI_BEARER_TOKEN`. From the repository root, set it with
+`export SHARPAI_BEARER_TOKEN="$(cat docker/auth/default-bearer-token)"` before making model or inference requests.

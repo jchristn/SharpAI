@@ -998,6 +998,7 @@ namespace SharpAI.Server
                     SecretSha256 = SharpAI.Security.PasswordHasher.Hash(bearerToken),
                     ExpiresUtc = body.ExpiresUtc
                 };
+                SharpAI.Server.Classes.Runtime.CredentialTokenVault.Store(credential, bearerToken);
                 _Database.Credentials.Create(credential);
                 SharpAI.Server.API.REST.Routes.AdministrationRoutes.RecordChange(_RouteContext, req, tenantGuid, "CredentialCreated");
                 req.Http.Response.Headers.Add("Cache-Control", "no-store");
@@ -1014,11 +1015,46 @@ namespace SharpAI.Server
                     expiresUtc = credential.ExpiresUtc
                 };
             }, api => Describe(api, "Management - Credentials", "Create a credential")
-                .WithDescription("Creates a revocable bearer credential and returns token ONCE. Send Authorization: Bearer token. Its digest is stored; plaintext is never retrievable again.")
+                .WithDescription("Creates a revocable bearer credential and returns token ONCE. Send Authorization: Bearer token. Its digest is stored in the database; an encrypted copy supports authorized reveal.")
                 .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Create credential request", true))
                 .WithResponse(200, OpenApiResponseMetadata.Json("Created credential (with one-time secret)", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(400, OpenApiResponseMetadata.BadRequest())
                 .WithResponse(403, OpenApiResponseMetadata.Forbidden()));
+
+            _Server.Get("/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token", async req =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Credential, SharpAI.Security.OperationTypeEnum.Admin, RouteParam(req, "credentialGuid"));
+                SharpAI.Security.Credential credential = _Database.Credentials.Read(RouteParam(req, "credentialGuid"));
+                if (credential == null || credential.TenantGuid != tenantGuid) throw new WebserverException(ApiResultEnum.NotFound, "Credential not found.");
+                string token = SharpAI.Server.Classes.Runtime.CredentialTokenVault.Reveal(credential);
+                if (token == null) throw new WebserverException(ApiResultEnum.Conflict, "This token was not retained. Regenerate it to enable reveal; the previous token will stop working.");
+                req.Http.Response.Headers.Add("Cache-Control", "no-store");
+                req.Http.Response.Headers.Add("Pragma", "no-cache");
+                SharpAI.Server.API.REST.Routes.AdministrationRoutes.RecordChange(_RouteContext, req, tenantGuid, "CredentialTokenRevealed");
+                return new { token = token, tokenType = "Bearer" };
+            }, api => Describe(api, "Management - Credentials", "Reveal a credential bearer token")
+                .WithDescription("Requires Credential Admin permission within the target tenant. Returns the encrypted-at-rest token after decryption, with Cache-Control: no-store. Ordinary credential reads and lists never return tokens. Reveal is audited and the response token is redacted from request history. Legacy hash-only credentials return 409 and must be regenerated.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Bearer token", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(401, OpenApiResponseMetadata.Unauthorized()).WithResponse(403, OpenApiResponseMetadata.Forbidden())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()).WithResponse(409, OpenApiResponseMetadata.Json("Token not retained", OpenApiSchemaMetadata.Create("object"))));
+
+            _Server.Post("/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate", async req =>
+            {
+                string tenantGuid = ResolveManagementTenant(req, RouteParam(req, "tenantGuid"));
+                Authorize(req, SharpAI.Security.ResourceTypes.Credential, SharpAI.Security.OperationTypeEnum.Admin, RouteParam(req, "credentialGuid"));
+                SharpAI.Security.Credential credential = _Database.Credentials.Read(RouteParam(req, "credentialGuid"));
+                if (credential == null || credential.TenantGuid != tenantGuid) throw new WebserverException(ApiResultEnum.NotFound, "Credential not found.");
+                if (credential.IsProtected) throw new WebserverException(ApiResultEnum.Forbidden, "Protected credentials cannot be regenerated.");
+                string token = SharpAI.Server.Classes.Runtime.CredentialTokenVault.Regenerate(_Database, credential.Guid);
+                req.Http.Response.Headers.Add("Cache-Control", "no-store");
+                SharpAI.Server.API.REST.Routes.AdministrationRoutes.RecordChange(_RouteContext, req, tenantGuid, "CredentialTokenRegenerated");
+                return new { token = token, tokenType = "Bearer" };
+            }, api => Describe(api, "Management - Credentials", "Regenerate a credential bearer token")
+                .WithDescription("Requires Credential Admin permission. Immediately invalidates the previous token, preserves the credential's scopes, active flag and expiry, and retains the replacement encrypted at rest. Reveal later through GET .../token. Update integrations using the old token. Protected credentials return 403.")
+                .WithResponse(200, OpenApiResponseMetadata.Json("Replacement bearer token", OpenApiSchemaMetadata.Create("object")))
+                .WithResponse(401, OpenApiResponseMetadata.Unauthorized()).WithResponse(403, OpenApiResponseMetadata.Forbidden())
+                .WithResponse(404, OpenApiResponseMetadata.NotFound()));
 
             _Server.Get("/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}", async (req) =>
             {
@@ -1043,6 +1079,7 @@ namespace SharpAI.Server
                     throw new WebserverException(ApiResultEnum.NotFound, "The specified credential was not found.");
                 if (credential.IsProtected) throw new WebserverException(ApiResultEnum.Forbidden, "This credential is protected.");
                 _Database.Credentials.Delete(credentialGuid);
+                SharpAI.Server.Classes.Runtime.CredentialTokenVault.Delete(credentialGuid);
                 SharpAI.Server.API.REST.Routes.AdministrationRoutes.RecordChange(_RouteContext, req, tenantGuid, "CredentialDeleted");
                 return new { deleted = true, credentialId = credentialGuid };
             }, api => Describe(api, "Management - Credentials", "Delete a credential")

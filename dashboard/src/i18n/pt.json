@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "Parâmetros reutilizáveis de geração, amostragem, formato e streaming. Prompts são geridos separadamente.",
     "PUT /v1.0/model-configurations/{id}": "Editar · Configurações do modelo",
     "POST /v1.0/model-configurations/{id}/duplicate": "Cria cópia editável sem mudar a origem; pessoal por padrão quando conectado. · Configurações do modelo",
-    "DELETE /v1.0/model-configurations/{id}": "Excluir · Configurações do modelo"
+    "DELETE /v1.0/model-configurations/{id}": "Excluir · Configurações do modelo",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Revelar token Bearer",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "Gerar um novo token? O anterior deixará de funcionar imediatamente. Atualize as integrações que o utilizam."
   },
   "apiGroups": {
     "General": "Geral",
@@ -717,7 +719,7 @@
     "noPermissions": "Nenhuma regra política explícita.",
     "credentialCreated": "Credencial criada",
     "savedSecret": "Eu salvei o segredo",
-    "secretOnce": "Copie este token agora. Ele é exibido uma única vez e apagado ao fechar esta janela.",
+    "secretOnce": "Copie este token. Administradores autorizados podem revelá-lo novamente em Credenciais.",
     "deleteConfirm": "Confirmar a remoção de {{name}}?",
     "deleteUserHelp": "Isso também remove as credenciais e atribuições de função do usuário. As sessões existentes param de funcionar.",
     "deleteTenantHelp": "Todo o acesso a este inquilino é interrompido. Os registros associados ao inquilino podem permanecer no banco de dados.",
@@ -784,7 +786,13 @@
     "effectiveHelp": "Estas são regras de política atribuídas. Os administradores da plataforma ignoram as verificações de permissão; os administradores de locatários ignoram as verificações em seus locatários. O acesso à credencial também é limitado pelas permissões do usuário proprietário.",
     "id": "ID",
     "bearerToken": "Token de acesso da API",
-    "copyBearerToken": "Copiar o token completo para o cabeçalho Authorization"
+    "copyBearerToken": "Copiar o token completo para o cabeçalho Authorization",
+    "revealToken": "Revelar token Bearer",
+    "hideToken": "Ocultar token Bearer",
+    "regenerateToken": "Gerar novo token Bearer",
+    "regenerateTokenConfirm": "Gerar um novo token? O anterior deixará de funcionar imediatamente. Atualize as integrações que o utilizam.",
+    "tokenUnavailable": "Este token antigo não foi guardado. Gere um novo para permitir a revelação.",
+    "tokenFailed": "Não foi possível obter o token. Verifique permissões e conexão."
   },
   "help": {
     "refresh": "Atualiza os dados sem limpar filtros ou tenant.",

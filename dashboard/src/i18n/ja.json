@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "サンプリング、出力形式、ストリーミングの保存済み設定。プロンプトは別に管理します。",
     "PUT /v1.0/model-configurations/{id}": "編集 · モデル設定",
     "POST /v1.0/model-configurations/{id}/duplicate": "元を変更せず編集可能なコピーを作成。ログイン時は個人用が既定です。 · モデル設定",
-    "DELETE /v1.0/model-configurations/{id}": "削除 · モデル設定"
+    "DELETE /v1.0/model-configurations/{id}": "削除 · モデル設定",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Bearer トークンを表示",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "トークンを再生成しますか？古いトークンは直ちに無効になります。使用中の連携設定を更新してください。"
   },
   "apiGroups": {
     "General": "一般",
@@ -717,7 +719,7 @@
     "noPermissions": "明示的なポリシー規則はありません。",
     "credentialCreated": "認証情報が作成されました",
     "savedSecret": "秘密を保存しました",
-    "secretOnce": "今すぐトークンをコピーしてください。一度だけ表示され、閉じると消去されます。",
+    "secretOnce": "トークンをコピーしてください。権限のある管理者は認証情報ページで再表示できます。",
     "deleteConfirm": "{{name}} の削除を確認しますか?",
     "deleteUserHelp": "これにより、ユーザーの資格情報と役割の割り当ても削除されます。既存のセッションは動作を停止します。",
     "deleteTenantHelp": "このテナントへのすべてのアクセスが停止します。テナントに関連付けられたレコードがデータベースに残る場合があります。",
@@ -784,7 +786,13 @@
     "effectiveHelp": "これらは割り当てられたポリシー ルールです。プラットフォーム管理者は権限チェックをバイパスします。テナント管理者はテナント内のチェックをバイパスします。資格情報へのアクセスは、その資格情報を所有するユーザーの権限によっても制限されます。",
     "id": "ID",
     "bearerToken": "API Bearer トークン",
-    "copyBearerToken": "Authorization ヘッダー用のトークン全体をコピー"
+    "copyBearerToken": "Authorization ヘッダー用のトークン全体をコピー",
+    "revealToken": "Bearer トークンを表示",
+    "hideToken": "Bearer トークンを隠す",
+    "regenerateToken": "Bearer トークンを再生成",
+    "regenerateTokenConfirm": "トークンを再生成しますか？古いトークンは直ちに無効になります。使用中の連携設定を更新してください。",
+    "tokenUnavailable": "この古いトークンは保存されていません。表示するには再生成してください。",
+    "tokenFailed": "トークンを取得できません。権限と接続を確認してください。"
   },
   "help": {
     "refresh": "フィルターとテナントを保持してサーバーデータを再取得します。",

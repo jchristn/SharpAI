@@ -115,6 +115,13 @@ export class AdminMethods implements IAdminMethods {
     );
   }
 
+  revealCredentialToken(tenantGuid:string,credentialGuid:string,signal?:AbortSignal):Promise<Pick<CreatedCredential,'token'|'tokenType'>|null> {
+    return this.sdk.sendAsync('GET',this.url(`/v1.0/tenants/${encodeURIComponent(tenantGuid)}/credentials/${encodeURIComponent(credentialGuid)}/token`),undefined,signal);
+  }
+  regenerateCredentialToken(tenantGuid:string,credentialGuid:string,signal?:AbortSignal):Promise<Pick<CreatedCredential,'token'|'tokenType'>|null> {
+    return this.sdk.sendAsync('POST',this.url(`/v1.0/tenants/${encodeURIComponent(tenantGuid)}/credentials/${encodeURIComponent(credentialGuid)}/token/rotate`),undefined,signal);
+  }
+
   listRoles(tenantGuid: string, query?: QueryParams, signal?: AbortSignal): Promise<unknown | null> {
     return this.sdk.sendAsync('GET', this.url(`/v1.0/tenants/${tenantGuid}/roles`, query), undefined, signal);
   }

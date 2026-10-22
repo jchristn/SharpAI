@@ -73,3 +73,17 @@ python -m unittest discover -s tests -v
 ```
 
 The test harness mocks HTTP, so no running server is required.
+
+## Bearer token reveal and regeneration
+
+These methods require Credential Admin permission within the addressed tenant. Reveal returns `token` and
+`tokenType`; ordinary credential reads omit token values. Legacy hash-only credentials return HTTP 409 until
+regenerated. Regeneration immediately invalidates the previous token and preserves grants, active status and expiry.
+The SDK uses its normal non-success response behavior; do not log returned token objects.
+
+```python
+token = client.reveal_credential_token("default", "crd_...")
+replacement = client.regenerate_credential_token("default", "crd_...")
+```
+
+See [API contract and encrypted storage](../../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for authentication, caching, auditing, backup and legacy-token details.

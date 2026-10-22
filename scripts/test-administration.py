@@ -2,6 +2,7 @@
 """Run tenant/RBAC administration contracts against a private temporary server and SQLite database."""
 import argparse
 import json
+import hashlib
 import pathlib
 import secrets
 import socket
@@ -203,6 +204,36 @@ def main():
             cred = request('POST', base + '/credentials', {'UserGuid': user['Guid'], 'Name': 'Integration'})
             credential_auth = {'Authorization': 'Bearer ' + cred['token']}
             check(cred['token'].startswith('sharpai_') and cred['tokenType']=='Bearer' and 'accessKey' not in cred and 'secretKey' not in cred, 'Creation returns a one-time bearer token rather than access keys')
+            token_path = base + '/credentials/' + cred['guid'] + '/token'
+            request('GET',token_path,headers={},expected=401)
+            request('GET',token_path,headers=user_auth,expected=403)
+            request('GET',other+'/credentials/'+cred['guid']+'/token',expected=404)
+            request('GET',other+'/credentials/'+cred['guid']+'/token',headers=tenant_admin,expected=403)
+            credential_permission=request('POST',base+'/permissions',{'Name':'Manage credential tokens','ResourceTypes':['Credential'],'OperationTypes':['Admin'],'Effect':'Permit'})
+            credential_role=request('POST',base+'/roles',{'Name':'Credential manager'})
+            request('POST',base+'/roles/'+credential_role['Guid']+'/permissions/'+credential_permission['Guid'])
+            credential_grant=request('POST',base+'/assignments',{'UserGuid':user['Guid'],'RoleGuid':credential_role['Guid'],'ResourceScope':'Resource','ResourceGuid':cred['guid']})
+            check(request('GET',token_path,headers=user_auth)['token']==cred['token'],'Resource-scoped Credential Admin grants allow token reveal')
+            request('DELETE',base+'/assignments/'+credential_grant['Guid'])
+            revealed=request('GET',token_path,headers=tenant_admin)
+            check(revealed['token']==cred['token'] and revealed['tokenType']=='Bearer','Tenant administrators can reveal retained bearer tokens')
+            with urllib.request.urlopen(urllib.request.Request(root+token_path,headers=admin),timeout=20) as response:
+                check(response.headers.get('Cache-Control')=='no-store','Revealed tokens are never cacheable')
+            encrypted_path=runtime/'auth'/('credential-'+hashlib.sha256(cred['guid'].encode()).hexdigest()+'.token')
+            encrypted=encrypted_path.read_bytes()
+            check(cred['token'].encode() not in encrypted and encrypted_path.stat().st_mode & 0o077==0,'Token vault stores owner-only authenticated ciphertext')
+            encrypted_path.write_bytes(encrypted[:-1]+bytes([encrypted[-1]^1]))
+            request('GET',token_path,expected=500)
+            encrypted_path.write_bytes(encrypted)
+            encrypted_path.unlink()
+            request('GET',token_path,expected=409)
+            old_token=cred['token']
+            request('POST',token_path+'/rotate',headers=user_auth,expected=403)
+            rotated=request('POST',token_path+'/rotate',headers=tenant_admin)
+            check(rotated['token']!=old_token,'Regeneration supplies a new bearer token for legacy hash-only credentials')
+            request('GET','/v1/models',headers={'Authorization':'Bearer '+old_token},expected=401)
+            check(request('GET',token_path)['token']==rotated['token'],'Replacement tokens can be revealed repeatedly')
+            cred['token']=rotated['token'];credential_auth={'Authorization':'Bearer '+cred['token']}
             persisted = request('GET', base + '/credentials/' + cred['guid'])
             check(cred['token'] not in json.dumps(persisted) and not persisted.get('SecretSha256'), 'Credential reads never return secrets or hashes')
             request('GET', '/v1/models', headers=credential_auth, expected=403)
@@ -252,6 +283,10 @@ def main():
             check(any(key.lower() == 'x-password' and value == '[redacted]' for key, value in token_detail.get('RequestHeaders', {}).items()), 'Password authentication headers are redacted')
             audit = request('GET', '/v1.0/api/audit?tenantGuid=' + a)['Objects']
             check(any(item['EventType'] == 'PasswordReset' for item in audit), 'Password resets leave a security audit event')
+            check(any(item['EventType']=='CredentialTokenRevealed' for item in audit) and any(item['EventType']=='CredentialTokenRegenerated' for item in audit),'Token reveal and regeneration leave audit events')
+            revealed_history=next(item for item in history if item.get('Path')==token_path and item.get('StatusCode')==200)
+            revealed_detail=request('GET','/v1.0/api/request-history/'+revealed_history['Id'])
+            check('[redacted]' in str(revealed_detail.get('ResponseBody')) and cred['token'] not in json.dumps(revealed_detail),'Revealed tokens never enter request history as plaintext')
             own_history = request('GET', '/v1.0/api/request-history?pageSize=1000', headers=tenant_admin)['Objects']
             check(bool(own_history) and all(item.get('TenantId') == a for item in own_history), 'Tenant history enumeration stays inside the authenticated tenant')
             request('GET', '/v1.0/api/request-history?tenantId=' + b, headers=tenant_admin, expected=403)
@@ -283,6 +318,7 @@ def main():
                     break
                 except (urllib.error.URLError, TimeoutError): time.sleep(.1)
             request('GET','/v1.0/library-context',headers={},expected=401)
+            check(request('GET',token_path)['token']==cred['token'],'Encrypted reveal survives server restart')
             request('GET','/v1/models',headers=bootstrap_auth,expected=401)
             check(bootstrap_path.read_text().strip()==bootstrap_token,'Restart preserves the original token and its revocation')
             user_context=request('GET','/v1.0/library-context',headers=foreign_auth)

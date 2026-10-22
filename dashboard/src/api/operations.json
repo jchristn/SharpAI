@@ -725,5 +725,19 @@
     "tag": "ModelConfiguration",
     "summary": "Delete model-configurations",
     "example": null
+  },
+  {
+    "method": "GET",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token",
+    "tag": "Management - Credentials",
+    "summary": "Reveal a credential bearer token",
+    "example": null
+  },
+  {
+    "method": "POST",
+    "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate",
+    "tag": "Management - Credentials",
+    "summary": "Regenerate a credential bearer token",
+    "example": null
   }
 ]

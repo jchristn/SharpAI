@@ -342,3 +342,29 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-login-footer { width:100%; }
 .sa-login-actions { display:flex;justify-content:flex-end;gap:8px; }
 .sa-login-defaults { text-align:center;font-size:var(--sa-text-sm);line-height:1.6;margin:12px 0 0;color:var(--sa-text-muted); }
+
+/* The short sign-in form stays together; short viewports scroll the overlay, never its fields. */
+.sa-modal__overlay:has(.sa-modal--login) { padding:12px;overflow-y:auto;align-items:flex-start; }
+.sa-modal--login { width:min(520px,100%);max-height:none;overflow:visible;flex-shrink:0;margin-block:auto; }
+.sa-modal--login .sa-modal__header { padding:10px 16px; }
+.sa-modal--login .sa-modal__body { padding:14px 16px;overflow:visible; }
+.sa-modal--login .sa-modal__footer { padding:12px 16px; }
+.sa-login-form { display:flex;flex-direction:column;gap:10px; }
+.sa-login-intro { display:flex;align-items:center;justify-content:space-between;gap:12px; }
+.sa-modal--login .sa-login-brand { display:flex;align-items:center;gap:10px;text-align:start;padding:0; }
+.sa-modal--login .sa-login-brand img { width:48px;height:48px;flex-shrink:0; }
+.sa-modal--login .sa-login-brand h2 { margin:0 0 2px;font-size:20px; }
+.sa-modal--login .sa-login-brand p { font-size:12px; }
+.sa-modal--login .sa-settings-note { margin:0;padding:6px 10px; }
+.sa-modal--login .sa-login-defaults { margin-top:8px;line-height:1.4; }
+@media(max-width:420px) {
+ .sa-login-intro { flex-wrap:wrap;gap:6px; }
+ .sa-login-intro>select { margin-inline-start:auto; }
+}
+.sa-login-form>.sa-filterbar__field { flex:none; }
+.sa-topbar__actions .sa-btn--icon { width:32px;height:32px;padding:3px; }
+.sa-topbar__actions svg { display:block;width:24px;height:24px;flex:none; }
+.sa-credential-token { max-width:300px; }
+.sa-credential-token>div { display:flex;align-items:center;gap:4px; }
+.sa-credential-token code { max-width:220px;min-width:0;white-space:normal;overflow-wrap:anywhere;user-select:all; }
+.sa-credential-token small { display:block;color:var(--sa-danger);white-space:normal; }

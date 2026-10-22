@@ -128,7 +128,7 @@ services:
       - '--enable-feature=exemplar-storage'
     volumes:
       - ./telemetry/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
-      - ./auth/:/etc/sharpai-auth:ro
+      - ./auth/metrics/:/etc/sharpai-auth:ro
     ports:
       - '9090:9090'
     healthcheck:

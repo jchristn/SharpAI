@@ -391,7 +391,21 @@ control plane:
 
 ```ts
 const page = await sdk.admin.requestHistory({ pageSize: 25, method: 'GET' });
-const cred = await sdk.admin.createCredential('ten_...', 'usr_...', 'CI key'); // token shown once
+const cred = await sdk.admin.createCredential('ten_...', 'usr_...', 'CI key'); // token can be revealed by authorized administrators
 ```
 
 Methods return the parsed response, or `null` on a non-success status.
+
+## Bearer token reveal and regeneration
+
+These methods require Credential Admin permission within the addressed tenant. Reveal returns `token` and
+`tokenType`; ordinary credential reads omit token values. Legacy hash-only credentials return HTTP 409 until
+regenerated. Regeneration immediately invalidates the previous token and preserves grants, active status and expiry.
+The SDK uses its normal non-success response behavior; do not log returned token objects.
+
+```ts
+const token = await sdk.admin.revealCredentialToken('default', 'crd_...');
+const replacement = await sdk.admin.regenerateCredentialToken('default', 'crd_...');
+```
+
+See [API contract and encrypted storage](../../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for authentication, caching, auditing, backup and legacy-token details.

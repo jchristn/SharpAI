@@ -11,13 +11,14 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  className?: string;
 }
 
 /**
  * A portaled modal dialog. Replaces the browser's native alert/confirm/prompt. Closes on Escape and on
  * overlay click; the panel scrolls internally so long content never breaks the page layout.
  */
-export function Modal({ open, title, onClose, children, footer, wide = false }: ModalProps): JSX.Element | null {
+export function Modal({ open, title, onClose, children, footer, wide = false, className = '' }: ModalProps): JSX.Element | null {
   const { t } = useTranslation();
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
@@ -48,7 +49,7 @@ export function Modal({ open, title, onClose, children, footer, wide = false }: 
       <div
         ref={dialog}
         aria-labelledby={titleId}
-        className={`sa-modal ${wide ? 'sa-modal--wide' : ''}`}
+        className={`sa-modal ${wide ? 'sa-modal--wide' : ''} ${className}`}
         role="dialog"
         aria-modal="true"
         onClick={(event) => event.stopPropagation()}

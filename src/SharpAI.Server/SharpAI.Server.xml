@@ -572,6 +572,33 @@
             <param name="database">Initialized account database.</param>
             <param name="admin">Default administrator who owns the credential.</param>
         </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.CredentialTokenVault">
+            <summary>
+            Durable AES-GCM storage for administrator-revealable API bearer tokens. Authentication continues
+            to use database digests. The encryption key and ciphertext files reside in the private auth directory.
+            File operations are serialized within this process. Back up the directory together with the database.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.CredentialTokenVault.Store(SharpAI.Security.Credential,System.String)">
+            <summary>Encrypt and retain a token, binding its ciphertext to the credential identifier.</summary>
+            <param name="credential">Persisted credential that owns the token.</param>
+            <param name="token">Bearer token matching the stored digest.</param>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.CredentialTokenVault.Reveal(SharpAI.Security.Credential)">
+            <summary>Decrypt a retained token. Returns null for legacy or mismatched credentials.</summary>
+            <param name="credential">Current persisted credential; its digest must match the decrypted token.</param>
+            <returns>Bearer token, or null when it was not retained.</returns>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.CredentialTokenVault.Regenerate(SharpAI.Database.DatabaseDriverBase,System.String)">
+            <summary>Regenerate a token while preserving credential identity, scopes, status and expiry.</summary>
+            <param name="database">Initialized account store.</param>
+            <param name="credentialId">Existing credential identifier.</param>
+            <returns>The replacement token.</returns>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.CredentialTokenVault.Delete(System.String)">
+            <summary>Forget retained ciphertext after credential deletion. Does not remove the vault key.</summary>
+            <param name="credentialId">Deleted credential identifier.</param>
+        </member>
         <member name="T:SharpAI.Server.Classes.Runtime.LibraryPrivacy">
             <summary>Identifies library payloads that must not bypass item ownership through shared request history or debug body logs.</summary>
         </member>

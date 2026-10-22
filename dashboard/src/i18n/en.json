@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "Reusable generation settings, including sampling, output format and streaming. System prompts are managed separately.",
     "PUT /v1.0/model-configurations/{id}": "Edit · Model configurations",
     "POST /v1.0/model-configurations/{id}/duplicate": "Create an editable copy without changing the source. Copies default to personal visibility when signed in. · Model configurations",
-    "DELETE /v1.0/model-configurations/{id}": "Delete · Model configurations"
+    "DELETE /v1.0/model-configurations/{id}": "Delete · Model configurations",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Reveal bearer token",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "Regenerate this token? The previous token will stop working immediately. Update any integrations that use it."
   },
   "apiGroups": {
     "General": "General",
@@ -717,7 +719,7 @@
     "noPermissions": "No explicit policy rules.",
     "credentialCreated": "Credential created",
     "savedSecret": "I have saved the secret",
-    "secretOnce": "Copy this bearer token now. It is shown only once and cleared when this dialog closes.",
+    "secretOnce": "Copy this bearer token. Authorized administrators can reveal it again from Credentials.",
     "deleteConfirm": "Confirm removing {{name}}?",
     "deleteUserHelp": "This also removes the user’s credentials and role assignments. Existing sessions stop working.",
     "deleteTenantHelp": "All access to this tenant stops. Records associated with the tenant may remain in the database.",
@@ -784,7 +786,13 @@
     "effectiveHelp": "These are assigned policy rules. Platform administrators bypass permission checks; tenant administrators bypass checks within their tenant. Credential access is also limited by its owning user’s permissions.",
     "id": "ID",
     "bearerToken": "API bearer token",
-    "copyBearerToken": "Copy the complete bearer token for the Authorization header"
+    "copyBearerToken": "Copy the complete bearer token for the Authorization header",
+    "revealToken": "Reveal bearer token",
+    "hideToken": "Hide bearer token",
+    "regenerateToken": "Regenerate bearer token",
+    "regenerateTokenConfirm": "Regenerate this token? The previous token will stop working immediately. Update any integrations that use it.",
+    "tokenUnavailable": "This older token was not retained. Regenerate it to enable reveal.",
+    "tokenFailed": "Unable to retrieve the token. Check your permissions and connection."
   },
   "help": {
     "refresh": "Reload current server data without clearing the selected filters or tenant.",

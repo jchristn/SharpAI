@@ -1,3 +1,4 @@
+import { CredentialTokenControl } from '../CredentialTokenControl';
 import { Icon } from '../Icon';
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -338,6 +339,7 @@ function AdministrationRecords({
         header: t("admin.owner"),
         render: (r) => <CopyableId value={String(r.UserGuid ?? "")} />,
       },
+      { key:"bearerToken",header:t("admin.bearerToken"),render:r=><CredentialTokenControl key={JSON.stringify({tenant,id:r.Guid,canWrite})} tenant={tenant} id={r.Guid} canManage={canWrite} protectedCredential={r.IsProtected}/> },
 
     );
   else if (section === "permissions")

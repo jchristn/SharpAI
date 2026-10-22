@@ -127,7 +127,7 @@ namespace SharpAI.Sdk
         public void ApplyAuthHeaders(RestRequest req)
         {
             System.Collections.Specialized.NameValueCollection headers = req.Headers ?? new System.Collections.Specialized.NameValueCollection();
-            if (!string.IsNullOrEmpty(Token)) headers["Authorization"] = "Bearer " + Token;
+            if (!string.IsNullOrEmpty(Token)) req.Authorization.BearerToken = Token;
             if (!string.IsNullOrEmpty(ApiKey)) headers["x-api-key"] = ApiKey;
             if (!string.IsNullOrEmpty(AccessKey) && !string.IsNullOrEmpty(SecretKey))
             {
@@ -135,6 +135,14 @@ namespace SharpAI.Sdk
                 headers["x-secret-key"] = SecretKey;
             }
             req.Headers = headers;
+        }
+
+        private static string RedactSensitiveResponse(string url, string? response)
+        {
+            return url.Contains("/credentials", StringComparison.OrdinalIgnoreCase)
+                || url.Contains("/v1.0/token", StringComparison.OrdinalIgnoreCase)
+                || url.Contains("/api/settings", StringComparison.OrdinalIgnoreCase)
+                ? "[sensitive response withheld]" : response ?? String.Empty;
         }
 
         /// <summary>
@@ -285,7 +293,7 @@ namespace SharpAI.Sdk
                         string? responseData = await ReadResponse(resp, cancellationToken).ConfigureAwait(false);
 
                         if (LogResponses)
-                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {responseData}");
+                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {RedactSensitiveResponse(url, responseData)}");
 
                         if (resp.StatusCode >= 200 && resp.StatusCode <= 299)
                         {
@@ -344,7 +352,7 @@ namespace SharpAI.Sdk
                         string? responseData = await ReadResponse(resp, cancellationToken).ConfigureAwait(false);
 
                         if (LogResponses)
-                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {responseData}");
+                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {RedactSensitiveResponse(url, responseData)}");
 
                         if (resp.StatusCode >= 200 && resp.StatusCode <= 299)
                         {
@@ -411,7 +419,7 @@ namespace SharpAI.Sdk
                         string? responseData = await ReadResponse(resp, cancellationToken).ConfigureAwait(false);
 
                         if (LogResponses)
-                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {responseData}");
+                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {RedactSensitiveResponse(url, responseData)}");
 
                         if (resp.StatusCode >= 200 && resp.StatusCode <= 299)
                         {
@@ -476,7 +484,7 @@ namespace SharpAI.Sdk
                         string? responseData = await ReadResponse(resp, cancellationToken).ConfigureAwait(false);
 
                         if (LogResponses)
-                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {responseData}");
+                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {RedactSensitiveResponse(url, responseData)}");
 
                         if (resp.StatusCode >= 200 && resp.StatusCode <= 299)
                         {
@@ -524,7 +532,7 @@ namespace SharpAI.Sdk
                         string? responseData = await ReadResponse(resp, cancellationToken).ConfigureAwait(false);
 
                         if (LogResponses)
-                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {responseData}");
+                            Log("DEBUG", $"Response from {url} (status {resp.StatusCode}): {RedactSensitiveResponse(url, responseData)}");
 
                         if (resp.StatusCode >= 200 && resp.StatusCode <= 299)
                         {

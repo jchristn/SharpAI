@@ -54,3 +54,22 @@ for (const section of ['api','inference','embeddings']) {
     expect(iconSizes.every(size=>size.width===24 && size.height===24)).toBe(true);
   });
 }
+
+test('sign-in fits short viewports without an internal scrollbar', async ({page}) => {
+  for (const viewport of [{width:1280,height:600},{width:390,height:667}]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/');
+    const dialog=page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const dimensions=await dialog.evaluate(element=>{
+      const body=element.querySelector('.sa-modal__body')!;
+      return {height:element.getBoundingClientRect().height,bodyHeight:body.clientHeight,bodyContent:body.scrollHeight};
+    });
+    expect(dimensions.height).toBeLessThanOrEqual(viewport.height-24);
+    expect(dimensions.bodyContent).toBeLessThanOrEqual(dimensions.bodyHeight+1);
+    await expect(dialog.getByRole('button',{name:'Sign in',exact:true})).toBeInViewport();
+    await expect(dialog.locator('.sa-login-defaults')).toBeInViewport();
+    await dialog.locator('summary').click();
+    expect(await dialog.locator('.sa-modal__body').evaluate(element=>getComputedStyle(element).overflowY)).toBe('visible');
+  }
+});

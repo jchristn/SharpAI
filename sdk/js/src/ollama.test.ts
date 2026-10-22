@@ -22,7 +22,8 @@ describe('OllamaMethods import + presets', () => {
     const fetchMock = mockFetch(200, { name: 'm', model: 'm' });
     const sdk = new SharpAISdk('http://127.0.0.1:8000');
     await sdk.ollama.importModel({ path: 'C:/models/m.gguf', name: 'm' });
-    const [url, init] = fetchMock.mock.calls[0];
+    const call = fetchMock.mock.calls[0]!;
+    const url = call[0]; const init = call[1];
     expect(url).toBe('http://127.0.0.1:8000/api/import');
     expect((init as RequestInit).method).toBe('POST');
     expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ path: 'C:/models/m.gguf', name: 'm' });
@@ -32,7 +33,8 @@ describe('OllamaMethods import + presets', () => {
     const fetchMock = mockFetch(200, { Name: 'pirate' });
     const sdk = new SharpAISdk('http://127.0.0.1:8000');
     await sdk.ollama.createPreset({ name: 'pirate', model: 'qwen-base', system: 'Arr', temperature: 0.3 });
-    const [url, init] = fetchMock.mock.calls[0];
+    const call = fetchMock.mock.calls[0]!;
+    const url = call[0]; const init = call[1];
     expect(url).toBe('http://127.0.0.1:8000/v1.0/models/presets');
     expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ name: 'pirate', model: 'qwen-base' });
   });
@@ -41,7 +43,8 @@ describe('OllamaMethods import + presets', () => {
     const fetchMock = mockFetch(200, { deleted: true });
     const sdk = new SharpAISdk('http://127.0.0.1:8000');
     await sdk.ollama.deletePreset('pirate');
-    const [url, init] = fetchMock.mock.calls[0];
+    const call = fetchMock.mock.calls[0]!;
+    const url = call[0]; const init = call[1];
     expect(url).toBe('http://127.0.0.1:8000/v1.0/models/presets/pirate');
     expect((init as RequestInit).method).toBe('DELETE');
   });

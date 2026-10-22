@@ -557,7 +557,9 @@
     "GET /v1.0/model-configurations/{id}": "Tetapan penjanaan disimpan termasuk pensampelan, format dan penstriman. Prom diurus berasingan.",
     "PUT /v1.0/model-configurations/{id}": "Sunting · Konfigurasi model",
     "POST /v1.0/model-configurations/{id}/duplicate": "Cipta salinan boleh sunting tanpa menukar sumber; peribadi secara lalai selepas log masuk. · Konfigurasi model",
-    "DELETE /v1.0/model-configurations/{id}": "Padam · Konfigurasi model"
+    "DELETE /v1.0/model-configurations/{id}": "Padam · Konfigurasi model",
+    "GET /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": "Dedahkan token Bearer",
+    "POST /v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": "Jana semula token ini? Token lama akan berhenti berfungsi serta-merta. Kemas kini integrasi yang menggunakannya."
   },
   "apiGroups": {
     "General": "Am",
@@ -717,7 +719,7 @@
     "noPermissions": "Tiada peraturan dasar yang jelas.",
     "credentialCreated": "Bukti kelayakan dibuat",
     "savedSecret": "Saya telah menyimpan rahsia itu",
-    "secretOnce": "Salin token ini sekarang. Ia dipaparkan sekali sahaja dan dipadam apabila dialog ditutup.",
+    "secretOnce": "Salin token ini. Pentadbir yang dibenarkan boleh mendedahkannya semula melalui Kelayakan.",
     "deleteConfirm": "Sahkan mengalih keluar {{name}}?",
     "deleteUserHelp": "Ini juga mengalih keluar bukti kelayakan pengguna dan penetapan peranan. Sesi sedia ada berhenti berfungsi.",
     "deleteTenantHelp": "Semua akses kepada penyewa ini terhenti. Rekod yang dikaitkan dengan penyewa mungkin kekal dalam pangkalan data.",
@@ -784,7 +786,13 @@
     "effectiveHelp": "Ini adalah peraturan dasar yang ditetapkan. Pentadbir platform memintas semakan kebenaran; pentadbir penyewa memintas cek dalam penyewa mereka. Akses kelayakan juga dihadkan oleh kebenaran pengguna pemiliknya.",
     "id": "ID",
     "bearerToken": "Token pembawa API",
-    "copyBearerToken": "Salin token penuh untuk pengepala Authorization"
+    "copyBearerToken": "Salin token penuh untuk pengepala Authorization",
+    "revealToken": "Dedahkan token Bearer",
+    "hideToken": "Sembunyikan token Bearer",
+    "regenerateToken": "Jana semula token Bearer",
+    "regenerateTokenConfirm": "Jana semula token ini? Token lama akan berhenti berfungsi serta-merta. Kemas kini integrasi yang menggunakannya.",
+    "tokenUnavailable": "Token lama ini tidak disimpan. Jana semula untuk membolehkan pendedahan.",
+    "tokenFailed": "Token tidak dapat diperoleh. Semak kebenaran dan sambungan."
   },
   "help": {
     "refresh": "Muat semula data tanpa mengosongkan penapis atau penyewa.",

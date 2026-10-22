@@ -29,6 +29,16 @@ namespace SharpAI.Server.Classes.Runtime
             if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             string tokenFile = Path.Combine(directory, "default-bearer-token");
             string markerFile = Path.Combine(directory, "default-credential-owner");
+            Credential existing = database.Credentials.Read("crd_bootstrap_" + admin.Guid);
+            if (existing != null && File.Exists(tokenFile))
+            {
+                string bootstrapToken = File.ReadAllText(tokenFile).Trim();
+                if (PasswordHasher.Verify(bootstrapToken, existing.SecretSha256))
+                {
+                    CredentialTokenVault.Reveal(existing);
+                    CredentialTokenVault.Store(existing, bootstrapToken);
+                }
+            }
             if (File.Exists(markerFile) && File.ReadAllText(markerFile).Trim() == admin.Guid) return;
             string credentialId = "crd_bootstrap_" + admin.Guid;
             Credential credential = database.Credentials.Read(credentialId);
@@ -59,6 +69,11 @@ namespace SharpAI.Server.Classes.Runtime
                     Permissions = new List<string> { "Read", "Execute" },
                     ResourceTypes = new List<string> { ResourceTypes.Model, ResourceTypes.Inference }
                 });
+            if (File.Exists(tokenFile))
+            {
+                string bootstrapToken = File.ReadAllText(tokenFile).Trim();
+                if (PasswordHasher.Verify(bootstrapToken, credential.SecretSha256)) CredentialTokenVault.Store(credential, bootstrapToken);
+            }
             WritePrivate(markerFile, admin.Guid);
         }
 

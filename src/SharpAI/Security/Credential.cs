@@ -5,8 +5,8 @@ namespace SharpAI.Security
     using SharpAI.Helpers;
 
     /// <summary>
-    /// A non-interactive credential (access key / secret key) owned by a user within a tenant. The secret
-    /// is stored only as a SHA-256 hex digest; the plaintext is shown once at creation and never persisted.
+    /// A non-interactive credential owned by a user within a tenant. Authentication uses a SHA-256
+    /// digest. The server retains encrypted bearer tokens separately for authorized administrator reveal.
     /// </summary>
     public class Credential
     {
