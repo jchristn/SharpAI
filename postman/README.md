@@ -30,3 +30,12 @@ The replacement is stored in the private environment variable `revealedBearerTok
 Hash-only legacy tokens return 409 from reveal and require regeneration. Ordinary credential reads remain redacted.
 The live OpenAPI document is authoritative for routes, permission requirements and response codes. Full details
 are in [the deployment guide](../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens).
+
+## Terminal transport contracts
+
+`postman/simulations/tui.sim.yaml` runs the checked SharpAI fixtures on one local origin.
+`python3 scripts/test-tui.py --model /path/to/model.gguf` drives the real C# client and terminal host
+through it, alongside a separate native server. Fixtures under `/fixture` are synthetic transport cases,
+not server endpoints or inference compatibility evidence. The root collection includes a read-only
+Terminal dashboard contracts folder and a verified pull assertion using `modelSource`. No workspace
+push or public deployment is required for local verification.

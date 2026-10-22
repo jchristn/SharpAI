@@ -1,0 +1,9 @@
+{
+  "commit": "9c815098d89bd7eb1db0c8c3b63c883cc8bdfa9c",
+  "modelSha256": "66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739",
+  "configSha256": "2305ac17a12ebaade2e201c7301069c8a4b4b26e0842c0c645ac5740632e9f30",
+  "dotnet": "10.0.401",
+  "completed": true,
+  "workingTreeChanges": true,
+  "sourceSnapshotSha256": "2a35c3cc857c5870e1174796f87257052be4df6cd938b072bdd1f77be717e70b"
+}

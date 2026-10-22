@@ -137,6 +137,12 @@ namespace SharpAI.Sdk
             req.Headers = headers;
         }
 
+        /// <summary>Create an independent provider-neutral HTTP session with a snapshot of the configured authentication. Caller owns disposal.</summary>
+        public SharpAI.Client.ServerClient CreateServerClient()
+        {
+            return new SharpAI.Client.ServerClient(Endpoint) { Token = Token, ApiKey = ApiKey, RequestTimeout = TimeSpan.FromMilliseconds(TimeoutMs) };
+        }
+
         private static string RedactSensitiveResponse(string url, string? response)
         {
             return url.Contains("/credentials", StringComparison.OrdinalIgnoreCase)

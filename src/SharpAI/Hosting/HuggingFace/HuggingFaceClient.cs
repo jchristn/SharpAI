@@ -101,14 +101,23 @@ namespace SharpAI.Hosting
         /// <param name="modelName">Model name.</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>HuggingFaceModelMetadata.</returns>
-        public async Task<HuggingFaceModelMetadata> GetModelMetadata(string modelName, CancellationToken token = default)
+        public Task<HuggingFaceModelMetadata> GetModelMetadata(string modelName, CancellationToken token = default)
+        {
+            return GetModelMetadata(modelName, token, null);
+        }
+
+        /// <summary>Retrieve metadata at a requested revision, resolving it to an immutable commit SHA.</summary>
+        /// <param name="modelName">Repository identifier.</param><param name="token">Cancellation token.</param>
+        /// <param name="revision">Branch, tag or commit, or null for the repository default.</param>
+        /// <returns>Repository metadata at the requested revision.</returns>
+        public async Task<HuggingFaceModelMetadata> GetModelMetadata(string modelName, CancellationToken token, string revision)
         {
             if (string.IsNullOrEmpty(modelName))
                 throw new ArgumentNullException(nameof(modelName));
 
             using (HttpClient client = CreateDownloadClient())
             {
-                string apiUrl = $"{_BaseUrl}/api/models/{modelName}";
+                string apiUrl = $"{_BaseUrl}/api/models/{modelName}" + (String.IsNullOrEmpty(revision) ? "" : "/revision/" + Uri.EscapeDataString(revision));
                 HttpResponseMessage response = await client.GetAsync(apiUrl, token).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
 

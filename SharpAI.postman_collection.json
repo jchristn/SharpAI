@@ -61,7 +61,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"model\": \"all-minilm\"\r\n}",
+							"raw": "{\n  \"model\": \"{{modelSource}}\",\n  \"stream\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -79,9 +79,21 @@
 								"api",
 								"pull"
 							]
-						}
+						},
+						"description": "Pull organization/name or a validated Hugging Face HTTPS repository, tree revision, or resolve/blob GGUF URL. Exact revision and file selection are preserved. Only a final NDJSON status=success confirms publication; error records may occur after HTTP 200. Do not automatically retry ambiguous failures."
 					},
-					"response": []
+					"response": [],
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Pull publishes a verified model\", () => { const frames = pm.response.text().split(/\\r?\\n/).filter(line => line.trim()).map(line => JSON.parse(line)); pm.expect(frames.length).to.be.above(0); pm.expect(frames.at(-1).status).to.equal(\"success\"); pm.expect(frames.some(frame => frame.error)).to.equal(false); });"
+								]
+							}
+						}
+					]
 				},
 				{
 					"name": "Delete a model",
@@ -627,6 +639,115 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "Terminal dashboard contracts",
+			"description": "Read-only terminal-client contract checks. Supply a session bearer token with history/library access. No secrets are persisted by scripts.",
+			"item": [
+				{
+					"name": "Authentication capabilities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/auth/context"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+									"pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Library context",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/library-context"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+									"pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "System prompts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/system-prompts?pageSize=1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+									"pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+									"pm.test(\"Paged response includes counts\", () => { const page = pm.response.json(); pm.expect(page.Objects).to.be.an(\"array\"); pm.expect(page.TotalRecords).to.be.a(\"number\"); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Model configurations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/model-configurations?pageSize=1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+									"pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+									"pm.test(\"Paged response includes counts\", () => { const page = pm.response.json(); pm.expect(page.Objects).to.be.an(\"array\"); pm.expect(page.TotalRecords).to.be.a(\"number\"); });"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "History metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/api/request-history?pageSize=1"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+									"pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+									"pm.test(\"Paged response includes counts\", () => { const page = pm.response.json(); pm.expect(page.Objects).to.be.an(\"array\"); pm.expect(page.TotalRecords).to.be.a(\"number\"); });"
+								]
+							}
+						}
+					]
+				}
+			]
 		}
 	],
 	"event": [
@@ -661,6 +782,11 @@
 		{
 			"key": "port",
 			"value": "8000"
+		},
+		{
+			"key": "modelSource",
+			"value": "https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f212d81/tinyllamas/stories15M-q4_0.gguf",
+			"type": "string"
 		}
 	],
 	"auth": {

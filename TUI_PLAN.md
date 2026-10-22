@@ -2,6 +2,14 @@
 
 Status: proposed implementation, not shipped. Baseline: the v4.0.1 web dashboard and its checked-in operation catalog. The executable will be `sharpai-tui`, written in C#, with a NuGet dependency on TUIKit. It will operate the existing server over HTTP, so running a terminal client does not load model weights, open the server database, or bypass authorization.
 
+## Accepted execution scope and current evidence
+
+The implementation follows the user's decisions: execute all work that can run without a human; target macOS, Windows and Linux; use memory sessions or existing protected assets under `~/.sharpai` without requiring a vault; omit unsupported Arabic/RTL; and carry backend contract fixes through web, SDKs, Postman, documentation and validation. Existing release versions are unchanged.
+
+The executable implementation, public HTTP client, reusable Postman simulations, shared test descriptors, local publisher and CI matrix are present. The model-pull URL contract was corrected across server, web and all SDK documentation and tested with a real pinned GGUF download. See [the operator guide](docs/TUI.md), [validation evidence](docs/tui/README.md) and [the remote-profile example](examples/tui/README.md).
+
+The original acceptance criteria below remain the release standard. Workflow manifest entries remain `implemented` pending the complete parity review; implementation and passing route tests do not automatically check off full workflow acceptance. Local evidence identifies the exercised native platforms, while Windows and remote runner jobs require execution after the branch is made available to CI. External publication, persistent signing identities, package-manager submissions and terminal/translation acceptance remain separate gates.
+
 ## Reference review and design decisions
 
 The review covered the source implementations below, rather than screenshots alone. Paths are relative to the sibling repositories under `~/Code`. The patterns are useful for different parts of SharpAI; their product-specific background agents and approval policies do not become SharpAI features.

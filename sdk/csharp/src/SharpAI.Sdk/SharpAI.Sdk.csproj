@@ -47,6 +47,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="../SharpAI.Client/SharpAI.Client.csproj" />
 		<PackageReference Include="SharpAI" Version="2.0.0" />
 		<PackageReference Include="RestWrapper" Version="3.3.2" />
 		<!-- Override the vulnerable PKCS dependency brought in by Microsoft.Data.SqlClient. -->

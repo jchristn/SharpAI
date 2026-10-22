@@ -1,0 +1,31 @@
+{
+  "traceId": "2fdb4c711d69e62a0f1075d9fb16e8e1",
+  "metrics": [
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_bucket",
+    "sharpai_client_request_duration_seconds_sum",
+    "sharpai_client_request_duration_seconds_count",
+    "sharpai_tui_failures_total"
+  ],
+  "lokiStreams": 4,
+  "grafanaDatasources": [
+    "loki",
+    "prometheus",
+    "tempo"
+  ],
+  "passed": true
+}

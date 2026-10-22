@@ -4,6 +4,9 @@
 
 # SharpAI
 
+The C# terminal dashboard is available from source as `sharpai-tui`. See the [terminal guide](docs/TUI.md)
+for connection, saved libraries, keyboard controls, validation and packaging.
+
 **Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible and OpenAI-compatible API server. No cloud dependencies, no limits, just local embeddings and inference.**
 
 <p align="center">

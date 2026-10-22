@@ -87,3 +87,11 @@ replacement = client.regenerate_credential_token("default", "crd_...")
 ```
 
 See [API contract and encrypted storage](../../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for authentication, caching, auditing, backup and legacy-token details.
+
+## Verified model pull sources
+
+Pull methods accept an organization/name repository ID or a Hugging Face HTTPS repository, tree revision,
+or resolve/blob GGUF URL. Pass the complete URL unchanged to preserve the requested revision and exact
+file selection. The server verifies the complete model before its final NDJSON `status=success` record.
+HTTP 200 alone does not confirm a successful pull. Never automatically retry an ambiguous download.
+See [the shared source contract](../../docs/MODEL_PULL_SOURCES.md).

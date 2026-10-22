@@ -30,7 +30,7 @@ export class OllamaMethods implements IOllamaMethods {
   }
 
   /**
-   * Pull a model from the registry with streaming progress updates.
+   * Pull a repository ID or Hugging Face repository/tree/resolve/blob HTTPS URL with streaming progress. Revisions and exact GGUF file paths are preserved.
    */
   async *pullModel(
     request: OllamaPullModelRequest,

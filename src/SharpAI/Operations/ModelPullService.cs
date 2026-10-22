@@ -35,6 +35,8 @@ namespace SharpAI.Operations
             ArgumentNullException.ThrowIfNull(registry);
             ArgumentException.ThrowIfNullOrWhiteSpace(storage);
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
+            ModelPullSource source = ModelPullSource.Parse(name);
+            name = name.Trim();
             string key = Path.GetFullPath(storage) + "|" + name;
             while (!_Pulls.TryAdd(key, 0)) await Task.Delay(50, token).ConfigureAwait(false);
             string published = null;
@@ -52,13 +54,13 @@ namespace SharpAI.Operations
                 }
                 ModelFile existing = registry.GetByName(name);
                 if (existing != null) return existing;
-                HuggingFaceModelMetadata metadata = await client.GetModelMetadata(name, token).ConfigureAwait(false);
+                HuggingFaceModelMetadata metadata = await client.GetModelMetadata(source.Repository, token, source.Revision).ConfigureAwait(false);
                 if (String.IsNullOrWhiteSpace(metadata.Sha)) throw new InvalidDataException("Repository has no immutable revision.");
-                List<GgufFileInfo> files = await client.GetGgufFilesAsync(name, token, metadata.Sha).ConfigureAwait(false);
+                List<GgufFileInfo> files = await client.GetGgufFilesAsync(source.Repository, token, metadata.Sha).ConfigureAwait(false);
                 if (files == null || files.Count == 0) throw new KeyNotFoundException("Repository contains no GGUF models.");
                 files = files.Where(f => !Path.GetFileName(f.Path).StartsWith("mmproj", StringComparison.OrdinalIgnoreCase)).ToList();
                 if (files.Count == 0) throw new InvalidDataException("Vision projectors are not supported.");
-                GgufFileInfo selected = (priority == null || priority.Count == 0 ? GgufSelector.SortByOllamaPreference(files) : GgufSelector.SortByPreference(files, priority)).First();
+                GgufFileInfo selected = source.FilePath != null ? files.FirstOrDefault(file => file.Path == source.FilePath) ?? throw new InvalidDataException("The requested GGUF file is absent from the resolved revision.") : (priority == null || priority.Count == 0 ? GgufSelector.SortByOllamaPreference(files) : GgufSelector.SortByPreference(files, priority)).First();
                 List<GgufFileInfo> shards = GgufShards.Select(files, selected);
                 string stage = Path.Combine(storage, ".pull-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(name.ToLowerInvariant() + "|" + metadata.Sha + "|" + selected.Path))));
                 Directory.CreateDirectory(stage);
@@ -74,7 +76,7 @@ namespace SharpAI.Operations
                 foreach (GgufFileInfo file in shards)
                 {
                     string local = Path.Combine(stage, Path.GetFileName(file.Path));
-                    string url = client.GetRevisionDownloadUrl(name, metadata.Sha, file.Path);
+                    string url = client.GetRevisionDownloadUrl(source.Repository, metadata.Sha, file.Path);
                     using HttpClient http = client.CreateDownloadClient();
                     string hash = await VerifiedDownload.DownloadAsync(http, url, local, file.Lfs, file.Size.Value,
                         (p, bytes, fraction) => progress?.Invoke(p, completed + bytes, Math.Min(0.99m, (decimal)(completed + bytes) / total)), token).ConfigureAwait(false);
@@ -90,7 +92,7 @@ namespace SharpAI.Operations
                     Name = name, ContentLength = total, Quantization = selected.QuantizationType,
                     SHA256Hash = shards.Count == 1 ? hashes[0] : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(String.Join("\n", hashes)))),
                     Family = architecture, Embeddings = embeddings, Completions = generation,
-                    SourceUrl = "https://huggingface.co/" + name + "/tree/" + metadata.Sha,
+                    SourceUrl = "https://huggingface.co/" + source.Repository + "/tree/" + metadata.Sha,
                     ParameterCount = inspection.ParameterCount > 0 ? inspection.ParameterCount : metadata.SafeTensors?.Total ?? 0, ModelCreationUtc = selected.LastModified
                 };
                 if (shards.Count == 1)

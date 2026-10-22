@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 2,
+  "rid": "osx-arm64",
+  "framework": ".NET 8.0.31",
+  "os": "Darwin 25.6.0 Darwin Kernel Version 25.6.0: Sat Jul 11 15:27:04 PDT 2026; root:xnu-12377.161.13~4/RELEASE_ARM64_T6050",
+  "tUIKit": "1.12.0.0",
+  "seed": 42,
+  "terminal": "headless 120x40, resize 80x24/160x50",
+  "idleCpuMsOver2Seconds": 87.5125,
+  "workingSetBytes": 109035520,
+  "samples": [
+    {
+      "startupMs": 48.8069,
+      "processStartupMs": 60.8162,
+      "streamMs": 177.499,
+      "streamFrames": 2001,
+      "frameMs": 1.7432910000000001,
+      "largeTableMs": 144.8577,
+      "allocatedBytes": 97846648,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 5.4246,
+      "processStartupMs": 59.5287,
+      "streamMs": 210.9552,
+      "streamFrames": 2001,
+      "frameMs": 1.6785349999999999,
+      "largeTableMs": 177.7307,
+      "allocatedBytes": 97508760,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 3.9555,
+      "processStartupMs": 44.1465,
+      "streamMs": 69.8073,
+      "streamFrames": 2001,
+      "frameMs": 0.67133,
+      "largeTableMs": 84.5151,
+      "allocatedBytes": 97509776,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.8075,
+      "processStartupMs": 39.6286,
+      "streamMs": 59.4485,
+      "streamFrames": 2001,
+      "frameMs": 0.45903700000000003,
+      "largeTableMs": 56.9701,
+      "allocatedBytes": 97382424,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.8815,
+      "processStartupMs": 48.9006,
+      "streamMs": 55.8074,
+      "streamFrames": 2001,
+      "frameMs": 0.420148,
+      "largeTableMs": 50.0132,
+      "allocatedBytes": 97388632,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.6925,
+      "processStartupMs": 34.9023,
+      "streamMs": 52.3668,
+      "streamFrames": 2001,
+      "frameMs": 0.355577,
+      "largeTableMs": 41.8237,
+      "allocatedBytes": 97380672,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.8716,
+      "processStartupMs": 44.4937,
+      "streamMs": 47.7462,
+      "streamFrames": 2001,
+      "frameMs": 0.346307,
+      "largeTableMs": 40.4727,
+      "allocatedBytes": 97384008,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.3572,
+      "processStartupMs": 32.2792,
+      "streamMs": 50.5281,
+      "streamFrames": 2001,
+      "frameMs": 0.339189,
+      "largeTableMs": 40.0317,
+      "allocatedBytes": 97383992,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.2698,
+      "processStartupMs": 37.9427,
+      "streamMs": 47.5623,
+      "streamFrames": 2001,
+      "frameMs": 0.376852,
+      "largeTableMs": 38.3326,
+      "allocatedBytes": 97380672,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.233,
+      "processStartupMs": 37.481,
+      "streamMs": 46.2789,
+      "streamFrames": 2001,
+      "frameMs": 0.34279000000000004,
+      "largeTableMs": 39.0826,
+      "allocatedBytes": 97381784,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.4637,
+      "processStartupMs": 46.3079,
+      "streamMs": 45.7724,
+      "streamFrames": 2001,
+      "frameMs": 0.35089,
+      "largeTableMs": 35.9133,
+      "allocatedBytes": 97380552,
+      "renderedBytes": 597462
+    },
+    {
+      "startupMs": 1.4031,
+      "processStartupMs": 38.2447,
+      "streamMs": 47.6851,
+      "streamFrames": 2001,
+      "frameMs": 0.34811,
+      "largeTableMs": 39.681,
+      "allocatedBytes": 97383920,
+      "renderedBytes": 597462
+    }
+  ],
+  "completed": true,
+  "binarySha256": "0AC2F10D0D2F887F966B1F23988BD2BFA6BBE242FF764D8FB22DED7D2E86B26A",
+  "modelSha256": "66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739"
+}

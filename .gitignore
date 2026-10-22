@@ -387,3 +387,7 @@ TENSORFOLD_LEARNINGS.md
 
 # Authentication bootstrap secrets and provisioning markers
 auth/
+
+# Reproducible terminal publish outputs and local evidence
+installers/
+artifacts/tui/

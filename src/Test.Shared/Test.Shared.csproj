@@ -13,6 +13,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\SharpAI\SharpAI.csproj" />
+		<ProjectReference Include="..\SharpAI.Tui\SharpAI.Tui.csproj" />
 	</ItemGroup>
 
 </Project>

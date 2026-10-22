@@ -1,0 +1,13 @@
+SharpAI terminal dashboard
+
+This archive contains a self-contained sharpai-tui executable. No .NET runtime is required.
+Extract it to a directory on PATH and run sharpai-tui --help.
+macOS/Linux: install -m 755 sharpai-tui ~/.local/bin/sharpai-tui
+Windows: place sharpai-tui.exe in a directory on your user PATH.
+
+Upgrade: quit the client and replace the executable with the new release.
+Uninstall: remove the executable. Preferences remain in ~/.sharpai/tui.json.
+Remove that file separately to reset preferences. Existing token files are never deleted by uninstall.
+
+Windows executables are unsigned. macOS uses ad-hoc signing, without Apple notarization.
+On macOS, use the Finder Open action or your organization's approved Gatekeeper procedure if prompted.

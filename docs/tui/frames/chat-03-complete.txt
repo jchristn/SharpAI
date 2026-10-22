@@ -1,0 +1,40 @@
+HTTP 127.0.0.1:56038 | H200/R200 | ADMIN | t:default | u:usr_..0a74b1 | Complete                                        
+┌──── SharpAI ─────┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ > Playground ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+│Overview          ┃┌──────────────────────────────────────── Saved libraries ────────────────────────────────────────┐┃
+│Models            ┃│[ Model: https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f…│┃
+│System Prompts    ┃│[ System prompt: Helpful assistant ] [ Edit selected system prompt ] [ Configuration: Balanced ] │┃
+│Model Configuratio┃│[ Edit selected model configuration ]                                                            │┃
+│Playground        ┃│                                                                                                 │┃
+│Request History   ┃├───────────────────────────────────────── Conversation ──────────────────────────────────────────┤┃
+│Inference History ┃│User                                                                                             │┃
+│Embeddings History┃│                                                                                                 │┃
+│API Explorer      ┃│Once upon a time                                                                                 │┃
+│Observability     ┃│                                                                                                 │┃
+│Tenants           ┃│Assistant                                                                                        │┃
+│Users             ┃│                                                                                                 │┃
+│Credentials       ┃│Whomy was so excited to be able to help her mommy. "Mommy, can I help you with something?" she   │┃
+│Roles             ┃│asked. Mommy smiled. "No, I'm too busy. I need to finish this job first." Veryuring, Abigah went │┃
+│Permissions       ┃│to the storekeeper and asked, "Why are you buying something so helpful?" The shopkeeper answered,│┃
+│Assignments       ┃│"I'm buying something special for your mommy. She's a very good job." Abigailoror nodded and     │┃
+│Sessions          ┃│said, "I'm so helpful. I can help                                                                │┃
+│Security audit    ┃│                                                                                                 │┃
+│Settings          ┃│[Complete]                                                                                       │┃
+│                  ┃│                                                                                                 │┃
+│                  ┃│                                                                                                 │┃
+│                  ┃│                                                                                                 │┃
+│                  ┃├──────────────────────────────────────── Turn telemetry ─────────────────────────────────────────┤┃
+│                  ┃│Status                                                               Warming up the tiny neurons…│┃
+│                  ┃│Outcome                                                                                  Complete│┃
+│                  ┃│Total ms                                                                                     54.0│┃
+│                  ┃│TTFT ms                                                                                      2.78│┃
+│                  ┃┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ > Composer | Ctrl+J newline ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫┃
+│                  ┃┃                                                                                                 ┃┃
+│                  ┃┃                                                                                                 ┃┃
+│                  ┃┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫┃
+│                  ┃│[ Send ] [ Cancel ] [ New conversation ] [ Embeddings ] [ Copy code ]                            │┃
+│                  ┃│                                                                                                 │┃
+│                  ┃├─────────────────────────────────────────────────────────────────────────────────────────────────┤┃
+│                  ┃│AI can make mistakes. Please check answers.                                                      │┃
+│                  ┃└─────────────────────────────────────────────────────────────────────────────────────────────────┘┃
+└──────────────────┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Tab Next control   Enter Send   Ctrl+J Newline   F1 Help   F2 Navigation   Ctrl+P Commands   F5 Refresh                 

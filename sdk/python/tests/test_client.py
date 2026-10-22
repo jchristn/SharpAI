@@ -93,6 +93,14 @@ class ClientTests(unittest.TestCase):
             events = list(client.pull_model("my-model"))
         self.assertEqual(events, [{"status": "pulling"}, {"status": "done"}])
 
+    def test_pull_preserves_revision_and_exact_gguf_url(self):
+        source = "https://huggingface.co/org/model/resolve/commit123/folder/model.gguf"
+        with mock.patch("urllib.request.urlopen", return_value=FakeResponse(lines=[b'{"status":"success"}'])) as transport:
+            client = SharpAIClient("http://127.0.0.1:8000")
+            self.assertEqual(list(client.pull_model(source)), [{"status": "success"}])
+            request = transport.call_args.args[0]
+            self.assertEqual(json.loads(request.data)["name"], source)
+
 
 if __name__ == "__main__":
     unittest.main()

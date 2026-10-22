@@ -1,0 +1,932 @@
+[
+  {
+    "testId": "PullSource.Repository0",
+    "suiteId": "PullSource",
+    "caseId": "Repository0",
+    "displayName": "Repository source org/model",
+    "success": true,
+    "skipped": false,
+    "durationMs": 7,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Repository1",
+    "suiteId": "PullSource",
+    "caseId": "Repository1",
+    "displayName": "Repository source https://huggingface.co/org/model",
+    "success": true,
+    "skipped": false,
+    "durationMs": 3,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Repository2",
+    "suiteId": "PullSource",
+    "caseId": "Repository2",
+    "displayName": "Repository source https://hf.co/org/model/",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Repository3",
+    "suiteId": "PullSource",
+    "caseId": "Repository3",
+    "displayName": "Repository source https://www.huggingface.co/org/model/tree/main",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.resolve",
+    "suiteId": "PullSource",
+    "caseId": "resolve",
+    "displayName": "Preserve requested revision and nested GGUF path",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.blob",
+    "suiteId": "PullSource",
+    "caseId": "blob",
+    "displayName": "Preserve requested revision and nested GGUF path",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject6",
+    "suiteId": "PullSource",
+    "caseId": "Reject6",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject7",
+    "suiteId": "PullSource",
+    "caseId": "Reject7",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject8",
+    "suiteId": "PullSource",
+    "caseId": "Reject8",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject9",
+    "suiteId": "PullSource",
+    "caseId": "Reject9",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject10",
+    "suiteId": "PullSource",
+    "caseId": "Reject10",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject11",
+    "suiteId": "PullSource",
+    "caseId": "Reject11",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject12",
+    "suiteId": "PullSource",
+    "caseId": "Reject12",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject13",
+    "suiteId": "PullSource",
+    "caseId": "Reject13",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject14",
+    "suiteId": "PullSource",
+    "caseId": "Reject14",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject15",
+    "suiteId": "PullSource",
+    "caseId": "Reject15",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "PullSource.Reject16",
+    "suiteId": "PullSource",
+    "caseId": "Reject16",
+    "displayName": "Reject unsafe or ambiguous model source",
+    "success": true,
+    "skipped": false,
+    "durationMs": 0,
+    "message": null
+  },
+  {
+    "testId": "Tui.Sanitize",
+    "suiteId": "Tui",
+    "caseId": "Sanitize",
+    "displayName": "Sanitize",
+    "success": true,
+    "skipped": false,
+    "durationMs": 5,
+    "message": null
+  },
+  {
+    "testId": "Tui.Profile",
+    "suiteId": "Tui",
+    "caseId": "Profile",
+    "displayName": "Profile",
+    "success": true,
+    "skipped": false,
+    "durationMs": 34,
+    "message": null
+  },
+  {
+    "testId": "Tui.CjkPageFilter",
+    "suiteId": "Tui",
+    "caseId": "CjkPageFilter",
+    "displayName": "CjkPageFilter",
+    "success": true,
+    "skipped": false,
+    "durationMs": 38,
+    "message": null
+  },
+  {
+    "testId": "Tui.Locales",
+    "suiteId": "Tui",
+    "caseId": "Locales",
+    "displayName": "Locales",
+    "success": true,
+    "skipped": false,
+    "durationMs": 13,
+    "message": null
+  },
+  {
+    "testId": "Tui.Generation",
+    "suiteId": "Tui",
+    "caseId": "Generation",
+    "displayName": "Generation",
+    "success": true,
+    "skipped": false,
+    "durationMs": 2,
+    "message": null
+  },
+  {
+    "testId": "Tui.TypedRoundTrip",
+    "suiteId": "Tui",
+    "caseId": "TypedRoundTrip",
+    "displayName": "TypedRoundTrip",
+    "success": true,
+    "skipped": false,
+    "durationMs": 11,
+    "message": null
+  },
+  {
+    "testId": "Tui.Catalog",
+    "suiteId": "Tui",
+    "caseId": "Catalog",
+    "displayName": "Catalog",
+    "success": true,
+    "skipped": false,
+    "durationMs": 3,
+    "message": null
+  },
+  {
+    "testId": "Tui.ShellFrames",
+    "suiteId": "Tui",
+    "caseId": "ShellFrames",
+    "displayName": "ShellFrames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 32,
+    "message": null
+  },
+  {
+    "testId": "Tui.RestoreAfterFailure",
+    "suiteId": "Tui",
+    "caseId": "RestoreAfterFailure",
+    "displayName": "RestoreAfterFailure",
+    "success": true,
+    "skipped": false,
+    "durationMs": 2,
+    "message": null
+  },
+  {
+    "testId": "Tui.SecretDismissal",
+    "suiteId": "Tui",
+    "caseId": "SecretDismissal",
+    "displayName": "SecretDismissal",
+    "success": true,
+    "skipped": false,
+    "durationMs": 5,
+    "message": null
+  },
+  {
+    "testId": "Tui.ClipboardFallback",
+    "suiteId": "Tui",
+    "caseId": "ClipboardFallback",
+    "displayName": "ClipboardFallback",
+    "success": true,
+    "skipped": false,
+    "durationMs": 42,
+    "message": null
+  },
+  {
+    "testId": "Tui.ClipboardRace",
+    "suiteId": "Tui",
+    "caseId": "ClipboardRace",
+    "displayName": "ClipboardRace",
+    "success": true,
+    "skipped": false,
+    "durationMs": 23,
+    "message": null
+  },
+  {
+    "testId": "Tui.Streams",
+    "suiteId": "Tui",
+    "caseId": "Streams",
+    "displayName": "Streams",
+    "success": true,
+    "skipped": false,
+    "durationMs": 44,
+    "message": null
+  },
+  {
+    "testId": "Tui.Errors",
+    "suiteId": "Tui",
+    "caseId": "Errors",
+    "displayName": "Errors",
+    "success": true,
+    "skipped": false,
+    "durationMs": 8,
+    "message": null
+  },
+  {
+    "testId": "Tui.SessionRace",
+    "suiteId": "Tui",
+    "caseId": "SessionRace",
+    "displayName": "SessionRace",
+    "success": true,
+    "skipped": false,
+    "durationMs": 157,
+    "message": null
+  },
+  {
+    "testId": "Tui.Bounded",
+    "suiteId": "Tui",
+    "caseId": "Bounded",
+    "displayName": "Bounded",
+    "success": true,
+    "skipped": false,
+    "durationMs": 2,
+    "message": null
+  },
+  {
+    "testId": "Tui.NoMutationRetry",
+    "suiteId": "Tui",
+    "caseId": "NoMutationRetry",
+    "displayName": "NoMutationRetry",
+    "success": true,
+    "skipped": false,
+    "durationMs": 2,
+    "message": null
+  },
+  {
+    "testId": "Tui.Cancellation",
+    "suiteId": "Tui",
+    "caseId": "Cancellation",
+    "displayName": "Cancellation",
+    "success": true,
+    "skipped": false,
+    "durationMs": 104,
+    "message": null
+  },
+  {
+    "testId": "Tui.Routes",
+    "suiteId": "Tui",
+    "caseId": "Routes",
+    "displayName": "Routes",
+    "success": true,
+    "skipped": false,
+    "durationMs": 325,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.en.populated",
+    "suiteId": "TuiStates",
+    "caseId": "en.populated",
+    "displayName": "en populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 456,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.en.empty",
+    "suiteId": "TuiStates",
+    "caseId": "en.empty",
+    "displayName": "en empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 213,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.en.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "en.forbidden",
+    "displayName": "en forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 334,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.en.failed",
+    "suiteId": "TuiStates",
+    "caseId": "en.failed",
+    "displayName": "en failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 211,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.es.populated",
+    "suiteId": "TuiStates",
+    "caseId": "es.populated",
+    "displayName": "es populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 392,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.es.empty",
+    "suiteId": "TuiStates",
+    "caseId": "es.empty",
+    "displayName": "es empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 206,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.es.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "es.forbidden",
+    "displayName": "es forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 413,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.es.failed",
+    "suiteId": "TuiStates",
+    "caseId": "es.failed",
+    "displayName": "es failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 217,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.pt.populated",
+    "suiteId": "TuiStates",
+    "caseId": "pt.populated",
+    "displayName": "pt populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 383,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.pt.empty",
+    "suiteId": "TuiStates",
+    "caseId": "pt.empty",
+    "displayName": "pt empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 207,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.pt.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "pt.forbidden",
+    "displayName": "pt forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 449,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.pt.failed",
+    "suiteId": "TuiStates",
+    "caseId": "pt.failed",
+    "displayName": "pt failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 234,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.fr.populated",
+    "suiteId": "TuiStates",
+    "caseId": "fr.populated",
+    "displayName": "fr populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 344,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.fr.empty",
+    "suiteId": "TuiStates",
+    "caseId": "fr.empty",
+    "displayName": "fr empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 241,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.fr.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "fr.forbidden",
+    "displayName": "fr forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 423,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.fr.failed",
+    "suiteId": "TuiStates",
+    "caseId": "fr.failed",
+    "displayName": "fr failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 225,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.it.populated",
+    "suiteId": "TuiStates",
+    "caseId": "it.populated",
+    "displayName": "it populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 359,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.it.empty",
+    "suiteId": "TuiStates",
+    "caseId": "it.empty",
+    "displayName": "it empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 220,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.it.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "it.forbidden",
+    "displayName": "it forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 258,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.it.failed",
+    "suiteId": "TuiStates",
+    "caseId": "it.failed",
+    "displayName": "it failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 194,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.de.populated",
+    "suiteId": "TuiStates",
+    "caseId": "de.populated",
+    "displayName": "de populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 359,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.de.empty",
+    "suiteId": "TuiStates",
+    "caseId": "de.empty",
+    "displayName": "de empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 236,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.de.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "de.forbidden",
+    "displayName": "de forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 420,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.de.failed",
+    "suiteId": "TuiStates",
+    "caseId": "de.failed",
+    "displayName": "de failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 242,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.zh.populated",
+    "suiteId": "TuiStates",
+    "caseId": "zh.populated",
+    "displayName": "zh populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 334,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.zh.empty",
+    "suiteId": "TuiStates",
+    "caseId": "zh.empty",
+    "displayName": "zh empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 178,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.zh.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "zh.forbidden",
+    "displayName": "zh forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 418,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.zh.failed",
+    "suiteId": "TuiStates",
+    "caseId": "zh.failed",
+    "displayName": "zh failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 238,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ru.populated",
+    "suiteId": "TuiStates",
+    "caseId": "ru.populated",
+    "displayName": "ru populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 368,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ru.empty",
+    "suiteId": "TuiStates",
+    "caseId": "ru.empty",
+    "displayName": "ru empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 217,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ru.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "ru.forbidden",
+    "displayName": "ru forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 414,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ru.failed",
+    "suiteId": "TuiStates",
+    "caseId": "ru.failed",
+    "displayName": "ru failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 191,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ms.populated",
+    "suiteId": "TuiStates",
+    "caseId": "ms.populated",
+    "displayName": "ms populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 341,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ms.empty",
+    "suiteId": "TuiStates",
+    "caseId": "ms.empty",
+    "displayName": "ms empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 239,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ms.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "ms.forbidden",
+    "displayName": "ms forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 365,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ms.failed",
+    "suiteId": "TuiStates",
+    "caseId": "ms.failed",
+    "displayName": "ms failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 218,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.hi.populated",
+    "suiteId": "TuiStates",
+    "caseId": "hi.populated",
+    "displayName": "hi populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 341,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.hi.empty",
+    "suiteId": "TuiStates",
+    "caseId": "hi.empty",
+    "displayName": "hi empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 237,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.hi.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "hi.forbidden",
+    "displayName": "hi forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 358,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.hi.failed",
+    "suiteId": "TuiStates",
+    "caseId": "hi.failed",
+    "displayName": "hi failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 158,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ja.populated",
+    "suiteId": "TuiStates",
+    "caseId": "ja.populated",
+    "displayName": "ja populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 319,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ja.empty",
+    "suiteId": "TuiStates",
+    "caseId": "ja.empty",
+    "displayName": "ja empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 234,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ja.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "ja.forbidden",
+    "displayName": "ja forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 261,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.ja.failed",
+    "suiteId": "TuiStates",
+    "caseId": "ja.failed",
+    "displayName": "ja failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 211,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.qps-ploc.populated",
+    "suiteId": "TuiStates",
+    "caseId": "qps-ploc.populated",
+    "displayName": "qps-ploc populated route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 371,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.qps-ploc.empty",
+    "suiteId": "TuiStates",
+    "caseId": "qps-ploc.empty",
+    "displayName": "qps-ploc empty route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 188,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.qps-ploc.forbidden",
+    "suiteId": "TuiStates",
+    "caseId": "qps-ploc.forbidden",
+    "displayName": "qps-ploc forbidden route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 402,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.qps-ploc.failed",
+    "suiteId": "TuiStates",
+    "caseId": "qps-ploc.failed",
+    "displayName": "qps-ploc failed route frames",
+    "success": true,
+    "skipped": false,
+    "durationMs": 205,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.Width80",
+    "suiteId": "TuiStates",
+    "caseId": "Width80",
+    "displayName": "Keyboard focus at 80 columns",
+    "success": true,
+    "skipped": false,
+    "durationMs": 297,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.Width100",
+    "suiteId": "TuiStates",
+    "caseId": "Width100",
+    "displayName": "Keyboard focus at 100 columns",
+    "success": true,
+    "skipped": false,
+    "durationMs": 322,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.Width120",
+    "suiteId": "TuiStates",
+    "caseId": "Width120",
+    "displayName": "Keyboard focus at 120 columns",
+    "success": true,
+    "skipped": false,
+    "durationMs": 344,
+    "message": null
+  },
+  {
+    "testId": "TuiStates.Width160",
+    "suiteId": "TuiStates",
+    "caseId": "Width160",
+    "displayName": "Keyboard focus at 160 columns",
+    "success": true,
+    "skipped": false,
+    "durationMs": 380,
+    "message": null
+  },
+  {
+    "testId": "TuiLive.Libraries",
+    "suiteId": "TuiLive",
+    "caseId": "Libraries",
+    "displayName": "Library create, edit, duplicate and delete preserve sampling fields",
+    "success": true,
+    "skipped": false,
+    "durationMs": 52,
+    "message": null
+  },
+  {
+    "testId": "TuiLive.Inference",
+    "suiteId": "TuiLive",
+    "caseId": "Inference",
+    "displayName": "Native Ollama and OpenAI streaming/non-streaming and persisted history",
+    "success": true,
+    "skipped": false,
+    "durationMs": 136,
+    "message": null
+  },
+  {
+    "testId": "TuiOperator.Chat",
+    "suiteId": "TuiOperator",
+    "caseId": "Chat",
+    "displayName": "Choose a real model and send a native chat with keyboard and pointer input",
+    "success": true,
+    "skipped": false,
+    "durationMs": 124,
+    "message": null
+  },
+  {
+    "testId": "TuiOperator.Access",
+    "suiteId": "TuiOperator",
+    "caseId": "Access",
+    "displayName": "Create and edit a tenant role through terminal forms; delete with confirmation",
+    "success": true,
+    "skipped": false,
+    "durationMs": 154,
+    "message": null
+  },
+  {
+    "testId": "TuiOperator.Prompt",
+    "suiteId": "TuiOperator",
+    "caseId": "Prompt",
+    "displayName": "Create a personal saved prompt through the typed terminal form",
+    "success": true,
+    "skipped": false,
+    "durationMs": 79,
+    "message": null
+  }
+]

@@ -1,0 +1,40 @@
+HTTP localhost:56040 | H200/R200 | ADMIN | t:tena..ixture | u: | Connected                                              
+┌──── SharpAI ─────┬─────────────────────────────────────────── Server info ───────────────────────────────────────────┐
+│Overview          │version                                                                                            │
+│Models            │backend                                                                                            │
+│System Prompts    │native_initialized                                                                                 │
+│Model Configuratio┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│Playground        ┃HuggingFace                                                                                        ┃
+│Request History   ┃> HuggingFace.ApiKey                                                                               ┃
+│Inference History ┃  **********                                                                                       ┃
+│Embeddings History┃  Edit HuggingFace.ApiKey. Changes are sent only when you save.                                    ┃
+│API Explorer      ┃                                                                                                   ┃
+│Observability     ┃                                                                                                   ┃
+│Tenants           ┃Runtime                                                                                            ┃
+│Users             ┃  Runtime.MaxTokens                                                                                ┃
+│Credentials       ┃  ***                                                                                              ┃
+│Roles             ┃  Number. Leave blank to use the engine default (null).                                            ┃
+│Permissions       ┃                                                                                                   ┃
+│Assignments       ┃                                                                                                   ┃
+│Sessions          ┃UnknownFixture                                                                                     ┃
+│Security audit    ┃  [x] UnknownFixture.Preserve                                                                      ┃
+│Settings          ┃                                                                                                   ┃
+│                  ┃  [ Reload ]                                                                                       ┃
+│                  ┃                                                                                                   ┃
+│                  ┃  [ Save ] [ Cancel ]                                                                              ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+└──────────────────┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+Tab Next field   Ctrl+S Save   Esc Cancel   F1 Help   F2 Navigation   Ctrl+P Commands   F5 Refresh                      

@@ -556,3 +556,16 @@ JsonElement? replacement = await sdk.Admin.RegenerateCredentialTokenAsync("defau
 See [API contract and encrypted storage](../../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for authentication, caching, auditing, backup and legacy-token details.
 
 Run SDK HTTP transport and secret-log regression tests with `dotnet test tests/SharpAI.Sdk.Tests -c Release` from this directory.
+
+## Verified model pull sources
+
+Pull methods accept an organization/name repository ID or a Hugging Face HTTPS repository, tree revision,
+or resolve/blob GGUF URL. Pass the complete URL unchanged to preserve the requested revision and exact
+file selection. The server verifies the complete model before its final NDJSON `status=success` record.
+HTTP 200 alone does not confirm a successful pull. Never automatically retry an ambiguous download.
+See [the shared source contract](../../docs/MODEL_PULL_SOURCES.md).
+
+`SharpAI.Client` is the lightweight HTTP-only transport used by the terminal dashboard. It targets .NET 8/10,
+provides typed library/history/pull models, bounded inspection, cancellation, NDJSON/SSE decoding, and
+structured HTTP errors. It has no inference or database dependency. `SharpAISdk.CreateServerClient()`
+creates an independently owned session using the existing SDK authentication snapshot.

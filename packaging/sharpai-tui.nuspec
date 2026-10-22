@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<package><metadata><id>sharpai-tui</id><version>4.0.1</version><authors>Joel Christner</authors><description>SharpAI terminal dashboard</description><projectUrl>https://github.com/jchristn/SharpAI</projectUrl><license type="expression">MIT</license><requireLicenseAcceptance>false</requireLicenseAcceptance></metadata><files><file src="tools\**" target="tools"/></files></package>

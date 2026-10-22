@@ -1,0 +1,465 @@
+{
+  "sha256": "2a35c3cc857c5870e1174796f87257052be4df6cd938b072bdd1f77be717e70b",
+  "files": [
+    {
+      "path": ".github/workflows/tui.yml",
+      "sha256": "047399cae6b4ada416d4d62a8fdaef9eff74a7a22f81245eb9c607fbcb540f5c"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "f08fd998917879992b9ea1d8420cb46ca99a30d23e26ef57add82a8c0c032ede"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "74a1b8f290e77ac3e0e56d62b9a5d667e6bba7a46b8f09043333c4906d8e3554"
+    },
+    {
+      "path": "DEPLOYMENT_GUIDE.md",
+      "sha256": "317baa9633ffb81fc6367e3eecf7f1677271fac575725a9d7cee231542fe8751"
+    },
+    {
+      "path": "DOCKERHUB_README.md",
+      "sha256": "65ac86abb4bf6322f6d2aa429f56223a61143e8b65a6be0511833143090b1474"
+    },
+    {
+      "path": "README.md",
+      "sha256": "baefb42b63dd1402a2bf0fc9a82e3a0f9e0549e5cf05d75a6160dc8181753b14"
+    },
+    {
+      "path": "SharpAI.postman_collection.json",
+      "sha256": "b1594fd30ff92def38265e8e4c5d64be5113ebe8052e47b3031e53cabdd1585f"
+    },
+    {
+      "path": "TUI_PLAN.md",
+      "sha256": "361616c5ef9f8774eacad8f32016bc7f78dfd358958d049474b05132df8fa414"
+    },
+    {
+      "path": "build-all.bat",
+      "sha256": "2bb8ecd0245a3367b144b227120bf1b1f104937ed2bd1633dca28f4db2666f04"
+    },
+    {
+      "path": "build-all.sh",
+      "sha256": "c06ddba00508f78eb781c6261c94f21261f9ee27e8bfd88dc9d0e53311e2cd53"
+    },
+    {
+      "path": "build-tui.bat",
+      "sha256": "a263c794ab2a04c4046312093697eb686ad9889ef733983502961485be306bce"
+    },
+    {
+      "path": "build-tui.sh",
+      "sha256": "8b6a3a5bfe7cf0c4bda43c905aa55a320c3be2593044260b5a645b2dcd4a3eb4"
+    },
+    {
+      "path": "dashboard/src/api/operations.json",
+      "sha256": "a4f118f7bea90e39aacebe48eb8e4d9d38dda28a3e9b2832a8f1e2d8c27ce782"
+    },
+    {
+      "path": "dashboard/src/api/repository.test.ts",
+      "sha256": "b03fc1426992d72cb89872dad4abd564d8cc4d8af6a6c3ed3ade692a6b70f6d5"
+    },
+    {
+      "path": "dashboard/src/api/repository.ts",
+      "sha256": "829fe9bd7f8dd6ab302986ebfcce24384ababd1ad364644fca187484d18faf05"
+    },
+    {
+      "path": "docker/telemetry/otel-collector-config.yaml",
+      "sha256": "abdc35d5fb4fa01b35f5fe04108a68aad4fc3caa7ef7b5af37b5d677e34b853b"
+    },
+    {
+      "path": "docs/MODEL_PULL_SOURCES.md",
+      "sha256": "425beb04c1c627cb8cc7035aa166d93d63f84fe532aecf4f589fb6db75fcac0a"
+    },
+    {
+      "path": "docs/TUI.md",
+      "sha256": "dfb43150f0848742eb4ec3755ef1585c93b04d41d6d8f615a02a13d468e5ba00"
+    },
+    {
+      "path": "examples/tui/README.md",
+      "sha256": "da4f15fccffb3348ef883806af2e82385d34e7416ccde57c9dd77309000a5933"
+    },
+    {
+      "path": "examples/tui/remote-profile.json",
+      "sha256": "71422f21a5942138d551e3853e38e1a471cb453cc910ad2820a05bd8f80b004f"
+    },
+    {
+      "path": "packaging/INSTALL.txt",
+      "sha256": "4409b9051956511d18bf738287e7128d158d51bfda1c157d0e8fb699be174831"
+    },
+    {
+      "path": "packaging/sharpai-tui.iss",
+      "sha256": "ff6f666bd255fe833910bb30af3d161adc657b7d87909dc3063fd0da92df4322"
+    },
+    {
+      "path": "packaging/sharpai-tui.nuspec",
+      "sha256": "d75331107f07398b8b584e11c7c8f941a8eeb73656034fb244b67be81a08a14a"
+    },
+    {
+      "path": "postman/README.md",
+      "sha256": "07f7787e8b5406b148966af9a79e9e126ccf66c8316eea4938cf7bdb02729e6d"
+    },
+    {
+      "path": "postman/mocks/huggingface/default.js",
+      "sha256": "9c269b1b11db7080549b25a9acf0c01d3d697702f2453db20183772b942640f6"
+    },
+    {
+      "path": "postman/mocks/tui/config.yaml",
+      "sha256": "e9cc90166590be939ebece119ba3b203902a129f364e9c420f7871dd08c59859"
+    },
+    {
+      "path": "postman/mocks/tui/default.js",
+      "sha256": "85750b6c456f804c2e975ec5e6c4aa8a8f9dbe264dc535d7d9a10af7b964a08a"
+    },
+    {
+      "path": "postman/simulations/tui.sim.yaml",
+      "sha256": "ccc92aaac7b6c41a462ecdad16c48e2b69c99b6add421420d5d0d9c3a5cbc142"
+    },
+    {
+      "path": "publisher.json",
+      "sha256": "adb2d06dba28e9ee5a1b680e90db19e7b1eb3ff3d2fcf1a137da42fa82c0172c"
+    },
+    {
+      "path": "scripts/build-tui-repository.py",
+      "sha256": "fee74b9c0687c1162eb29d5c2d27c1299d64c2a8c74f994d9f3bcae16f98a604"
+    },
+    {
+      "path": "scripts/check-tui.py",
+      "sha256": "84ee8b20dea800d7dbf866a9ef5e9ea1eaf2005a55da22a96d0e51452e93c5b8"
+    },
+    {
+      "path": "scripts/test-tui-downloads.py",
+      "sha256": "aadbbb203e54b22a8809dac74ae86d757650564c9bcab40f29c9c35960bab819"
+    },
+    {
+      "path": "scripts/test-tui-telemetry.py",
+      "sha256": "97d6860986939ac38b85c2fa68e7a50a4a3ea342e46746423f71bc4e55c19379"
+    },
+    {
+      "path": "scripts/test-tui.py",
+      "sha256": "86a1a647624a7c7370bfd2c1454bc4321011432bce0568b9191b8f4d9f3be000"
+    },
+    {
+      "path": "sdk/csharp/README.md",
+      "sha256": "888279219703bffee6db8c046b53547dbbed54232af0f630207cc8193a23b4ba"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/ApiException.cs",
+      "sha256": "ded307c84bf8f3f6e118b9cbc1d788a8f1770d3588e144a005ef9e571f6d03f8"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/ApiResponse.cs",
+      "sha256": "6c979d9b47ad4e7e24e66f082727d417e895205ed8c66f57bf98bd27968954aa"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/GenerationConfiguration.cs",
+      "sha256": "07c4364237516e3b3270208ed8e6af6355cee2b046c416026e52abda2b2e7dea"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/HistoryRecord.cs",
+      "sha256": "e31fbc3788f1fc2509c56cf6b78a68430680a10f21633243877bf2b155b7e5d5"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/LibraryRecord.cs",
+      "sha256": "857fd794a3a3f9048150663885c1c730f78d292130d450e090b407469c7262b3"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/PullProgress.cs",
+      "sha256": "3b1237aa6a574216f34af18fedbb7f3d4d7b9b87bffd5a3202900e6e92451f8e"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/ResourcePage.cs",
+      "sha256": "9ff4a750e8632ee2797d83ce1cbd190da32a412c7f88d90e95a2b7ff3e0e0544"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/ServerClient.Pull.cs",
+      "sha256": "f3eaedbbb272619f09a715ae607fc17d6f7830958c429287782243c02d33efbc"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/ServerClient.Resources.cs",
+      "sha256": "7d911459c832290ebda45bdc81c06f2585ef4156e053e71d63f85327e2a1db34"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/ServerClient.cs",
+      "sha256": "1167ae7123fb7547aa8c03c8cdaaf8cdb37b11acd5f8b3ff44c0a9082005b794"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Client/SharpAI.Client.csproj",
+      "sha256": "a8b00247c6100ab4d8f1b52c2c825928d933b6ef90c70aa27fc7600f35297bcc"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Sdk/Interfaces/IOllamaMethods.cs",
+      "sha256": "0de106780a568e5b917b393d9c508f5d7d1ff99c099bfcf629219c7c69fb0577"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Sdk/SharpAI.Sdk.csproj",
+      "sha256": "19acf770e155019ca3bf3389a21540d3a4e4890fe3cb1016c51777a3ded8bdcb"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Sdk/SharpAI.Sdk.xml",
+      "sha256": "bb8ecce8f993cac522208172d54789cebbe852a8fcbcd4912564aa39d8a31e39"
+    },
+    {
+      "path": "sdk/csharp/src/SharpAI.Sdk/SharpAISdk.cs",
+      "sha256": "ed311be13920384c1fa0d141e470c1ec22ea5b417aedea8fe104404b5d0733fd"
+    },
+    {
+      "path": "sdk/js/README.md",
+      "sha256": "138a7873feb957a6c853c79898cc188dda04800719c07b2e3110820aec93d0c2"
+    },
+    {
+      "path": "sdk/js/src/implementations/OllamaMethods.ts",
+      "sha256": "aecb63925825d47af8ccfbb743ad20691a2e65f830ab08cbd09c84cf7b349050"
+    },
+    {
+      "path": "sdk/js/src/interfaces/IOllamaMethods.ts",
+      "sha256": "0d6bee210d626ca195f3e0ca98ebbbea107cbb06b7061582c1b78fa71b6b6deb"
+    },
+    {
+      "path": "sdk/js/src/ollama.test.ts",
+      "sha256": "8f4f4fbae5a9c8b3de79399777a31075450f11d075d989b69aec413292378e14"
+    },
+    {
+      "path": "sdk/python/README.md",
+      "sha256": "6fe1a6e340eba9fa3ac6893e86359f50eaa49c2ed78dc1f727f4b65206a00807"
+    },
+    {
+      "path": "sdk/python/src/sharpai/client.py",
+      "sha256": "c3ff9157f49a50908cbb7a34e8aca0112784d03433516e9c96ca92b8780ea89a"
+    },
+    {
+      "path": "sdk/python/tests/test_client.py",
+      "sha256": "e52b898b3761b61ef756e31736747deb8d942f6881e26806b5dfc053945007a0"
+    },
+    {
+      "path": "src/SharpAI.Publisher/Program.cs",
+      "sha256": "11bc4b50051580dd5ef1abb0c7a24d98ee152127184ef925f7ee90983d227245"
+    },
+    {
+      "path": "src/SharpAI.Publisher/SharpAI.Publisher.csproj",
+      "sha256": "b2efdfdcad5c4aa1dc69727b82f4a1009a4208a9abd0affbf386e0bb560914c4"
+    },
+    {
+      "path": "src/SharpAI.Server/Program.cs",
+      "sha256": "ff751e8acf68966071aa0780102b4fd2429c794c2321cf284d487de31858fc82"
+    },
+    {
+      "path": "src/SharpAI.Tui/Localization/Localizer.cs",
+      "sha256": "d096cb719acbbd11040ff1076cfb22821926e2621e684353480f9b1474dc90fb"
+    },
+    {
+      "path": "src/SharpAI.Tui/Localization/OperatorKeys.cs",
+      "sha256": "b4da630766e6eb4c674c54e7ad5423afce9d7ba9ff25905e08ee6ae6857a5585"
+    },
+    {
+      "path": "src/SharpAI.Tui/Localization/operator.json",
+      "sha256": "e03d11fd6962528c9c51d6b96eac7ef6f6145e79f3a592df0e83f95c158632a5"
+    },
+    {
+      "path": "src/SharpAI.Tui/Program.cs",
+      "sha256": "e3c7f479189d892ddbf8b85bdaa89062bf22abb55d39546959c34c592cb5d522"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Access.cs",
+      "sha256": "c7cc4a5bbd216bf40748f6f0eae4d7a29639cac3213b27bca6aad7e7e3ba51e7"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Connection.cs",
+      "sha256": "7d0595218e1ae63b0f0350ed47bede68d73f03469960bc7708ee8b24aeca2c9f"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Explorer.cs",
+      "sha256": "6ea142b9831ae67f25a687365cfd56239b04ab4004c3b07bf40cc7a245752498"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/History.cs",
+      "sha256": "9fe561108a0738bfc8253c05cdc324a4a259fab172560f618d7451fa9157489a"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Libraries.cs",
+      "sha256": "b1639921b5849121654f71dd178ccdd258e77fbaf807f45ae2431f35df03cf54"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Models.cs",
+      "sha256": "e5ccd8ffce7c77667172debb72596192e523431631a5b70d8cc5077068ec5898"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Observability.cs",
+      "sha256": "df47317f4d0a7eeef0bdceffdd6814534660a59f2e521b132231c0313cda0c88"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Playground.cs",
+      "sha256": "65521173551d0404cd3a5172c77434c9b78e6dc37abb2a80516a3748ee1b0d5e"
+    },
+    {
+      "path": "src/SharpAI.Tui/Screens/Resources.cs",
+      "sha256": "3aec10742b400b7f5041f9fdeb93ca4749dabc253393a06ac80429fc36e18ab2"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/ChatTurn.cs",
+      "sha256": "051781d7034f14feb07aad710dba868d30f8a9e1d3fa35a3b8889901b0ec3d10"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/ClientTelemetry.cs",
+      "sha256": "b3b0979bc33439f9e53e433740312ef26662f347c77eac0803754c7df68c7743"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/ClipboardService.cs",
+      "sha256": "fb676d6aea8450751b9ec24df920c83bdf59d9ebf19ebcc6e52fbb6fad69a561"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/ConnectionProfile.cs",
+      "sha256": "d3fdb2ff26393f84ec2b424111f31689559e532a47ef35e3e4293d789cc4dac1"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/HistoryFilter.cs",
+      "sha256": "e43f5bd618d85cab20742709e482e73353b58ced95fd6c7f51536c31746d41cf"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/IClipboard.cs",
+      "sha256": "2e02de9f8a64a74b183a6fd60a59792c6c127d38246bb1d6389368eccc4c71fa"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/JsonData.cs",
+      "sha256": "4d17f76b3fe35e41b9a312cf671f30614e6ea4f9b1eb9b15eec9d1564e3fba2e"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/MetricsSample.cs",
+      "sha256": "6179ef798cec83fcb957d6ca6d291706e36a3fa4a6b9ea74d916445dd40f93a3"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/ProfileStore.cs",
+      "sha256": "d17ca11a35af55b37f1901e2f35f7f048324ed0514a752a411a68dfd1f53bc69"
+    },
+    {
+      "path": "src/SharpAI.Tui/Services/SafeText.cs",
+      "sha256": "908c2ef48a71c78fa631c0f306bb121076306701e091f23e485cdc796fd3dba6"
+    },
+    {
+      "path": "src/SharpAI.Tui/SharpAI.Tui.csproj",
+      "sha256": "db3cce915668e4890dd6a8b87fe3e7e6ec0482c17d60df2234a98e7e10edcd96"
+    },
+    {
+      "path": "src/SharpAI.Tui/SharpAITuiApp.cs",
+      "sha256": "d0bd8789c0e193f79ea639117f9c0638ba10ca281c7c39450f05861575b83123"
+    },
+    {
+      "path": "src/SharpAI.Tui/Shell/AdaptiveShell.cs",
+      "sha256": "93a79ff2c9bbd97d3c1cc3021371d42d5ff5c009892567e0976d848b15e9f738"
+    },
+    {
+      "path": "src/SharpAI.Tui/Widgets/Composer.cs",
+      "sha256": "be927f4065e81a4a46c1be4aa42e630b22a2f5a2ba88d4e95c4c5473ab489d84"
+    },
+    {
+      "path": "src/SharpAI.Tui/Widgets/JsonForm.cs",
+      "sha256": "96ef16c3671303df91ba7e64b03a03b0c49016629314941c0134cc521909608f"
+    },
+    {
+      "path": "src/SharpAI.Tui/Widgets/MultilineField.cs",
+      "sha256": "84ad58f676062c62fef20a023dd2555d8591cea52dea08870c7ce8ec5af32047"
+    },
+    {
+      "path": "src/SharpAI.Tui/Widgets/ResponsiveScreen.cs",
+      "sha256": "d1d775b4ee9b2a41154c8aab42b33d0b534b239dbf9b0ef73eb77f612581d1dd"
+    },
+    {
+      "path": "src/SharpAI.Tui/Widgets/SecretModal.cs",
+      "sha256": "b197e20fc045de7bdb25db6e5fc8a6dd291562302a62d9a04c3bead038c7cd3d"
+    },
+    {
+      "path": "src/SharpAI.Tui/Widgets/TableViewport.cs",
+      "sha256": "dc48e54f8f60d62dd52bed2c74811470456d0192edc4cb5cb23fd7758f297301"
+    },
+    {
+      "path": "src/SharpAI.Tui/parity.json",
+      "sha256": "fbbef365743e2950b48840322655851d752752d048e4e073cadf45da1c84c760"
+    },
+    {
+      "path": "src/SharpAI.sln",
+      "sha256": "833c06f331e9b98e40f111faee229433d7faf00c31dab618a231a14392e844f8"
+    },
+    {
+      "path": "src/SharpAI/Hosting/HuggingFace/HuggingFaceClient.cs",
+      "sha256": "688e97de5f99cde4684a3aa57e0f8008c087e303792574699918a87172d19d08"
+    },
+    {
+      "path": "src/SharpAI/Operations/ModelPullService.cs",
+      "sha256": "bb0645bd6154efc2e0177aeac9b645cd10a45c93bec18dce0fc2ac3f2c5afe7b"
+    },
+    {
+      "path": "src/SharpAI/Operations/ModelPullSource.cs",
+      "sha256": "4ad621ab07cdf11c11fc94ad45661077d44ef85362003265130fa5deef923229"
+    },
+    {
+      "path": "src/SharpAI/SharpAI.xml",
+      "sha256": "faa58e8ebf54c0949918d13dd9b0e92a30f5851faceef64a7bd3c63362e059b9"
+    },
+    {
+      "path": "src/Test.Benchmark/Program.cs",
+      "sha256": "7dc6861d782c03013e1bce22c7137da703530e0f96e76014db1b67b485c6867f"
+    },
+    {
+      "path": "src/Test.Benchmark/Test.Benchmark.csproj",
+      "sha256": "f5983e1c52c3ed96629002f8b268ab2d3e36192adbba228bda4209af5d627608"
+    },
+    {
+      "path": "src/Test.Shared/ModelPullSourceSuite.cs",
+      "sha256": "3fa801ac407f4e3e49b02092ff5b3a1bc6ecb9e081d99f9e11d3c9ce70dbb1aa"
+    },
+    {
+      "path": "src/Test.Shared/SharpAISuites.cs",
+      "sha256": "01ffb2855d269ef6c842cbbfe09119eea874e2f4be92b03a8468eb1841f09b3f"
+    },
+    {
+      "path": "src/Test.Shared/Test.Shared.csproj",
+      "sha256": "6d7f0f5231c19d46aed1912d4ba3a62d8e2466ea4e3129c5aa8ea28e05a735b7"
+    },
+    {
+      "path": "src/Test.Shared/Tui/FailingTerminal.cs",
+      "sha256": "ef8dbdacda02f2cb31a19f7f3f62d61a42df8a5a2cc7f5542bfda65be5e8ca31"
+    },
+    {
+      "path": "src/Test.Shared/Tui/JsonNodeResult.cs",
+      "sha256": "1c291cb094e1bb8f81d24ae52c269c39de36e5e85009660a733f2a8e0e6eb87d"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TestClipboard.cs",
+      "sha256": "a74057ec05501883219d0cce70668dd00ba4e2ad9d5ddfe5252822205bac6093"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TestProfileStore.cs",
+      "sha256": "19d32d1994cffc111b83a3fe3479e5a6a514462cfb19e4848a9f430bac0035d9"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TuiLiveSuite.cs",
+      "sha256": "24eb25105d62d9e2f722886d563c31f722399544d0c2f5420fb081bc94515cfc"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TuiOperatorSuite.cs",
+      "sha256": "7e4e5baab7636281c3ad58c4b5413b5881e79dd6ae17cd46c615e8e7625d43ba"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TuiStateSuite.cs",
+      "sha256": "c88a2f5d8ccec5e39596286f0b43b5b05728376a1708d8ffb6d7bcacff06ed54"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TuiSuite.cs",
+      "sha256": "c6127df0e30678b9fe4ca1a7dffbe407b38d13987ab3f86ecadff4a349ef0ed0"
+    },
+    {
+      "path": "src/Test.Shared/Tui/TuiTelemetryProbe.cs",
+      "sha256": "9cbccebebb504b1312ae4e0b9dd0c6d46547f4da3bad99513af70688f1369228"
+    },
+    {
+      "path": "src/Test.Tui/Program.cs",
+      "sha256": "061283876a80ed36aa98776894accb632537e8cff1b29043dea0e024f8a90043"
+    },
+    {
+      "path": "src/Test.Tui/Test.Tui.csproj",
+      "sha256": "c0c82d1e3bd467350d5e0a6d21b2ab070c2f26dc0873d6db348ceeca43d29b96"
+    },
+    {
+      "path": "src/Test.Xunit/DownloadSimulationTests.cs",
+      "sha256": "f6a80289577dfc1d08d416534ffe373715af132f52ef79c9f25f33f482c85ced"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+simulation: sharpai-tui
+routing: path
+mocks:
+  - routeKey: server
+    path: ../mocks/tui/config.yaml

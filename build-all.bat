@@ -9,6 +9,8 @@ CALL build-server.bat %*
 IF ERRORLEVEL 1 GOTO :Failed
 CALL build-dashboard.bat %*
 IF ERRORLEVEL 1 GOTO :Failed
+CALL build-tui.bat
+IF ERRORLEVEL 1 GOTO :Failed
 
 POPD
 EXIT /B 0

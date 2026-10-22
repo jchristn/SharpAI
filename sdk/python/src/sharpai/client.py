@@ -147,7 +147,10 @@ class SharpAIClient:
         return self._request("POST", "/api/unload", body={"name": name} if name else {})
 
     def pull_model(self, name: str) -> Iterator[Any]:
-        """Pull a model, yielding parsed newline-delimited progress objects."""
+        """Pull a repository ID or Hugging Face repository/tree/resolve/blob HTTPS URL.
+
+        The server preserves revision and exact GGUF selection. Yields NDJSON progress;
+        only status=success confirms publication. Never automatically retry a pull."""
         with self._open("POST", "/api/pull", {"name": name}, None, None) as response:
             for raw in response:
                 line = raw.decode("utf-8", "replace").strip()

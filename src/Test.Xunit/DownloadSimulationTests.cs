@@ -20,6 +20,7 @@ namespace Test.Xunit
     /// <summary>Runs production downloads over real HTTP against the committed Postman stand-in.</summary>
     public sealed class DownloadSimulationTests : IDisposable
     {
+        private readonly CancellationToken _Token = CancellationToken.None;
         private readonly string _Directory = Path.Combine(Path.GetTempPath(), "sharpai-download-" + Guid.NewGuid());
         private static readonly byte[] _Data = Encoding.UTF8.GetBytes("verified model content");
         private static string BaseUrl { get { return Environment.GetEnvironmentVariable("SHARPAI_TEST_HF_URL")!; } }
@@ -57,6 +58,22 @@ namespace Test.Xunit
             using HttpClient http = new HttpClient();
             await Assert.ThrowsAsync<InvalidDataException>(() => VerifiedDownload.DownloadAsync(http, url, Destination, Digest, _Data.Length));
             Assert.Equal("old", File.ReadAllText(Destination)); Assert.Equal(_Data.Take(4), File.ReadAllBytes(Destination + ".partial"));
+        }
+
+        /// <summary>Repository URLs retain their revision and exact file selection through real HTTP metadata, tree and verified download calls.</summary>
+        [SimulationTheory]
+        [InlineData("tree")] [InlineData("resolve")] [InlineData("blob")]
+        public async Task FullRepositoryUrlsPreserveRevisionAndExactGgufSelection(string kind)
+        {
+            using DatabaseDriverBase database = await DatabaseDriverFactory.CreateAndInitializeAsync(new DatabaseSettings { Filename = Path.Combine(_Directory, "url.db") }, new LoggingModule(), _Token);
+            ModelFileService registry = new ModelFileService(new LoggingModule(), database.Models, _Directory);
+            HuggingFaceClient client = new HuggingFaceClient(new LoggingModule(), null!, BaseUrl);
+            string source = "https://huggingface.co/org/single/" + kind + "/revision1" + (kind == "tree" ? "" : "/model-Q4_K_M.gguf");
+            ModelFile model = await ModelPullService.PullAsync(client, registry, _Directory, source, token: _Token);
+            Assert.Equal(source, model.Name); Assert.Contains("/org/single/tree/revision1", model.SourceUrl);
+            Assert.True(File.Exists(registry.GetFilename(source)));
+            await Assert.ThrowsAsync<InvalidDataException>(() => ModelPullService.PullAsync(client, registry, _Directory, "https://huggingface.co/org/single/resolve/revision1/missing.gguf", token: _Token));
+            await Assert.ThrowsAsync<HttpRequestException>(() => ModelPullService.PullAsync(client, registry, _Directory, "https://huggingface.co/org/single/tree/absent", token: _Token));
         }
 
         [SimulationTheory]

@@ -1,0 +1,13 @@
+{
+  "Server": "https://sharpai.example.com",
+  "Locale": "en",
+  "Theme": "dark",
+  "Ascii": false,
+  "TelemetryEnabled": false,
+  "ServiceLinks": {
+    "Grafana": "https://grafana.example.com/dashboards/f/sharpai",
+    "Prometheus": "https://prometheus.example.com/graph",
+    "Loki": "https://loki.example.com/ready",
+    "Tempo": "https://tempo.example.com/ready"
+  }
+}

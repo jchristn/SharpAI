@@ -1,5 +1,11 @@
 # Changelog
 
+### Unreleased terminal dashboard work
+
+- Add an HTTP-only C#/TUIKit terminal client, a provider-neutral C# transport, shared terminal tests, benchmarks and packaging infrastructure.
+- Preserve requested Hugging Face revisions and exact GGUF file selection across the shared pull pipeline, dashboard, SDKs and Postman contract.
+- Record terminal parity and release gates separately from shipped v4.0.1 features. Existing release versions are unchanged.
+
 ### v4.0.1 dashboard and diagnostics follow-up
 
 - Compact icon utilities and localized operational help across dashboard controls, forms, tables, and dialogs.

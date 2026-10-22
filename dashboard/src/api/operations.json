@@ -366,10 +366,10 @@
     "method": "POST",
     "path": "/api/pull",
     "tag": "Ollama - Models",
-    "summary": "Pull a model",
+    "summary": "Pull a verified model from a repository ID or Hugging Face HTTPS URL",
     "example": {
-      "name": "Qwen/Qwen3-8B-GGUF",
-      "stream": false
+      "model": "https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f212d81/tinyllamas/stories15M-q4_0.gguf",
+      "stream": true
     }
   },
   {

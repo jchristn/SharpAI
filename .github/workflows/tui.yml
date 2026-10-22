@@ -1,0 +1,186 @@
+name: Terminal dashboard
+on:
+  pull_request:
+    paths: ['src/**', 'sdk/csharp/**', 'dashboard/src/api/**', 'dashboard/src/i18n/**', 'postman/**', 'scripts/*tui*', 'publisher.json', 'packaging/**', '.github/workflows/tui.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'sdk/csharp/**', 'dashboard/src/api/**', 'dashboard/src/i18n/**', 'postman/**', 'scripts/*tui*', 'publisher.json', 'packaging/**', '.github/workflows/tui.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install -g postman-cli@1.75.0
+      - name: Download verified native model fixture
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 'https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f212d81/tinyllamas/stories15M-q4_0.gguf' -o "$RUNNER_TEMP/stories15M-q4_0.gguf"
+          python -c 'import hashlib,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"stories15M-q4_0.gguf"; assert hashlib.sha256(p.read_bytes()).hexdigest()=="66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739"'
+      - name: Public API, native inference and terminal operator workflows
+        shell: bash
+        run: python scripts/test-tui.py --model "$RUNNER_TEMP/stories15M-q4_0.gguf" --output artifacts/tui
+      - name: Model-pull source and recovery contracts
+        run: python scripts/test-tui-downloads.py --output artifacts/tui/downloads
+      - name: Shared xUnit adapter
+        run: dotnet test src/Test.Xunit -f net8.0 --filter FullyQualifiedName~SharpAIFactTests
+      - name: Shared NUnit adapter
+        run: dotnet test src/Test.Nunit -f net8.0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tui-evidence-${{ matrix.os }}
+          path: artifacts/tui
+  packages:
+    needs: contracts
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: windows-11-arm, rid: win-arm64 }
+          - { os: macos-latest, rid: osx-arm64 }
+          - { os: macos-15-intel, rid: osx-x64 }
+          - { os: ubuntu-latest, rid: linux-x64 }
+          - { os: ubuntu-24.04-arm, rid: linux-arm64 }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet run --project src/SharpAI.Publisher -- --channel archive --rid ${{ matrix.rid }}
+      - name: Native package smoke
+        shell: bash
+        run: |
+          executable="installers/sharpai-tui-4.0.1-${{ matrix.rid }}/sharpai-tui"
+          if [[ '${{ matrix.rid }}' == win-* ]]; then executable="${executable}.exe"; fi
+          "$executable" --version
+          "$executable" --help
+      - name: Build macOS disk image
+        if: runner.os == 'macOS'
+        run: dotnet run --project src/SharpAI.Publisher -- --channel dmg --rid ${{ matrix.rid }}
+      - name: Verify macOS mounted image and replacement
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mountpoint="$RUNNER_TEMP/tui-dmg"
+          mkdir -p "$mountpoint" "$RUNNER_TEMP/tui-installed"
+          hdiutil attach installers/*.dmg -mountpoint "$mountpoint" -nobrowse
+          cp "$mountpoint/sharpai-tui" "$RUNNER_TEMP/tui-installed/sharpai-tui"
+          "$RUNNER_TEMP/tui-installed/sharpai-tui" --version
+          cp -f "$mountpoint/sharpai-tui" "$RUNNER_TEMP/tui-installed/sharpai-tui"
+          "$RUNNER_TEMP/tui-installed/sharpai-tui" --help
+          hdiutil detach "$mountpoint"
+          rm "$RUNNER_TEMP/tui-installed/sharpai-tui"
+          test ! -e "$RUNNER_TEMP/tui-installed/sharpai-tui"
+      - name: Build and exercise Linux packages
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby-dev build-essential rpm apt-utils createrepo-c gnupg
+          sudo gem install fpm -v 1.17.0 --no-document
+          dotnet run --project src/SharpAI.Publisher -- --channel deb --rid ${{ matrix.rid }}
+          dotnet run --project src/SharpAI.Publisher -- --channel rpm --rid ${{ matrix.rid }}
+          debarch=$(dpkg --print-architecture)
+          rpmarch=$(uname -m)
+          fpm -s dir -t deb -n sharpai-tui -v 0.0.0 -a "$debarch" -p "$RUNNER_TEMP/tui-baseline.deb" "installers/sharpai-tui-4.0.1-${{ matrix.rid }}/sharpai-tui=/usr/bin/sharpai-tui"
+          sudo dpkg -i "$RUNNER_TEMP/tui-baseline.deb"
+          sudo dpkg -i installers/*.deb
+          sharpai-tui --version
+          sudo dpkg -i installers/*.deb
+          sharpai-tui --help
+          sudo dpkg -r sharpai-tui
+          test ! -e /usr/bin/sharpai-tui
+          fpm -s dir -t rpm -n sharpai-tui -v 0.0.0 -a "$rpmarch" -p "$RUNNER_TEMP/tui-baseline.rpm" "installers/sharpai-tui-4.0.1-${{ matrix.rid }}/sharpai-tui=/usr/bin/sharpai-tui"
+          sudo rpm -i --nodeps "$RUNNER_TEMP/tui-baseline.rpm"
+          sudo rpm -U --nodeps installers/*.rpm
+          sharpai-tui --version
+          sudo rpm -U --replacepkgs --nodeps installers/*.rpm
+          sharpai-tui --help
+          sudo rpm -e sharpai-tui
+          test ! -e /usr/bin/sharpai-tui
+      - name: Exercise signed Linux repository metadata with a disposable key
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          export GNUPGHOME="$(mktemp -d)"
+          chmod 700 "$GNUPGHOME"
+          trap 'rm -rf "$GNUPGHOME"' EXIT
+          gpg --batch --passphrase '' --quick-generate-key 'SharpAI CI validation <ci@example.invalid>' rsa2048 sign 1d
+          fingerprint=$(gpg --with-colons --list-secret-keys | awk -F: '$1 == "fpr" {print $10; exit}')
+          python3 scripts/build-tui-repository.py --packages installers --output installers/repositories --key-id "$fingerprint"
+          gpg --verify installers/repositories/apt/InRelease
+          gpg --verify installers/repositories/rpm/repodata/repomd.xml.asc installers/repositories/rpm/repodata/repomd.xml
+      - name: Build Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          $compiler = Get-ChildItem ${env:ProgramFiles(x86)} -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (!$compiler) { throw 'Inno Setup compiler unavailable' }
+          $env:PATH += ';' + $compiler.DirectoryName
+          dotnet run --project src/SharpAI.Publisher -- --channel inno --rid ${{ matrix.rid }}
+          if ($LASTEXITCODE -ne 0) { throw 'Installer build failed' }
+          $setup = Get-ChildItem installers/*-setup.exe | Select-Object -First 1
+          $destination = Join-Path $env:RUNNER_TEMP 'tui-installed'
+          Start-Process $setup.FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/DIR=' + $destination)) -Wait
+          & "$destination/sharpai-tui.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed executable failed' }
+          Start-Process $setup.FullName -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', ('/DIR=' + $destination)) -Wait
+          & "$destination/sharpai-tui.exe" --help
+          Start-Process "$destination/unins000.exe" -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait
+          if (Test-Path "$destination/sharpai-tui.exe") { throw 'Uninstall left executable' }
+      - name: Generate Windows package-manager metadata
+        if: runner.os == 'Windows'
+        run: dotnet run --project src/SharpAI.Publisher -- --channel winget --rid ${{ matrix.rid }}
+      - name: Build and exercise offline Chocolatey package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dotnet run --project src/SharpAI.Publisher -- --channel choco --rid ${{ matrix.rid }}
+          if ($LASTEXITCODE -ne 0) { throw 'Chocolatey package build failed' }
+          choco install sharpai-tui --source "$PWD/installers" --version 4.0.1 --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Chocolatey install failed' }
+          sharpai-tui --version
+          choco upgrade sharpai-tui --source "$PWD/installers" --version 4.0.1 --force --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Chocolatey replacement failed' }
+          sharpai-tui --help
+          choco uninstall sharpai-tui --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { throw 'Chocolatey uninstall failed' }
+      - name: Generate Homebrew metadata
+        if: runner.os == 'macOS'
+        run: dotnet run --project src/SharpAI.Publisher -- --channel brew --rid ${{ matrix.rid }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tui-packages-${{ matrix.rid }}
+          path: |
+            installers/*.zip
+            installers/*.tar.gz
+            installers/*.sha256
+            installers/*.yaml
+            installers/brew/**/*.rb
+            installers/*.dmg
+            installers/*.exe
+            installers/*.deb
+            installers/*.rpm
+            installers/*.nupkg

@@ -1134,3 +1134,9 @@ cp sharpai.json sharpai.json.backup
 ### Docker context size
 
 The v4.0.1 Compose files default `SHARPAI_CONTEXT_SIZE` to `2048`, rather than the model's potentially much larger trained context. This keeps models such as Qwen3-8B practical in a Docker VM with limited memory. Increase the context explicitly when memory permits, for example `SHARPAI_CONTEXT_SIZE=4096 docker compose up -d`. An exit code of 137 during model loading can indicate memory pressure; account for model weights, KV cache, compute buffers, and other containers.
+
+## Terminal client
+
+The terminal dashboard connects to the existing server over HTTP and adds no container service or port.
+See [the terminal guide](docs/TUI.md) for source builds, authentication and remote profiles, and
+[model pull sources](docs/MODEL_PULL_SOURCES.md) for repository and exact GGUF URLs.

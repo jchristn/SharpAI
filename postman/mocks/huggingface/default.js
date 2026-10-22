@@ -18,7 +18,7 @@ function gguf(arch = 'llama') {
   {key:'llama.attention.head_count_kv',value:2},
   {key:'llama.embedding_length',value:256},
 ];
-  return Buffer.concat([Buffer.from('GGUF'), u32(3), u64(0), u64(entries.length), ...entries.map(([key, value]) => Buffer.concat([str(key), typeof value === 'string' ? Buffer.concat([u32(8), str(value)]) : Buffer.concat([u32(4), u32(value)])]))]);
+  return Buffer.concat([Buffer.from('GGUF'), u32(3), u64(0), u64(entries.length), ...entries.map(entry => Buffer.concat([str(entry.key), typeof entry.value === 'string' ? Buffer.concat([u32(8), str(entry.value)]) : Buffer.concat([u32(4), u32(entry.value)])]))]);
 }
 const hash = b => crypto.createHash('sha256').update(b).digest('hex');
 function json(res, code, body) { res.writeHead(code, {'Content-Type':'application/json'}); res.end(JSON.stringify(body)); }
@@ -54,6 +54,8 @@ http.createServer((req, res) => {
     if (mode !== 'oversize' && mode !== 'short') headers['Content-Length'] = mode === 'badlength' ? data.length + 1 : body.length;
     res.writeHead(200, headers); return res.end(body);
   }
+  const metadata = path.match(/^\/api\/models\/org\/([^/]+)\/revision\/([^/]+)$/);
+  if (metadata) { if (!['main', 'revision1'].includes(metadata[2])) return json(res, 404, {error:'unknown revision'}); return json(res, 200, {id:`org/${metadata[1]}`,sha:'revision1',safetensors:{total:1000}}); }
   const api = path.match(/^\/api\/models\/org\/([^/]+)(?:\/tree\/([^/]+))?$/);
   if (api) {
     const scenario = api[1];

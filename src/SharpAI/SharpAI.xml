@@ -2872,6 +2872,12 @@
             <param name="token">Cancellation token.</param>
             <returns>HuggingFaceModelMetadata.</returns>
         </member>
+        <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelMetadata(System.String,System.Threading.CancellationToken,System.String)">
+            <summary>Retrieve metadata at a requested revision, resolving it to an immutable commit SHA.</summary>
+            <param name="modelName">Repository identifier.</param><param name="token">Cancellation token.</param>
+            <param name="revision">Branch, tag or commit, or null for the repository default.</param>
+            <returns>Repository metadata at the requested revision.</returns>
+        </member>
         <member name="M:SharpAI.Hosting.HuggingFaceClient.GetModelFilesAsync(System.String,System.Threading.CancellationToken)">
             <summary>List repository files at main using the original binary-compatible signature.</summary>
             <param name="modelName">Repository.</param><param name="token">Cancellation token.</param>
@@ -8138,6 +8144,24 @@
             <param name="storage">Storage directory.</param><param name="name">Repository name.</param>
             <param name="priority">Optional quantization preferences.</param><param name="progress">Optional progress.</param>
             <param name="token">Cancellation token.</param><returns>Registered model.</returns>
+        </member>
+        <member name="T:SharpAI.Operations.ModelPullSource">
+            <summary>Immutable validated Hugging Face source. Parsing never contacts a host or exposes credentials. Thread safe.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelPullSource.Repository">
+            <summary>Repository identifier, organization/name.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelPullSource.Revision">
+            <summary>Requested revision, or null for the repository default revision.</summary>
+        </member>
+        <member name="P:SharpAI.Operations.ModelPullSource.FilePath">
+            <summary>Exact repository-relative GGUF path, or null for quantization selection.</summary>
+        </member>
+        <member name="M:SharpAI.Operations.ModelPullSource.Parse(System.String)">
+            <summary>Parse organization/name, a repository HTTPS URL, a tree revision URL, or a resolve/blob GGUF URL.</summary>
+            <param name="input">Nonempty source without user information, query strings or fragments.</param>
+            <returns>A source restricted to Hugging Face. Network requests still use the configured repository client origin.</returns>
+            <exception cref="T:System.ArgumentException">Input is invalid, ambiguous or points at an unsupported host/path.</exception>
         </member>
         <member name="T:SharpAI.Operations.VerifiedDownload">
             <summary>Verified, resumable transfers. The caller must serialize writes to each destination.</summary>

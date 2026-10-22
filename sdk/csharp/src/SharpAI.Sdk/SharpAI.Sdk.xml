@@ -243,7 +243,7 @@
         </member>
         <member name="M:SharpAI.Sdk.Interfaces.IOllamaMethods.PullModel(SharpAI.Models.Ollama.OllamaPullModelRequest,System.Threading.CancellationToken)">
             <summary>
-            Pull a model from the registry with streaming progress updates.
+            Pull a repository ID or Hugging Face repository/tree/resolve/blob HTTPS URL from the registry with streaming progress updates.
             </summary>
             <param name="request">Pull model request.</param>
             <param name="cancellationToken">Cancellation token.</param>
@@ -746,6 +746,9 @@
             Apply the configured authentication headers to a request.
             </summary>
             <param name="req">Request.</param>
+        </member>
+        <member name="M:SharpAI.Sdk.SharpAISdk.CreateServerClient">
+            <summary>Create an independent provider-neutral HTTP session with a snapshot of the configured authentication. Caller owns disposal.</summary>
         </member>
         <member name="M:SharpAI.Sdk.SharpAISdk.SendAsync``1(System.Net.Http.HttpMethod,System.String,System.Object,System.Collections.Generic.IDictionary{System.String,System.String},System.Threading.CancellationToken)">
             <summary>

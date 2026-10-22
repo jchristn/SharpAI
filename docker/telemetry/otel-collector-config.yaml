@@ -51,6 +51,6 @@ service:
       processors: [memory_limiter, batch]
       exporters: [otlp/tempo]
     logs:
-      receivers: [filelog]
+      receivers: [filelog, otlp]
       processors: [resource, memory_limiter, batch]
       exporters: [otlphttp/loki]

@@ -5,3 +5,5 @@ cd "$(dirname "$0")"
 
 bash ./build-server.sh "$@"
 bash ./build-dashboard.sh "$@"
+
+bash ./build-tui.sh

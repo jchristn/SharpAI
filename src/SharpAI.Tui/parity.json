@@ -1,0 +1,1297 @@
+{
+  "schemaVersion": 1,
+  "baseline": "4.0.1",
+  "routes": [
+    {
+      "path": "/",
+      "key": "nav.overview",
+      "terminalRoute": "/",
+      "command": "route./",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/models",
+      "key": "nav.models",
+      "terminalRoute": "/models",
+      "command": "route./models",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/system-prompts",
+      "key": "library.promptsTitle",
+      "terminalRoute": "/system-prompts",
+      "command": "route./system-prompts",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/model-configurations",
+      "key": "library.configurationsTitle",
+      "terminalRoute": "/model-configurations",
+      "command": "route./model-configurations",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/playground",
+      "key": "nav.playground",
+      "terminalRoute": "/playground",
+      "command": "route./playground",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/request-history",
+      "key": "nav.requestHistory",
+      "terminalRoute": "/request-history",
+      "command": "route./request-history",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/api-explorer",
+      "key": "nav.apiExplorer",
+      "terminalRoute": "/api-explorer",
+      "command": "route./api-explorer",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/observability",
+      "key": "nav.observability",
+      "terminalRoute": "/observability",
+      "command": "route./observability",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access",
+      "key": "nav.access",
+      "terminalRoute": "/access",
+      "command": "route./access",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/settings",
+      "key": "nav.settings",
+      "terminalRoute": "/settings",
+      "command": "route./settings",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/tenants",
+      "key": "admin.tenants",
+      "terminalRoute": "/access/tenants",
+      "command": "route./access/tenants",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/users",
+      "key": "admin.users",
+      "terminalRoute": "/access/users",
+      "command": "route./access/users",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/credentials",
+      "key": "admin.credentials",
+      "terminalRoute": "/access/credentials",
+      "command": "route./access/credentials",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/roles",
+      "key": "admin.roles",
+      "terminalRoute": "/access/roles",
+      "command": "route./access/roles",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/permissions",
+      "key": "admin.permissions",
+      "terminalRoute": "/access/permissions",
+      "command": "route./access/permissions",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/assignments",
+      "key": "admin.assignments",
+      "terminalRoute": "/access/assignments",
+      "command": "route./access/assignments",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/sessions",
+      "key": "admin.sessions",
+      "terminalRoute": "/access/sessions",
+      "command": "route./access/sessions",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/access/audit",
+      "key": "admin.audit",
+      "terminalRoute": "/access/audit",
+      "command": "route./access/audit",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/request-history/inference",
+      "key": "history.inference",
+      "terminalRoute": "/request-history/inference",
+      "command": "route./request-history/inference",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/request-history/embeddings",
+      "key": "history.embeddings",
+      "terminalRoute": "/request-history/embeddings",
+      "command": "route./request-history/embeddings",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/request-history/:section",
+      "terminalRoute": "/request-history",
+      "command": "route./request-history",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/inference-history",
+      "terminalRoute": "/request-history/inference",
+      "command": "route./request-history/inference",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/embeddings-history",
+      "terminalRoute": "/request-history/embeddings",
+      "command": "route./request-history/embeddings",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/tenants",
+      "terminalRoute": "/access/tenants",
+      "command": "route./access/tenants",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/users",
+      "terminalRoute": "/access/users",
+      "command": "route./access/users",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/credentials",
+      "terminalRoute": "/access/credentials",
+      "command": "route./access/credentials",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/roles",
+      "terminalRoute": "/access/roles",
+      "command": "route./access/roles",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/permissions",
+      "terminalRoute": "/access/permissions",
+      "command": "route./access/permissions",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/assignments",
+      "terminalRoute": "/access/assignments",
+      "command": "route./access/assignments",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/sessions",
+      "terminalRoute": "/access/sessions",
+      "command": "route./access/sessions",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    },
+    {
+      "path": "/audit",
+      "terminalRoute": "/access/audit",
+      "command": "route./access/audit",
+      "testIds": [
+        "Tui.Catalog",
+        "Tui.Routes"
+      ]
+    }
+  ],
+  "operations": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "command": "explorer.0",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/ready",
+      "command": "explorer.1",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/diagnostics/runtime",
+      "command": "explorer.2",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/diagnostics/memory",
+      "command": "explorer.3",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/inspect",
+      "command": "explorer.4",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/models/{id}/inspect",
+      "command": "explorer.5",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/settings",
+      "command": "explorer.6",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/settings",
+      "command": "explorer.7",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/api/request-history",
+      "command": "explorer.8",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/api/request-history",
+      "command": "explorer.9",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/api/request-history/summary",
+      "command": "explorer.10",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/api/request-history/{id}",
+      "command": "explorer.11",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/api/request-history/{id}",
+      "command": "explorer.12",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/embed",
+      "command": "explorer.13",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/generate",
+      "command": "explorer.14",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat",
+      "command": "explorer.15",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/models",
+      "command": "explorer.16",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/embeddings",
+      "command": "explorer.17",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/completions",
+      "command": "explorer.18",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/chat/completions",
+      "command": "explorer.19",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/token",
+      "command": "explorer.20",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/token",
+      "command": "explorer.21",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/token",
+      "command": "explorer.22",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/api/audit",
+      "command": "explorer.23",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}/permissions",
+      "command": "explorer.24",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/permissions",
+      "command": "explorer.25",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants",
+      "command": "explorer.26",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants",
+      "command": "explorer.27",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}",
+      "command": "explorer.28",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}",
+      "command": "explorer.29",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/users",
+      "command": "explorer.30",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/users",
+      "command": "explorer.31",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}",
+      "command": "explorer.32",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}",
+      "command": "explorer.33",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials",
+      "command": "explorer.34",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials",
+      "command": "explorer.35",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}",
+      "command": "explorer.36",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}",
+      "command": "explorer.37",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/roles",
+      "command": "explorer.38",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/roles",
+      "command": "explorer.39",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}",
+      "command": "explorer.40",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/permissions",
+      "command": "explorer.41",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/permissions",
+      "command": "explorer.42",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions/{permissionGuid}",
+      "command": "explorer.43",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}/assignments",
+      "command": "explorer.44",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/assignments",
+      "command": "explorer.45",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/assignments/{assignmentGuid}",
+      "command": "explorer.46",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pull",
+      "command": "explorer.47",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/import",
+      "command": "explorer.48",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/models/presets",
+      "command": "explorer.49",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/models/presets",
+      "command": "explorer.50",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/models/presets/{name}",
+      "command": "explorer.51",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/models/presets/{name}",
+      "command": "explorer.52",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/delete",
+      "command": "explorer.53",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/unload",
+      "command": "explorer.54",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/tags",
+      "command": "explorer.55",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/ps",
+      "command": "explorer.56",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/api/version",
+      "command": "explorer.57",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/api/show",
+      "command": "explorer.58",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/auth/context",
+      "command": "explorer.59",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/tenants/{tenantGuid}",
+      "command": "explorer.60",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}",
+      "command": "explorer.61",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/tenants/{tenantGuid}/users/{userGuid}/password",
+      "command": "explorer.62",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}",
+      "command": "explorer.63",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}",
+      "command": "explorer.64",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions",
+      "command": "explorer.65",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions/{permissionGuid}",
+      "command": "explorer.66",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/tenants/{tenantGuid}/permissions/{permissionGuid}",
+      "command": "explorer.67",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/permissions/{permissionGuid}",
+      "command": "explorer.68",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments",
+      "command": "explorer.69",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments",
+      "command": "explorer.70",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}",
+      "command": "explorer.71",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/sessions",
+      "command": "explorer.72",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}",
+      "command": "explorer.73",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/library-context",
+      "command": "explorer.74",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/system-prompts",
+      "command": "explorer.75",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/system-prompts",
+      "command": "explorer.76",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/system-prompts/{id}",
+      "command": "explorer.77",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/system-prompts/{id}",
+      "command": "explorer.78",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/system-prompts/{id}/duplicate",
+      "command": "explorer.79",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/system-prompts/{id}",
+      "command": "explorer.80",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/model-configurations",
+      "command": "explorer.81",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/model-configurations",
+      "command": "explorer.82",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/model-configurations/{id}",
+      "command": "explorer.83",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "PUT",
+      "path": "/v1.0/model-configurations/{id}",
+      "command": "explorer.84",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/model-configurations/{id}/duplicate",
+      "command": "explorer.85",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "DELETE",
+      "path": "/v1.0/model-configurations/{id}",
+      "command": "explorer.86",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "GET",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token",
+      "command": "explorer.87",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    },
+    {
+      "method": "POST",
+      "path": "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate",
+      "command": "explorer.88",
+      "testId": "Tui.Catalog",
+      "status": "planned"
+    }
+  ],
+  "states": [
+    "populated",
+    "empty",
+    "loading",
+    "forbidden",
+    "validation",
+    "failed"
+  ],
+  "workflows": [
+    {
+      "id": "workflow.1",
+      "surface": "Connection and shell",
+      "requirements": "Server URL/profile, explicit HTTP/TLS behavior, health/readiness, current identity and admin badges, login/logout, default-tenant sign-in, language/theme, help, repository/docs/service links, version",
+      "contract": "`/health`, `/ready`, `POST /v1.0/token`, `GET /v1.0/token`, `DELETE /v1.0/token`, `/v1.0/auth/context`",
+      "evidence": "Resume/expired sessions, auth-off mode, unreachable server, no token leakage, keyboard-only navigation",
+      "status": "implemented",
+      "terminalRoute": "/",
+      "commandIds": [
+        "route./"
+      ],
+      "testIds": [
+        "Tui.Routes",
+        "Tui.SessionRace",
+        "Tui.ClipboardRace"
+      ]
+    },
+    {
+      "id": "workflow.2",
+      "surface": "Overview",
+      "requirements": "All web KPI values and four quick actions: models, playground, observability, explorer; manual refresh",
+      "contract": "Same dashboard summary/model/health calls",
+      "evidence": "Values and actions agree with web fixtures; no fabricated activity",
+      "status": "implemented",
+      "terminalRoute": "/",
+      "commandIds": [
+        "route./"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.3",
+      "surface": "Models",
+      "requirements": "Registered and resident model tables with names, sizes, modified/expiry times; structured pull progress from repository name or full URL; delete-local-model confirmation; unload-resident-model confirmation; refresh both lists",
+      "contract": "`/api/tags`, `/api/ps`, `/api/pull`, `/api/delete`, `/api/unload`; explorer also exposes show/import/inspect",
+      "evidence": "Real NDJSON progress, malformed URL, failed/aborted download, unreadable model, protected data and failure paths",
+      "status": "implemented",
+      "terminalRoute": "/models",
+      "commandIds": [
+        "route./models"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.4",
+      "surface": "Playground chat",
+      "requirements": "Actual model picker; conversation, Markdown and code; system prompt; temperature, maximum output tokens, top-p, top-k, min-p, repeat penalty/window, presence/frequency penalties, seed; per-line stop strings; JSON output; thinking visibility; streaming toggle; one-line initial composer; cancel; new conversation; copy text/code; warning and rotating wait messages",
+      "contract": "`/api/tags`, `/api/chat` streaming and non-streaming",
+      "evidence": "Multi-turn request payloads, whitespace preservation, split UTF-8 frames, errors after headers, cancellation, manual transcript scroll, all parameter bounds",
+      "status": "implemented",
+      "terminalRoute": "/playground",
+      "commandIds": [
+        "route./playground"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.5",
+      "surface": "Playground telemetry",
+      "requirements": "Per-turn TTFT, total/stream time, input/output/total tokens, generation speed; expand details only when response data exists; unavailable values distinct from zero",
+      "contract": "Final inference envelope; persisted history detail for additional engine phases",
+      "evidence": "Same units as web; no invented cache usage; stopped and failed responses visibly distinguished",
+      "status": "implemented",
+      "terminalRoute": "/playground",
+      "commandIds": [
+        "route./playground"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.6",
+      "surface": "Playground embeddings",
+      "requirements": "Model/input selection, cancellation, dimension count and readable vector preview, copy full result",
+      "contract": "`/api/embed`",
+      "evidence": "Single/batched/unsupported model, no fabricated vector values",
+      "status": "implemented",
+      "terminalRoute": "/playground",
+      "commandIds": [
+        "route./playground"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.7",
+      "surface": "Request History",
+      "requirements": "UTC timestamp first, method/path/status/duration/source; filter method/status/path; presets hour/day/week/month with exact web bucket widths; chart-to-table interval drilldown; pagination/page size; refresh preserves filters; row activation opens wide structured inspector",
+      "contract": "`/v1.0/api/request-history`, `/summary`, `/{id}`",
+      "evidence": "Encoded query parity, newest-first ordering, details fetched separately, timestamp and filter consistency",
+      "status": "implemented",
+      "terminalRoute": "/request-history",
+      "commandIds": [
+        "route./request-history"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.8",
+      "surface": "Request inspector",
+      "requirements": "Request ID, complete URL, principal/tenant/user, start/end/status/duration, trace/span IDs; request and response headers/body, original bytes, truncation and unavailable flags; redacted fields stay redacted; clipboard",
+      "contract": "`GET /v1.0/api/request-history/{id}`",
+      "evidence": "Large text/JSON/NDJSON/SSE, missing body, old records, 404/403; no whole-record JSON-only presentation",
+      "status": "implemented",
+      "terminalRoute": "/request-history",
+      "commandIds": [
+        "route./request-history"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.9",
+      "surface": "Inference History",
+      "requirements": "All request-history controls with inference category and endpoint selector, duration meters and usage/phase breakdown; nullable cached count, queue/load/prompt/generation/engine/TTFT/stream phases, cancellation and approximation flags",
+      "contract": "Same history endpoints, `category=inference`",
+      "evidence": "Persisted fields match engine measurements and survive server restart; unavailable data explained",
+      "status": "implemented",
+      "terminalRoute": "/request-history/inference",
+      "commandIds": [
+        "route./request-history/inference"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.10",
+      "surface": "API Explorer",
+      "requirements": "Operation picker from checked catalog above request editor; method/path placeholders/query/body; all catalog operations, validation, destructive confirmations, execute, response status/body and streaming inspector, exact command/response copy",
+      "contract": "`operations.json`, `/openapi.json`, selected API route",
+      "evidence": "Catalog/route coverage gate; valid JSON, path encoding, authorization, 4xx/5xx, NDJSON/SSE, cancel long response",
+      "status": "implemented",
+      "terminalRoute": "/api-explorer",
+      "commandIds": [
+        "route./api-explorer"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.11",
+      "surface": "Observability",
+      "requirements": "Health/ready plus current web request/token-rate/resident/latency summaries; detect missing metrics; configurable Grafana SharpAI-folder, Prometheus, Loki and Tempo links; exact URL copy",
+      "contract": "`/health`, `/ready`, `/metrics`; configured engine metrics endpoint such as dashboard `/engine-metrics`",
+      "evidence": "Refresh/delta rates and missing/stale series; external service failure is separate from SharpAI health",
+      "status": "implemented",
+      "terminalRoute": "/observability",
+      "commandIds": [
+        "route./observability"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.12",
+      "surface": "Access: tenants",
+      "requirements": "Scope selector, enumerate all accessible tenants, create/edit/activate/deactivate/delete, protected restrictions",
+      "contract": "`/v1.0/tenants`, `/{tenant}`",
+      "evidence": "Platform-only mutation enforced server-side; isolated test tenants",
+      "status": "implemented",
+      "terminalRoute": "/access/tenants",
+      "commandIds": [
+        "route./access/tenants"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.13",
+      "surface": "Access: users",
+      "requirements": "Paged users; separate ID/name/email/type/status/date; create/edit; platform/tenant admin checks; reset password with confirmation; delete; effective permission inspection",
+      "contract": "Tenant user routes, password and permission inspection operations in catalog",
+      "evidence": "Cannot elevate a tenant administrator or mutate protected global admins; own password reset invalidates session",
+      "status": "implemented",
+      "terminalRoute": "/access/users",
+      "commandIds": [
+        "route./access/users"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.14",
+      "surface": "Access: credentials",
+      "requirements": "Paged separate IDs, name, owner, public key, expiry/status; create/edit/revoke; one-time secret copy; effective rights and owner ceiling",
+      "contract": "Tenant credential routes and effective-permission route",
+      "evidence": "Secret only in creation modal; never preferences/logs/history; dismiss clears memory",
+      "status": "implemented",
+      "terminalRoute": "/access/credentials",
+      "commandIds": [
+        "route./access/credentials"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.15",
+      "surface": "Access: roles",
+      "requirements": "Built-ins/custom rows; create/rename/delete custom roles; permission mappings add/remove; inspect inactive and built-in mappings",
+      "contract": "Tenant roles and role-permission mapping routes",
+      "evidence": "Built-in/protected mutations disabled; cross-tenant mappings rejected",
+      "status": "implemented",
+      "terminalRoute": "/access/roles",
+      "commandIds": [
+        "route./access/roles"
+      ],
+      "testIds": [
+        "Tui.Routes",
+        "TuiOperator.Access"
+      ]
+    },
+    {
+      "id": "workflow.16",
+      "surface": "Access: permissions",
+      "requirements": "Typed permit/deny forms; operations/resources; create/edit where backend permits/delete custom rules",
+      "contract": "Tenant permission routes",
+      "evidence": "Shorthand Read/Write/All semantics, deny precedence, invalid operations",
+      "status": "implemented",
+      "terminalRoute": "/access/permissions",
+      "commandIds": [
+        "route./access/permissions"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.17",
+      "surface": "Access: assignments",
+      "requirements": "User grants and credential scope tabs; principal picker; role; tenant/resource scope, exact resource ID and inheritance; create/remove; inspect effective permission rules",
+      "contract": "User-role and credential-scope assignment routes",
+      "evidence": "IDs required for resource scope; tenant boundaries and credential owner ceiling",
+      "status": "implemented",
+      "terminalRoute": "/access/assignments",
+      "commandIds": [
+        "route./access/assignments"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.18",
+      "surface": "Access: sessions",
+      "requirements": "Selected tenant sessions, separate session/user IDs, creation/expiry, revoke confirmation",
+      "contract": "Tenant session routes",
+      "evidence": "Revoked and inactive-owner sessions rejected on next API call",
+      "status": "implemented",
+      "terminalRoute": "/access/sessions",
+      "commandIds": [
+        "route./access/sessions"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.19",
+      "surface": "Access: audit",
+      "requirements": "Paged security events with event/principal/path/outcome/time and detail inspection",
+      "contract": "`/v1.0/api/audit`",
+      "evidence": "Scope/permission changes never reveal another tenant\u2019s events",
+      "status": "implemented",
+      "terminalRoute": "/access/audit",
+      "commandIds": [
+        "route./access/audit"
+      ],
+      "testIds": [
+        "Tui.Routes"
+      ]
+    },
+    {
+      "id": "workflow.20",
+      "surface": "Settings / server info",
+      "requirements": "Single scrollable typed form, all returned sections including HuggingFace, Auth, Rest, Runtime, Database, Storage, Telemetry, RequestHistory, Logging, Debug; nested objects, arrays, header/priority dictionaries; add/remove row icons; password masks; read-only managed values; dirty/reload/save and restart notes",
+      "contract": "`/api/settings` GET/PUT, `/health`",
+      "evidence": "Unknown fields preserved, secret redaction policy respected, type-correct round trip, null overrides, failed save retains draft",
+      "status": "implemented",
+      "terminalRoute": "/settings",
+      "commandIds": [
+        "route./settings"
+      ],
+      "testIds": [
+        "Tui.Routes",
+        "Tui.TypedRoundTrip"
+      ]
+    },
+    {
+      "id": "workflow.21",
+      "surface": "Cross-cutting table/form behavior",
+      "requirements": "Distinct nonwrapping copyable IDs; filter drafts; paging, loading/error/empty; localized useful help for labels/fields/headers/actions; column visibility, pinned essentials, persisted per-table preferences",
+      "contract": "Existing list filter capabilities",
+      "evidence": "No hidden records are claimed to be filtered; unsupported server sort/filter labeled local-to-page",
+      "status": "implemented",
+      "terminalRoute": "/settings",
+      "commandIds": [
+        "route./settings"
+      ],
+      "testIds": [
+        "Tui.Routes",
+        "Tui.TypedRoundTrip"
+      ]
+    },
+    {
+      "id": "library.system-prompts",
+      "surface": "system-prompts",
+      "requirements": "List/page/inspect/create/edit/delete/duplicate, ownership visibility, saved selectors",
+      "status": "implemented",
+      "terminalRoute": "/system-prompts",
+      "commandIds": [
+        "route./system-prompts"
+      ],
+      "testIds": [
+        "Tui.Routes",
+        "TuiLive.Libraries",
+        "TuiOperator.Prompt"
+      ]
+    },
+    {
+      "id": "library.model-configurations",
+      "surface": "model-configurations",
+      "requirements": "List/page/inspect/create/edit/delete/duplicate, ownership visibility, saved selectors",
+      "status": "implemented",
+      "terminalRoute": "/model-configurations",
+      "commandIds": [
+        "route./model-configurations"
+      ],
+      "testIds": [
+        "Tui.Routes",
+        "TuiLive.Libraries"
+      ]
+    }
+  ],
+  "decisions": {
+    "authentication": "Current server requires bearer authentication; legacy auth-off compatibility is not claimed.",
+    "sessions": "Memory-only or an operator-selected existing protected token file. No credential vault requirement.",
+    "unsupportedLocales": [
+      "ar"
+    ],
+    "versions": "Existing release versions remain unchanged."
+  }
+}

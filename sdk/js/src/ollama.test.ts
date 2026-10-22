@@ -48,4 +48,12 @@ describe('OllamaMethods import + presets', () => {
     expect(url).toBe('http://127.0.0.1:8000/v1.0/models/presets/pirate');
     expect((init as RequestInit).method).toBe('DELETE');
   });
+  it('preserves a full GGUF URL including its revision through streaming transport', async () => {
+    const source = 'https://huggingface.co/org/model/resolve/commit123/folder/model.gguf';
+    const sdk = new SharpAISdk('http://127.0.0.1:8000');
+    const stream = vi.spyOn(sdk, 'postStreamAsync').mockImplementation(async function* () { yield { status: 'success' }; });
+    for await (const progress of sdk.ollama.pullModel({ model: source })) expect(progress.status).toBe('success');
+    expect(stream).toHaveBeenCalledWith('http://127.0.0.1:8000/api/pull', { model: source }, undefined);
+  });
+
 });

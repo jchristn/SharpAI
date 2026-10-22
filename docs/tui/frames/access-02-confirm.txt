@@ -1,0 +1,40 @@
+HTTP 127.0.0.1:56038 | H200/R200 | ADMIN | t:ten_..135ba9 | u:usr_..0a74b1 | Connected                                  
+┌──── SharpAI ─────┬───────────────────────────────────────────────────────────────────────────────────────────────────┐
+│Overview          │Guid                                                           role_4fabe94d61c5476cb2cf61d6495093█│
+│Models            │TenantGuid                                                      ten_953cf1feca654dfc85abb63a9c135b█│
+│System Prompts    │Name                                                                           Updated terminal ro█│
+│Model Configuratio│IsBuiltIn                                                                                      fal█│
+│Playground        │Active                                                                                          tr█│
+│Request History   │IsProtected                                                                                    fal█│
+│Inference History │CreatedUtc                                                               2026-10-22T23:06:57.74249█│
+│Embeddings History│LastUpdateUtc                                                            2026-10-22T23:06:57.77313█│
+│API Explorer      │                                                                                                  █│
+│Observability     │                                                                                                  █│
+│Tenants           │                                                                                                  █│
+│Users             │                                                                                                  █│
+│Credentials       │                                                                                                  █│
+│Roles             │                                                                                                  █│
+│Permis┌─────────────────────────────────────────────── Confirm ────────────────────────────────────────────────┐     █│
+│Assign│                                                                                                        │     █│
+│Sessio│ DELETE /v1.0/tenants/ten_953cf1feca654dfc85abb63a9c135ba9/roles/role_4fabe94d61c5476cb2cf61d6495093c8? │     █│
+│Securi│                                                                                                        │     █│
+│Settin│                                            [ Yes ] [ No ]                                              │     █│
+│      │                                                                                                        │     █│
+│      └────────────────────────────────────────────────────────────────────────────────────────────────────────┘     █│
+│                  │                                                                                                  █│
+│                  │                                                                                                  ││
+│                  │                                                                                                  ││
+│                  │                                                                                                  ││
+│                  │                                                                                                  ││
+│                  │                                                                                                  ││
+│                  │████████████████████████████████████████████████████████████████████████████████████████████████── │
+│                  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│                  ┃[ Back ] [ Edit ] [ Delete ] [ Role permissions ]                                                  ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+└──────────────────┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+F1 Help   F2 Navigation   Ctrl+P Commands   F5 Refresh   Ctrl+Y Copy current result   Ctrl+X Cancel active operation    

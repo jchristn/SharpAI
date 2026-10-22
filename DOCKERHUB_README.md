@@ -83,3 +83,9 @@ you operate the server. The server exports OTLP metrics/traces/logs and a Promet
 - Issues: https://github.com/jchristn/SharpAI/issues
 
 Licensed under the MIT license.
+
+## Terminal client
+
+The terminal dashboard connects to the existing server over HTTP and adds no container service or port.
+See [the terminal guide](docs/TUI.md) for source builds, authentication and remote profiles, and
+[model pull sources](docs/MODEL_PULL_SOURCES.md) for repository and exact GGUF URLs.

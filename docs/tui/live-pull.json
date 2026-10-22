@@ -1,0 +1,40 @@
+[
+  {
+    "status": "pulling manifest"
+  },
+  {
+    "status": "downloading",
+    "file": "stories15M-q4_0.gguf",
+    "downloaded": 16384,
+    "percent": 0.0008588197602349677
+  },
+  {
+    "status": "downloading",
+    "file": "stories15M-q4_0.gguf",
+    "downloaded": 692516,
+    "percent": 0.036300440983818294
+  },
+  {
+    "status": "downloading",
+    "file": "stories15M-q4_0.gguf",
+    "downloaded": 8180004,
+    "percent": 0.42878107141119853
+  },
+  {
+    "status": "downloading",
+    "file": "stories15M-q4_0.gguf",
+    "downloaded": 14504228,
+    "percent": 0.7602854988618961
+  },
+  {
+    "status": "verifying",
+    "file": "stories15M-q4_0.gguf",
+    "downloaded": 19077344,
+    "percent": 1
+  },
+  {
+    "status": "success",
+    "downloaded": 19077344,
+    "percent": 1
+  }
+]

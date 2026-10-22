@@ -9,7 +9,7 @@ namespace SharpAI.Sdk.Interfaces
     public interface IOllamaMethods
     {
         /// <summary>
-        /// Pull a model from the registry with streaming progress updates.
+        /// Pull a repository ID or Hugging Face repository/tree/resolve/blob HTTPS URL from the registry with streaming progress updates.
         /// </summary>
         /// <param name="request">Pull model request.</param>
         /// <param name="cancellationToken">Cancellation token.</param>

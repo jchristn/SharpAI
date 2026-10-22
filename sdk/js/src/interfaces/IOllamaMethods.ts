@@ -19,7 +19,7 @@ import type {
  */
 export interface IOllamaMethods {
   /**
-   * Pull a model from the registry with streaming progress updates.
+   * Pull a repository ID or Hugging Face repository/tree/resolve/blob HTTPS URL with streaming progress. Revisions and exact GGUF file paths are preserved.
    * @param request - Pull model request.
    * @param signal - Optional AbortSignal for cancellation.
    * @returns AsyncGenerator yielding pull model progress updates.

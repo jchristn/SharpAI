@@ -1,0 +1,10 @@
+version: 1
+name: sharpai-tui-contract
+slug: sharpai-tui-contract
+protocol: http
+port: 4911
+interceptRequests: true
+scenarios:
+  - name: default
+    path: ./default.js
+    default: true

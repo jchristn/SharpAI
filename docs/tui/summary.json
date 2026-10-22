@@ -1,0 +1,44 @@
+{
+  "sourceCommit": "9c815098d89bd7eb1db0c8c3b63c883cc8bdfa9c",
+  "workingTreeChanges": true,
+  "results": {
+    "net8.0": {
+      "total": 93,
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0
+    },
+    "net10.0": {
+      "total": 93,
+      "passed": 93,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "administrationAssertions": 270,
+  "dashboardTests": 79,
+  "javascriptSdkTests": 9,
+  "pythonSdkTests": 7,
+  "downloadSimulationTestsPerFramework": 50,
+  "xunitSharedFactPassed": true,
+  "nunitAdapterCasesPassed": 287,
+  "nativeModelPull": true,
+  "historyRestart": true,
+  "benchmarkRepeatGate": true,
+  "telemetryStack": true,
+  "ptyRestored": true,
+  "archiveRuntimes": [
+    "win-x64",
+    "win-arm64",
+    "osx-x64",
+    "osx-arm64",
+    "linux-x64",
+    "linux-arm64"
+  ],
+  "nativeWindowsExecution": "CI configured; not run from local checkout",
+  "releaseParityGate": "closed pending workflow and platform acceptance",
+  "downloadedModelInference": true,
+  "csharpSdkBuildWarnings": 0,
+  "signedAptClientInstall": true,
+  "linuxUpgradeFromPriorVersionFixture": true
+}

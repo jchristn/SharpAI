@@ -1,0 +1,40 @@
+HTTP 127.0.0.1:56038 | H200/R200 | ADMIN | t:default | u:usr_..0a74b1 | Connected                                       
+┌──── SharpAI ─────┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+│Overview          ┃ID: system-starter-prompt                                                                          ┃
+│Models            ┃Filter this page (2/2)                                                                             ┃
+│System Prompts    ┃Id                                      Name                      Scope                     Descrip┃
+│Model Configuratio┃system-starter-prompt                   Helpful assistant         System                    General┃
+│Playground        ┃7f4d61d3cd6749c8abc5aedef4a2c602        TUI operator 01fca353a4ba User                             ┃
+│Request History   ┃                                                                                                   ┃
+│Inference History ┃                                                                                                   ┃
+│Embeddings History┃                                                                                                   ┃
+│API Explorer      ┃                                                                                                   ┃
+│Observability     ┃                                                                                                   ┃
+│Tenants           ┃                                                                                                   ┃
+│Users             ┃                                                                                                   ┃
+│Credentials       ┃                                                                                                   ┃
+│Roles             ┃                                                                                                   ┃
+│Permissions       ┃                                                                                                   ┃
+│Assignments       ┃                                                                                                   ┃
+│Sessions          ┃                                                                                                   ┃
+│Security audit    ┃                                                                                                   ┃
+│Settings          ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃                                                                                                   ┃
+│                  ┃Showing 1-2 of 2. Page 1 of 1.                                                                     ┃
+│                  ┃█████████████████████████████████████████████████████──────────────────────────────────────────────┃
+│                  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+│                  │[ Create ] [ Edit ] [ Duplicate ] [ Delete ]                                                       │
+│                  │                                                                                                   │
+│                  │                                                                                                   │
+│                  │                                                                                                   │
+└──────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────┘
+Enter Open   Up/Down Move   Left/Right Scroll columns   Tab Table / page filter   F1 Help   F2 Navigation               

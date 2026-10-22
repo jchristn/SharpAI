@@ -1266,7 +1266,7 @@ namespace SharpAI.Server
                 OllamaPullModelRequest pmr = req.GetData<OllamaPullModelRequest>();
                 return await _OllamaApiHandler.PullModel(req, pmr, _TokenSource.Token).ConfigureAwait(false);
             }, api => Describe(api, "Ollama - Models", "Pull a model")
-                .WithDescription("Downloads a model from HuggingFace. Streams progress as newline-delimited JSON.")
+                .WithDescription("Downloads a verified GGUF model from a Hugging Face organization/name, HTTPS repository URL, tree revision URL, or resolve/blob GGUF URL. Resolves revisions to immutable commits and honors exact file selection. Streams NDJSON progress with downloaded bytes and percent; success is explicit. Failures after headers are error records. Never automatically retry a pull.")
                 .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Pull model request", true))
                 .WithResponse(200, OpenApiResponseMetadata.Json("Progress stream", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(400, OpenApiResponseMetadata.BadRequest()));
