@@ -913,6 +913,11 @@ function RoleMappings({
       <DataTable
         columns={[
           {
+            key: "Guid",
+            header: t("admin.id"),
+            render: (r) => <CopyableId value={r.Guid} truncateTo={18} />,
+          },
+          {
             key: "Name",
             header: t("admin.name"),
             render: (r) => securityName(r),
