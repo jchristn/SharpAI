@@ -1,5 +1,9 @@
 # Dashboard administration
 
+Sign-in is required before any dashboard page or management data is loaded. Initial credentials are
+`admin@sharpai.local` / `password`, tenant `default`, until changed. See
+[API bearer credentials](../DEPLOYMENT_GUIDE.md#api-bearer-credentials) for bootstrap token provisioning.
+
 The dashboard's **Access** navigation item opens a tabbed workspace for tenant-scoped security management. Its tenant selector
 chooses the target of management requests; it does not impersonate another user or change a session's tenant.
 Platform administrators can choose any tenant. Other principals are bound to their authenticated tenant.
@@ -8,7 +12,7 @@ Platform administrators can choose any tenant. Other principals are bound to the
 | --- | --- | --- |
 | `/access/tenants` | List, create, edit, deactivate, delete unprotected tenants | `/v1.0/tenants` |
 | `/access/users` | List, create, edit account details/status, reset passwords, inspect effective permissions | `/v1.0/tenants/{tenant}/users` |
-| `/access/credentials` | List, create with one-time secret, edit status/expiration, revoke, inspect permissions | `/v1.0/tenants/{tenant}/credentials` |
+| `/access/credentials` | List, create with one-time bearer token, edit status/expiration, revoke, inspect permissions | `/v1.0/tenants/{tenant}/credentials` |
 | `/access/roles` | List built-in/custom roles, create/rename/delete custom roles, manage permission mappings | `/v1.0/tenants/{tenant}/roles` |
 | `/access/permissions` | List, create permit/deny rules, delete custom permissions | `/v1.0/tenants/{tenant}/permissions` |
 | `/access/assignments` | Grant/revoke user roles and credential scopes at tenant/resource scope | User and credential assignment APIs |
@@ -41,7 +45,7 @@ Armada's tenant-isolation and RBAC patterns; the Agents authentication and dashb
 3. Open **Users** to add accounts, edit active/admin flags, or reset passwords. A reset revokes all of
    the user's current sessions. Disabling a user or tenant also blocks existing sessions and credentials.
 4. Open **Credentials**, choose an owning user, and create a named integration key. Save its one-time
-   secret. API calls use `x-access-key` and `x-secret-key`; these are separate from dashboard passwords.
+   bearer token. API calls require `Authorization: Bearer <token>`; these are separate from dashboard passwords.
 5. In **Permissions**, define resource/operation rules with Permit or Deny. In **Roles**, create a custom
    role and use **Role permissions** to map rules. Built-in roles and permissions are read-only.
 6. In **Assignments**, choose Users or Credentials and the principal, then grant a role over the entire
@@ -58,7 +62,7 @@ select the new tenant and add its first account on Users.
 
 `python3 scripts/test-administration.py` starts its own temporary, authenticated server and SQLite database;
 it never modifies a running deployment. It verifies tenant isolation, admin escalation prevention, built-in
-immutability, role mappings, permission effects, credential owner ceilings, one-time secret redaction,
+immutability, role mappings, permission effects, credential owner ceilings, one-time bearer token redaction,
 account/tenant deactivation, password resets, and session revocation. Build the server first or pass
 `--server-dll /absolute/path/to/SharpAI.Server.dll`. This test also runs in dashboard CI.
 

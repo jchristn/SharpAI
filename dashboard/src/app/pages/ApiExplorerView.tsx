@@ -20,7 +20,7 @@ export function ApiExplorerView(): JSX.Element {
   const resolvedPath = path.replace(/\{([^}]+)\}/g, (_, key: string) => encodeURIComponent(parameters[key] ?? ''));
   const parameterNames = Array.from(path.matchAll(/\{([^}]+)\}/g), match => match[1]);
   const quote = (text: string): string => "'" + text.replaceAll("'", "'\"'\"'") + "'";
-  const curl = `curl -X ${selected.method} ${quote(window.location.origin + resolvedPath)}${body ? ` -H 'Content-Type: application/json' --data-raw ${quote(body)}` : ''}`;
+  const curl = `curl -X ${selected.method} ${quote(window.location.origin + resolvedPath)} -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN"${body ? ` -H 'Content-Type: application/json' --data-raw ${quote(body)}` : ''}`;
 
   const run = async (): Promise<void> => {
     setRunning(true); setError(null); setResult(null);

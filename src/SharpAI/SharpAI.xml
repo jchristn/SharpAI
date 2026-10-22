@@ -9234,9 +9234,15 @@
             secret keys "secret_", each followed by a run of high-entropy alphanumerics.
             </summary>
         </member>
+        <member name="M:SharpAI.Security.CredentialKeyGenerator.GenerateBearerToken">
+            <summary>
+            Generate an opaque API bearer token with 256 bits of cryptographic randomness.
+            </summary>
+            <returns>Bearer token, shown only on creation.</returns>
+        </member>
         <member name="M:SharpAI.Security.CredentialKeyGenerator.GenerateAccessKey">
             <summary>
-            Generate an access key (prefix "access_", 32 random characters).
+            Generate a legacy access key. Server API authentication requires bearer tokens.
             </summary>
             <returns>Access key.</returns>
         </member>

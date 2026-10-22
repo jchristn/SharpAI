@@ -22,9 +22,8 @@ _JSON = "application/json"
 class SharpAIClient:
     """A synchronous client for a SharpAI server.
 
-    Authentication is optional (the server is open by default). Supply a bearer ``token``, an admin
-    ``api_key``, or an ``access_key``/``secret_key`` pair; or call :meth:`login` to obtain and store a
-    session token.
+    Server authentication requires a bearer ``token``; call :meth:`login` to obtain a session token.
+    Legacy ``api_key`` and ``access_key``/``secret_key`` options are retained for older servers only.
     """
 
     def __init__(

@@ -47,6 +47,17 @@ describe('AuthProvider', () => {
     expect(result.current.auth.session?.token).toBe('tok123');
   });
 
+  it('does not authenticate a persisted token until the server verifies it', async () => {
+    localStorage.setItem('sharpai.session', JSON.stringify({token:'stored',userId:'user',tenantId:'default'}));
+    let complete: (value: unknown) => void = () => {};
+    globalThis.fetch = vi.fn().mockReturnValue(new Promise(resolve => {complete=resolve;})) as unknown as typeof fetch;
+    const {result} = renderHook(() => useAuth(), {wrapper});
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.isCheckingSession).toBe(true);
+    await act(async () => complete({ok:true,status:200,text:async()=>JSON.stringify({userId:'user',tenantId:'default'})}));
+    await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+  });
+
   it('logs in, persists the session, then clears on logout', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 

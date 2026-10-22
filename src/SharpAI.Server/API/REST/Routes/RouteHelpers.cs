@@ -21,10 +21,12 @@ namespace SharpAI.Server.API.REST.Routes
         /// <param name="api">Route metadata to annotate.</param>
         /// <param name="tag">OpenAPI tag grouping the route.</param>
         /// <param name="summary">Human-readable summary.</param>
+        /// <param name="anonymous">Whether this operation permits anonymous access.</param>
         /// <returns>The same metadata instance, annotated.</returns>
-        public static OpenApiRouteMetadata Describe(OpenApiRouteMetadata api, string tag, string summary)
+        public static OpenApiRouteMetadata Describe(OpenApiRouteMetadata api, string tag, string summary, bool anonymous = false)
         {
             if (api == null) throw new ArgumentNullException(nameof(api));
+            if (!anonymous) api.Security = new System.Collections.Generic.List<string> { "bearerAuth" };
             api.Summary = summary;
             api.WithTag(tag);
             return api;
@@ -111,7 +113,7 @@ namespace SharpAI.Server.API.REST.Routes
         }
 
         /// <summary>
-        /// Extract a bearer token from the Authorization header (Bearer scheme) or the x-token header.
+        /// Extract a bearer token from the Authorization header (Bearer scheme).
         /// </summary>
         /// <param name="ctx">HTTP context.</param>
         /// <returns>Token, or null.</returns>
@@ -124,7 +126,7 @@ namespace SharpAI.Server.API.REST.Routes
                 return authorization.Substring(7).Trim();
             }
 
-            return HeaderValue(ctx, "x-token");
+            return null;
         }
 
         #endregion

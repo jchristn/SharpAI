@@ -16,6 +16,9 @@ scrape_configs:
 
   - job_name: 'sharpai'
     metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/sharpai-auth/default-bearer-token
     static_configs:
       - targets: ['sharpai:8000']
         labels:

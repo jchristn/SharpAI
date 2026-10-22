@@ -239,7 +239,8 @@
     "failed": "Accesso non riuscito.",
     "setupTitle": "Dove trovo le mie credenziali?",
     "setupHelp": "Nuova installazione: admin@sharpai.local, password password. ID tenant default; il campo può restare vuoto. Cambia password in Accesso → Utenti. Gli account esistenti mantengono la password.",
-    "setupConfig": "L'accesso è facoltativo mentre Autenticazione → Abilitata è disattivata. Abilita l'autenticazione in Impostazioni e configura una chiave di firma token persistente prima di richiedere l'accesso. Gli utenti esistenti e gli hash delle password vengono archiviati nel database configurato."
+    "setupConfig": "L’accesso e l’autenticazione Bearer sono obbligatori. Configura una chiave di firma persistente per mantenere le sessioni dopo i riavvii. Account e hash delle password sono nel database.",
+    "initialCredentials": "Credenziali iniziali (fino alla modifica):"
   },
   "inferenceHistory": {
     "title": "Cronologia di inferenze e incorporamenti",
@@ -319,7 +320,7 @@
   "settingsDescriptions": {
     "Runtime": "Backend di inferenza nativo e posizioni delle librerie.",
     "Storage": "Directory utilizzate per modelli scaricati e file temporanei.",
-    "Auth": "Controllo degli accessi e impostazioni della sessione. Conserva le credenziali di amministratore prima di abilitare l'autenticazione.",
+    "Auth": "Autenticazione Bearer obbligatoria e impostazioni di sessione.",
     "Telemetry": "Metriche, registri e tracce esportate nello stack di osservabilità.",
     "RequestHistory": "Richiedere limiti di cattura e conservazione.",
     "Rest": "Listener, protocolli HTTP e limiti di connessione.",
@@ -663,7 +664,7 @@
     "selectedTenant": "Locatario selezionato",
     "selectTenant": "Selezionare un inquilino",
     "scopeHelp": "La selezione modifica l'ambito amministrativo. Non cambia la tua identità autenticata.",
-    "openAccess": "L'autenticazione è disabilitata. L'amministrazione non ha restrizioni finché non viene attivata l'opzione Autenticazione → Abilitata nelle Impostazioni.",
+    "openAccess": "Autenticazione Bearer obbligatoria e impostazioni di sessione.",
     "accessFailed": "Impossibile caricare l'amministrazione. Accedi se l'autenticazione è abilitata o riprova la connessione.",
     "denied": "Il tuo account non dispone dell'autorizzazione per visualizzare questa pagina di amministrazione.",
     "createTenantFirst": "Creare un inquilino nella pagina Inquilini, quindi selezionarlo per gestirne le risorse.",
@@ -716,7 +717,7 @@
     "noPermissions": "Nessuna regola politica esplicita.",
     "credentialCreated": "Credenziale creata",
     "savedSecret": "Ho salvato il segreto",
-    "secretOnce": "Copia queste chiavi adesso. Il segreto viene mostrato solo una volta e viene cancellato quando chiudi questa finestra di dialogo.",
+    "secretOnce": "Copia questo token ora. Viene mostrato una sola volta e cancellato alla chiusura.",
     "deleteConfirm": "Confermi la rimozione di {{name}}?",
     "deleteUserHelp": "Ciò rimuove anche le credenziali dell'utente e le assegnazioni di ruolo. Le sessioni esistenti smettono di funzionare.",
     "deleteTenantHelp": "Tutti gli accessi a questo tenant si interrompono. I record associati al locatario possono rimanere nel database.",
@@ -781,7 +782,9 @@
     "copyAccessKey": "Copiare la chiave di accesso",
     "copySecretKey": "Copia la chiave segreta",
     "effectiveHelp": "Queste sono regole di policy assegnate. Gli amministratori della piattaforma ignorano i controlli delle autorizzazioni; gli amministratori del tenant ignorano i controlli all'interno del proprio tenant. L'accesso alle credenziali è limitato anche dalle autorizzazioni dell'utente proprietario.",
-    "id": "ID"
+    "id": "ID",
+    "bearerToken": "Token bearer API",
+    "copyBearerToken": "Copia il token completo per l’intestazione Authorization"
   },
   "help": {
     "refresh": "Ricarica i dati senza cancellare filtri o tenant.",
@@ -929,7 +932,7 @@
     "hostname": "Host o IP: indirizzo locale per ascolto, destinazione per connessioni remote.",
     "port": "Porta TCP o UDP del componente; intervallo 0–65535. Il significato di 0 dipende dal componente.",
     "configuration": "Configurazione {{path}} salvata nel file del server; i componenti di avvio richiedono riavvio.",
-    "authEnable": "Richiede autenticazione per API protette; conserva credenziali amministratore valide prima di attivare.",
+    "authEnable": "Autenticazione Bearer obbligatoria e impostazioni di sessione.",
     "historyEnable": "Registra metadati HTTP e corpi limitati nella cronologia; i limiti sono separati.",
     "nativeLogging": "Include diagnostica nativa llama.cpp; può produrre molti messaggi. Richiede riavvio.",
     "console": "Scrive i log anche nella console del server. Richiede riavvio.",

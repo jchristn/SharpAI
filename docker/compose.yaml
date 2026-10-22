@@ -36,6 +36,7 @@ services:
         target: /app/sharpai.db
         bind:
           create_host_path: false
+      - ./auth/:/app/auth/
       - ./logs/:/app/logs/
       - sharpai-models:/app/models/
     environment:
@@ -117,11 +118,17 @@ services:
   prometheus:
     container_name: 'sharpai-prometheus'
     image: 'prom/prometheus:v2.55.1'
+    # Read the owner-only bootstrap token without making the host secret world-readable.
+    user: '0:0'
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
     command:
       - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/tmp/prometheus'
       - '--enable-feature=exemplar-storage'
     volumes:
       - ./telemetry/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./auth/:/etc/sharpai-auth:ro
     ports:
       - '9090:9090'
     healthcheck:

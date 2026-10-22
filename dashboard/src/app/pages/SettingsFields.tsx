@@ -19,6 +19,7 @@ export function SettingsFields({ value, onChange, path = '' }: {
   const label = (key: string): string => t(`fields.${key}`, { defaultValue: fieldLabel(key) });
   if (!value || typeof value !== 'object' || Array.isArray(value)) return <p role="alert">{t('settings.invalidResponse')}</p>;
   return <div className={/^Logging\.Servers\.\d+$/.test(path) ? 'sa-settings-grid sa-syslog-grid' : 'sa-settings-grid'}>{Object.entries(value).map(([key, item]) => {
+    if (path === 'Auth' && ['Enabled','AdminApiKeys'].includes(key)) return null;
     if (path === 'Database' && (value.Type === 'Sqlite' ? ['Hostname','Port','DatabaseName','Username','Password'].includes(key) : key === 'Filename')) return null;
     const location = path ? `${path}.${key}` : key;
     const help = t(`settingHelp.${settingHelpKey(location)}`, { field: label(key), path: location });

@@ -20,7 +20,7 @@ const paths: Record<string, ReactNode> = {
   '/model-configurations': <><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></>,
   edit: <><path d="m15 4 5 5-10 10-6 1 1-6L15 4Z"/><path d="m13 6 5 5"/></>,
   stop: <rect x="6" y="6" width="12" height="12" fill="currentColor" stroke="none"/>,
-  refresh: <><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></>,
+  refresh: <><path d="M3 11a9 9 0 0 1 15.5-6.5L21 7M21 3v4h-4M21 13a9 9 0 0 1-15.5 6.5L3 17M7 17H3v4"/></>,
   download: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></>,
   copy: <><rect x="8" y="8" width="13" height="13" rx="1"/><path d="M16 8V3H3v13h5"/></>,
   check: <path d="m5 12 4 4L19 6"/>,
@@ -34,5 +34,5 @@ const paths: Record<string, ReactNode> = {
   github: <path d="M9 19c-4 1-4-2-6-2m12 5v-4c0-1-.3-2-1-2 3-.4 6-1.5 6-6 0-1.3-.5-2.5-1.3-3.4.1-.9.1-2-.4-3.1 0 0-1.2-.4-3.5 1.3a12 12 0 0 0-6.6 0C6 3.1 4.8 3.5 4.8 3.5c-.5 1.1-.5 2.2-.4 3.1A5 5 0 0 0 3 10c0 4.5 3 5.6 6 6-.7.5-1 1.3-1 2v4"/>,
 };
 export function Icon({ name }: { name: string }): JSX.Element {
-  return <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths['/']}</svg>;
+  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths['/']}</svg>;
 }

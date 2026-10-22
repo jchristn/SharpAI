@@ -51,11 +51,11 @@ namespace SharpAI.Server.API.REST.Routes
                     native_initialized = NativeLibraryBootstrapper.IsInitialized,
                     utc = DateTime.UtcNow
                 };
-            }, api => RouteHelpers.Describe(api, "General", "Health check")
+            }, api => RouteHelpers.Describe(api, "General", "Health check", true)
                 .WithDescription("Lightweight liveness check for container and process monitoring.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Health status", OpenApiSchemaMetadata.Create("object"))));
 
-            ctx.Server.Head("/health", async (req) => null, api => RouteHelpers.Describe(api, "General", "Health HEAD probe"));
+            ctx.Server.Head("/health", async (req) => null, api => RouteHelpers.Describe(api, "General", "Health HEAD probe", true));
 
             ctx.Server.Get("/ready", async (req) =>
             {
@@ -96,7 +96,7 @@ namespace SharpAI.Server.API.REST.Routes
                     telemetry_ready = telemetryReady,
                     utc = DateTime.UtcNow
                 };
-            }, api => RouteHelpers.Describe(api, "General", "Readiness check")
+            }, api => RouteHelpers.Describe(api, "General", "Readiness check", true)
                 .WithDescription("Readiness check that verifies startup initialization and writable runtime directories.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Ready status", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(503, OpenApiResponseMetadata.Json("Not ready status", OpenApiSchemaMetadata.Create("object"))));

@@ -366,19 +366,17 @@ This project is licensed under the MIT License.
 
 ## Authentication & admin surface (v5)
 
-The server is open by default. When authentication is enabled, supply credentials to the constructor, or
+The server requires bearer authentication. Supply a bearer token to the constructor, or
 sign in to obtain a bearer session token (stored on the client automatically):
 
 ```ts
 import { SharpAISdk } from '@sharpai/sdk';
 
-// Up-front credentials (any one of):
+// API bearer credential (shown once on creation) or interactive session token:
 const sdk = new SharpAISdk('http://127.0.0.1:8000', { token: 'eyJ...' });        // bearer token
-new SharpAISdk('http://127.0.0.1:8000', { apiKey: '...' });                       // admin API key
-new SharpAISdk('http://127.0.0.1:8000', { accessKey: 'access_...', secretKey: 'secret_...' });
 
 // Or interactive login -> stores the token on the client
-await sdk.admin.login('admin@sharpai.local', 'password', 'ten_...');
+await sdk.admin.login('admin@sharpai.local', 'password', 'default');
 ```
 
 All requests then carry the appropriate auth headers automatically. The `admin` group covers the v5
@@ -393,7 +391,7 @@ control plane:
 
 ```ts
 const page = await sdk.admin.requestHistory({ pageSize: 25, method: 'GET' });
-const cred = await sdk.admin.createCredential('ten_...', 'usr_...', 'CI key'); // secretKey shown once
+const cred = await sdk.admin.createCredential('ten_...', 'usr_...', 'CI key'); // token shown once
 ```
 
 Methods return the parsed response, or `null` on a non-success status.

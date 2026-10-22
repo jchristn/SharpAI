@@ -44,6 +44,7 @@ namespace SharpAI.Server
         private static LoggingModule _Logging = null;
         private static DatabaseDriverBase _Database = null;
         private static SharpAI.Server.Classes.Runtime.TelemetryHost _TelemetryHost = null;
+        private static WatsonWebserver.Core.Telemetry.PrometheusScrapeCollector _HttpMetricsCollector = null;
         private static SharpAI.Server.Classes.Runtime.RequestHistoryCaptureService _RequestHistoryCapture = null;
         private static SharpAI.Server.Classes.Runtime.AuthenticationService _AuthService = null;
         private static SharpAI.Security.SessionTokenService _SessionTokens = null;
@@ -161,6 +162,7 @@ namespace SharpAI.Server
 
             try { _Server?.Stop(); } catch (Exception ex) { SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "server stop failed: " + ex.Message); }
             _Server?.Dispose();
+            _HttpMetricsCollector?.Dispose();
             _PruneTimer?.Dispose();
             _ModelEngineService?.Dispose();
             _Database?.Dispose();
@@ -238,7 +240,7 @@ namespace SharpAI.Server
                 if (admin == null)
                 {
                     string initialPassword = "password";
-                    _Database.Users.Create(new SharpAI.Security.User
+                    admin = _Database.Users.Create(new SharpAI.Security.User
                     {
                         TenantGuid = tenant.Guid,
                         FirstName = "Administrator",
@@ -254,10 +256,12 @@ namespace SharpAI.Server
                         _Header + "seeded default administrator 'admin@sharpai.local' with initial password '" +
                         initialPassword + "' - change it after first login (this is shown only once)");
                 }
+                SharpAI.Server.Classes.Runtime.BootstrapCredential.Ensure(_Database, admin);
+
             }
             catch (Exception ex)
             {
-                SharpAI.Logging.JsonLog.Warn(_Logging, _Header + "authentication seeding failed:" + Environment.NewLine + ex.ToString());
+                throw new InvalidOperationException("Authentication provisioning failed; refusing to start.", ex);
             }
         }
 
@@ -545,27 +549,31 @@ namespace SharpAI.Server
             if (_Settings.Telemetry != null && _Settings.Telemetry.Enable)
             {
                 _Settings.Rest.Telemetry.Enable = true;
-                _Settings.Rest.Telemetry.Prometheus.Enable = true;
+                _Settings.Rest.Telemetry.Prometheus.Enable = false;
                 _Settings.Rest.Telemetry.Prometheus.Path = "/metrics";
             }
 
+            // Watson's built-in scrape handler runs before PreRouting. Collect the same meter locally
+            // and expose it through a normal authenticated route instead.
+            _Settings.Rest.Telemetry.Prometheus.Enable = false;
             _Server = new Webserver(_Settings.Rest, DefaultRoute);
+            if (_Settings.Rest.Telemetry.Enable)
+                _HttpMetricsCollector = new WatsonWebserver.Core.Telemetry.PrometheusScrapeCollector(_Settings.Rest.Telemetry.MeterName);
             _Server.Events.Logger = (msg) => SharpAI.Logging.JsonLog.Debug(_Logging, _Header + msg);
 
-            // Authentication is resolved in PreRouting (see below), not via Watson's AuthenticateRequest /
-            // AuthenticateApiRequest hooks — those only fire for routes registered with
-            // requiresAuthentication: true, whereas PreRouting fires for every request. PreRouting attaches
-            // the RequestContext to ctx.Metadata; the per-route Authorize() helper enforces the 401 challenge
-            // (when disabled it installs the system principal and never challenges) and RBAC (403).
+            // PreRouting challenges every protected request, including framework-generated endpoints.
+            // Guarded route handlers additionally enforce tenant-scoped RBAC.
 
             #region OpenAPI
 
             _Server.UseOpenApi(openApi =>
             {
-                // The OpenAPI document (/openapi.json) and the Swagger UI (/swagger) are always served
-                // anonymously so tooling and the dashboard's API Explorer can introspect the surface
-                // without credentials. When authentication is added (plan W9), these two paths must remain
-                // outside the authenticated route set.
+                // Documentation uses the same mandatory bearer boundary as the API.
+                openApi.SecuritySchemes.Add("bearerAuth", new OpenApiSecurityScheme
+                {
+                    Type = "http", Scheme = "bearer", BearerFormat = "opaque",
+                    Description = "API credential or interactive session token. Legacy key headers are not accepted."
+                });
                 openApi.DocumentPath = "/openapi.json";
                 openApi.SwaggerUiPath = "/swagger";
                 openApi.EnableSwaggerUi = true;
@@ -576,7 +584,7 @@ namespace SharpAI.Server
                     "Local AI inference server with Ollama- and OpenAI-compatible REST endpoints. " +
                     "Provides model management, embeddings, completions, and chat completions against " +
                     "locally hosted GGUF models via LlamaSharp. The OpenAPI document at /openapi.json and " +
-                    "the Swagger UI at /swagger are served without authentication.";
+                    "the Swagger UI at /swagger require bearer authentication.";
                 openApi.Info.Contact = new OpenApiContact
                 {
                     Name = "SharpAI",
@@ -614,9 +622,16 @@ namespace SharpAI.Server
             {
                 ctx.Response.Headers.Add(Constants.RequestIdHeader, Guid.NewGuid().ToString());
 
-                // Resolve and attach the authenticated principal for every request. Enforcement (401/403)
-                // happens per-route in Authorize(); this only establishes ctx.Metadata.
-                _AuthService.AttachContext(ctx);
+                // Challenge before routing so generated endpoints cannot bypass authentication.
+                SharpAI.Security.RequestContext authentication = _AuthService.AttachContext(ctx);
+                if (authentication.ShouldChallenge)
+                {
+                    ctx.Response.StatusCode = 401;
+                    ctx.Response.Headers.Add("WWW-Authenticate", "Bearer");
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.Send("{\"error\":\"Bearer authentication is required.\"}").ConfigureAwait(false);
+                    return;
+                }
                 SharpAI.Server.Classes.Runtime.RequestDiagnostics.Begin(ctx, _Settings.RequestHistory.Enabled ? _Settings.RequestHistory.MaxResponseBodyBytes : 0);
 
                 if (_Settings.Debug.RequestBody)
@@ -668,6 +683,15 @@ namespace SharpAI.Server
                     _TelemetryHost)
                 .ConfigureControlPlane(_AuthGate, _Serializer, s => { _Settings = s; _HuggingFaceClient.ApiKey = s.HuggingFace.ApiKey; }, Constants.SettingsFile);
 
+            if (_HttpMetricsCollector != null)
+                _Server.Get("/metrics", async req =>
+                {
+                    req.Http.Response.ContentType = "text/plain; version=0.0.4; charset=utf-8";
+                    return _HttpMetricsCollector.Render();
+                }, api => Describe(api, "General", "Read HTTP server metrics")
+                    .WithDescription("Authenticated Prometheus exposition for Watson HTTP server instruments.")
+                    .WithResponse(200, OpenApiResponseMetadata.Text("Prometheus metrics"))
+                    .WithResponse(401, OpenApiResponseMetadata.Unauthorized()));
             SharpAI.Server.API.REST.Routes.GeneralRoutes.Register(_RouteContext);
             SharpAI.Server.API.REST.Routes.SettingsRoutes.Register(_RouteContext);
             SharpAI.Server.API.REST.Routes.RequestHistoryRoutes.Register(_RouteContext);
@@ -702,7 +726,7 @@ namespace SharpAI.Server
                     userId = session.UserGuid,
                     expiresUtc = session.ExpiresUtc
                 };
-            }, api => Describe(api, "Authentication", "Log in and create a session token")
+            }, api => Describe(api, "Authentication", "Log in and create a session token", true)
                 .WithDescription(
                     "Validates an email/password login and, on success, returns an opaque bearer token that " +
                     "references a revocable server-side session. Supply credentials in the x-email, x-password, " +
@@ -727,7 +751,7 @@ namespace SharpAI.Server
                     expiresUtc = session.ExpiresUtc
                 };
             }, api => Describe(api, "Authentication", "Read the current session")
-                .WithDescription("Returns details of the session referenced by the supplied bearer token (Authorization: Bearer, or x-token).")
+                .WithDescription("Returns details of the session referenced by the supplied bearer token (Authorization: Bearer).")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Session details", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(401, OpenApiResponseMetadata.Unauthorized()));
 
@@ -964,14 +988,14 @@ namespace SharpAI.Server
                 if (owner == null || !String.Equals(owner.TenantGuid, tenantGuid, StringComparison.Ordinal))
                     throw new WebserverException(ApiResultEnum.BadRequest, "The specified owning user does not exist in this tenant.");
 
-                string secretKey = SharpAI.Security.CredentialKeyGenerator.GenerateSecretKey();
+                string bearerToken = SharpAI.Security.CredentialKeyGenerator.GenerateBearerToken();
                 SharpAI.Security.Credential credential = new SharpAI.Security.Credential
                 {
                     UserGuid = body.UserGuid,
                     TenantGuid = tenantGuid,
                     Name = body.Name,
-                    AccessKey = SharpAI.Security.CredentialKeyGenerator.GenerateAccessKey(),
-                    SecretSha256 = SharpAI.Security.PasswordHasher.Hash(secretKey),
+                    AccessKey = "bearer_" + SharpAI.Security.PasswordHasher.Hash(bearerToken),
+                    SecretSha256 = SharpAI.Security.PasswordHasher.Hash(bearerToken),
                     ExpiresUtc = body.ExpiresUtc
                 };
                 _Database.Credentials.Create(credential);
@@ -985,12 +1009,12 @@ namespace SharpAI.Server
                     userId = credential.UserGuid,
                     tenantId = credential.TenantGuid,
                     name = credential.Name,
-                    accessKey = credential.AccessKey,
-                    secretKey = secretKey,
+                    token = bearerToken,
+                    tokenType = "Bearer",
                     expiresUtc = credential.ExpiresUtc
                 };
             }, api => Describe(api, "Management - Credentials", "Create a credential")
-                .WithDescription("Creates a credential and returns the access key plus the plaintext secret key ONCE. The secret is never retrievable again.")
+                .WithDescription("Creates a revocable bearer credential and returns token ONCE. Send Authorization: Bearer token. Its digest is stored; plaintext is never retrievable again.")
                 .WithRequestBody(OpenApiRequestBodyMetadata.Json(OpenApiSchemaMetadata.Create("object"), "Create credential request", true))
                 .WithResponse(200, OpenApiResponseMetadata.Json("Created credential (with one-time secret)", OpenApiSchemaMetadata.Create("object")))
                 .WithResponse(400, OpenApiResponseMetadata.BadRequest())
@@ -1426,9 +1450,9 @@ namespace SharpAI.Server
             await ctx.Response.Send("{\"error\":\"NotFound\",\"message\":\"No route matched\"}").ConfigureAwait(false);
         }
 
-        private static OpenApiRouteMetadata Describe(OpenApiRouteMetadata api, string tag, string summary)
+        private static OpenApiRouteMetadata Describe(OpenApiRouteMetadata api, string tag, string summary, bool anonymous = false)
         {
-            return SharpAI.Server.API.REST.Routes.RouteHelpers.Describe(api, tag, summary);
+            return SharpAI.Server.API.REST.Routes.RouteHelpers.Describe(api, tag, summary, anonymous);
         }
 
         private static string HeaderValue(WatsonWebserver.Core.HttpContextBase ctx, string name)

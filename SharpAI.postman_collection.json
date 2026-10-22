@@ -3,7 +3,8 @@
 		"_postman_id": "d599bc13-0544-4784-90f4-787ff8280a3f",
 		"name": "SharpAI",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "720438"
+		"_exporter_id": "720438",
+		"description": "SharpAI v4.0.1 requires Authorization: Bearer {{bearerToken}} for API requests. Use the private auth/default-bearer-token bootstrap file for model/inference access, or POST /v1.0/token with x-email, x-password and x-tenant-guid for an interactive session. Access keys and x-api-key are not accepted by the server."
 	},
 	"item": [
 		{
@@ -446,6 +447,126 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Authentication boundary",
+			"description": "Read-only mandatory bearer checks. Set bearerToken in a private environment; telemetry must be enabled for the metrics check.",
+			"item": [
+				{
+					"name": "Reject anonymous model access",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/api/tags",
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Anonymous API calls are challenged', () => pm.response.to.have.status(401));",
+									"pm.test('Challenge advertises bearer authentication', () => pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer'));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Reject invalid bearer token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/api/tags",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "invalid-contract-fixture",
+									"type": "string"
+								}
+							]
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Invalid bearer token is rejected', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "List models with bearer credential",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/api/tags"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Bearer credential authorizes model reads', () => pm.response.to.have.status(200));",
+									"pm.test('Model inventory is structured JSON', () => pm.expect(pm.response.json().models).to.be.an('array')); "
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Reject anonymous metrics access",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/metrics",
+						"auth": {
+							"type": "noauth"
+						}
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Metrics cannot bypass the bearer boundary', () => pm.response.to.have.status(401));"
+								]
+							}
+						}
+					]
+				},
+				{
+					"name": "Read metrics with bearer credential",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{protocol}}://{{hostname}}:{{port}}/metrics"
+					},
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test('Bearer credential authorizes metric scraping', () => pm.response.to.have.status(200));",
+									"pm.test('HTTP instruments are exposed', () => pm.expect(pm.response.text()).to.include('# TYPE')); "
+								]
+							}
+						}
+					]
+				}
+			]
 		}
 	],
 	"event": [
@@ -481,5 +602,15 @@
 			"key": "port",
 			"value": "8000"
 		}
-	]
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearerToken}}",
+				"type": "string"
+			}
+		]
+	}
 }

@@ -104,3 +104,6 @@ Thumbs.db
 *.tar.gz
 *.rar
 *.7z
+
+# Private server authentication bootstrap files
+**/auth/

@@ -239,7 +239,8 @@
     "failed": "Sign-in failed.",
     "setupTitle": "Where do I get my credentials?",
     "setupHelp": "For a new installation, sign in as admin@sharpai.local with password password. The default tenant ID is default; you may leave Tenant blank. Change the password under Access → Users after signing in. Existing accounts retain their saved password.",
-    "setupConfig": "Sign-in is optional while Auth → Enabled is off. Enable authentication in Settings and configure a persistent token signing key before requiring sign-in. Existing users and password hashes are stored in the configured database."
+    "setupConfig": "Sign-in and bearer authentication are required. Configure a persistent token signing key to keep sessions valid across restarts. Accounts and password hashes are stored in the database.",
+    "initialCredentials": "Initial sign-in credentials (until changed):"
   },
   "inferenceHistory": {
     "title": "Inference & Embeddings History",
@@ -319,7 +320,7 @@
   "settingsDescriptions": {
     "Runtime": "Native inference backend and library locations.",
     "Storage": "Directories used for downloaded models and temporary files.",
-    "Auth": "Access control and session settings. Keep an administrator credential before enabling authentication.",
+    "Auth": "Mandatory bearer authentication and interactive session settings.",
     "Telemetry": "Metrics, logs, and traces exported to your observability stack.",
     "RequestHistory": "Request capture limits and retention.",
     "Rest": "Listener, HTTP protocols, and connection limits.",
@@ -663,7 +664,7 @@
     "selectedTenant": "Selected tenant",
     "selectTenant": "Select a tenant",
     "scopeHelp": "Selection changes the administration scope. It does not switch your authenticated identity.",
-    "openAccess": "Authentication is disabled. Administration is unrestricted until Auth → Enabled is turned on in Settings.",
+    "openAccess": "Mandatory bearer authentication and interactive session settings.",
     "accessFailed": "Administration could not be loaded. Sign in if authentication is enabled, or retry the connection.",
     "denied": "Your account does not have permission to view this administration page.",
     "createTenantFirst": "Create a tenant on the Tenants page, then select it to manage its resources.",
@@ -716,7 +717,7 @@
     "noPermissions": "No explicit policy rules.",
     "credentialCreated": "Credential created",
     "savedSecret": "I have saved the secret",
-    "secretOnce": "Copy these keys now. The secret is shown only once and is cleared when you close this dialog.",
+    "secretOnce": "Copy this bearer token now. It is shown only once and cleared when this dialog closes.",
     "deleteConfirm": "Confirm removing {{name}}?",
     "deleteUserHelp": "This also removes the user’s credentials and role assignments. Existing sessions stop working.",
     "deleteTenantHelp": "All access to this tenant stops. Records associated with the tenant may remain in the database.",
@@ -781,7 +782,9 @@
     "copyAccessKey": "Copy access key",
     "copySecretKey": "Copy secret key",
     "effectiveHelp": "These are assigned policy rules. Platform administrators bypass permission checks; tenant administrators bypass checks within their tenant. Credential access is also limited by its owning user’s permissions.",
-    "id": "ID"
+    "id": "ID",
+    "bearerToken": "API bearer token",
+    "copyBearerToken": "Copy the complete bearer token for the Authorization header"
   },
   "help": {
     "refresh": "Reload current server data without clearing the selected filters or tenant.",
@@ -929,7 +932,7 @@
     "hostname": "Host or IP used by this server component. Listener settings use a bind address; remote connection settings use a destination address.",
     "port": "TCP or UDP port for this server component. Valid port numbers are 0 through 65535; 0 behavior depends on the component.",
     "configuration": "Server configuration value for {{path}}. Saved to the settings file; startup components require a server restart to apply.",
-    "authEnable": "Require authentication for protected API operations. Keep a working administrator credential before enabling this.",
+    "authEnable": "Mandatory bearer authentication and interactive session settings.",
     "historyEnable": "Record HTTP request metadata and bounded bodies for the history pages. Body capture limits are configured separately.",
     "nativeLogging": "Include native llama.cpp diagnostic messages in application logs; can produce substantial output. Restart to apply.",
     "console": "Write application log messages to the server console as well as configured log destinations. Restart to apply.",

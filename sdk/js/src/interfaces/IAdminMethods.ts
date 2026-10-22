@@ -39,15 +39,15 @@ export interface CreateAssignmentRequest {
 }
 
 /**
- * The one-time credential creation response (includes the plaintext secret key, shown only once).
+ * The one-time credential creation response (includes the plaintext bearer token, shown only once).
  */
 export interface CreatedCredential {
   guid: string;
   userId: string;
   tenantId: string;
   name: string;
-  accessKey: string;
-  secretKey: string;
+  token: string;
+  tokenType: 'Bearer';
   expiresUtc: string | null;
 }
 

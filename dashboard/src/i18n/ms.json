@@ -239,7 +239,8 @@
     "failed": "Log masuk gagal.",
     "setupTitle": "Di manakah saya boleh mendapatkan kelayakan saya?",
     "setupHelp": "Pemasangan baharu: admin@sharpai.local dengan kata laluan password. ID penyewa default; medan boleh kosong. Tukar kata laluan di Akses → Pengguna. Akaun sedia ada mengekalkan kata laluan.",
-    "setupConfig": "Log masuk adalah pilihan manakala Auth → Enabled dimatikan. Dayakan pengesahan dalam Tetapan dan konfigurasikan kunci tandatangan token yang berterusan sebelum memerlukan log masuk. Pengguna sedia ada dan cincang kata laluan disimpan dalam pangkalan data yang dikonfigurasikan."
+    "setupConfig": "Log masuk dan pengesahan Bearer diperlukan. Tetapkan kunci tandatangan kekal untuk mengekalkan sesi selepas mula semula. Akaun dan cincangan kata laluan disimpan dalam pangkalan data.",
+    "initialCredentials": "Kelayakan log masuk awal (sehingga diubah):"
   },
   "inferenceHistory": {
     "title": "Sejarah Inferens & Pembenaman",
@@ -319,7 +320,7 @@
   "settingsDescriptions": {
     "Runtime": "Bahagian belakang inferens asli dan lokasi perpustakaan.",
     "Storage": "Direktori yang digunakan untuk model yang dimuat turun dan fail sementara.",
-    "Auth": "Kawalan akses dan tetapan sesi. Simpan bukti kelayakan pentadbir sebelum mendayakan pengesahan.",
+    "Auth": "Pengesahan Bearer wajib dan tetapan sesi interaktif.",
     "Telemetry": "Metrik, log dan jejak dieksport ke timbunan kebolehmerhatian anda.",
     "RequestHistory": "Minta had tangkapan dan pengekalan.",
     "Rest": "Pendengar, protokol HTTP dan had sambungan.",
@@ -663,7 +664,7 @@
     "selectedTenant": "Penyewa terpilih",
     "selectTenant": "Pilih penyewa",
     "scopeHelp": "Pemilihan mengubah skop pentadbiran. Ia tidak menukar identiti anda yang disahkan.",
-    "openAccess": "Pengesahan dilumpuhkan. Pentadbiran tidak terhad sehingga Auth → Enabled dihidupkan dalam Tetapan.",
+    "openAccess": "Pengesahan Bearer wajib dan tetapan sesi interaktif.",
     "accessFailed": "Pentadbiran tidak dapat dimuatkan. Log masuk jika pengesahan didayakan atau cuba semula sambungan.",
     "denied": "Akaun anda tidak mempunyai kebenaran untuk melihat halaman pentadbiran ini.",
     "createTenantFirst": "Buat penyewa pada halaman Penyewa, kemudian pilih penyewa itu untuk mengurus sumbernya.",
@@ -716,7 +717,7 @@
     "noPermissions": "Tiada peraturan dasar yang jelas.",
     "credentialCreated": "Bukti kelayakan dibuat",
     "savedSecret": "Saya telah menyimpan rahsia itu",
-    "secretOnce": "Salin kekunci ini sekarang. Rahsia ditunjukkan sekali sahaja dan dikosongkan apabila anda menutup dialog ini.",
+    "secretOnce": "Salin token ini sekarang. Ia dipaparkan sekali sahaja dan dipadam apabila dialog ditutup.",
     "deleteConfirm": "Sahkan mengalih keluar {{name}}?",
     "deleteUserHelp": "Ini juga mengalih keluar bukti kelayakan pengguna dan penetapan peranan. Sesi sedia ada berhenti berfungsi.",
     "deleteTenantHelp": "Semua akses kepada penyewa ini terhenti. Rekod yang dikaitkan dengan penyewa mungkin kekal dalam pangkalan data.",
@@ -781,7 +782,9 @@
     "copyAccessKey": "Salin kunci akses",
     "copySecretKey": "Salin kunci rahsia",
     "effectiveHelp": "Ini adalah peraturan dasar yang ditetapkan. Pentadbir platform memintas semakan kebenaran; pentadbir penyewa memintas cek dalam penyewa mereka. Akses kelayakan juga dihadkan oleh kebenaran pengguna pemiliknya.",
-    "id": "ID"
+    "id": "ID",
+    "bearerToken": "Token pembawa API",
+    "copyBearerToken": "Salin token penuh untuk pengepala Authorization"
   },
   "help": {
     "refresh": "Muat semula data tanpa mengosongkan penapis atau penyewa.",
@@ -929,7 +932,7 @@
     "hostname": "Hos atau IP; alamat ikatan untuk pendengar, destinasi untuk sambungan jauh.",
     "port": "Port TCP atau UDP komponen, julat 0–65535; makna 0 bergantung pada komponen.",
     "configuration": "Tetapan pelayan {{path}} disimpan dalam fail; komponen permulaan memerlukan mula semula.",
-    "authEnable": "Wajibkan pengesahan untuk API dilindungi; simpan kelayakan pentadbir yang berfungsi sebelum mengaktifkan.",
+    "authEnable": "Pengesahan Bearer wajib dan tetapan sesi interaktif.",
     "historyEnable": "Rekod metadata HTTP dan badan terhad untuk sejarah; had rakaman ditetapkan berasingan.",
     "nativeLogging": "Sertakan diagnostik natif llama.cpp; mungkin menghasilkan banyak mesej. Perlu mula semula.",
     "console": "Tulis log aplikasi juga ke konsol pelayan. Perlu mula semula.",

@@ -22,6 +22,7 @@ services:
         target: /app/sharpai.db
         bind:
           create_host_path: false
+      - ./auth/:/app/auth/
       - ./logs/:/app/logs/
       - sharpai-models:/app/models/
     environment:

@@ -239,7 +239,8 @@
     "failed": "登录失败。",
     "setupTitle": "我在哪里可以获得我的凭证？",
     "setupHelp": "新安装使用 admin@sharpai.local 和密码 password 登录。默认租户 ID 为 default；租户字段可留空。登录后在访问 → 用户中修改密码。已有账户保留其密码。",
-    "setupConfig": "当“验证→启用”关闭时，登录是可选的。在要求登录之前，在“设置”中启用身份验证并配置持久令牌签名密钥。现有用户和密码哈希值存储在配置的数据库中。"
+    "setupConfig": "必须登录并使用 Bearer 身份验证。配置持久的令牌签名密钥，以便重启后保留会话。账户和密码哈希存储在数据库中。",
+    "initialCredentials": "初始登录凭据（更改前有效）："
   },
   "inferenceHistory": {
     "title": "推理和嵌入历史",
@@ -319,7 +320,7 @@
   "settingsDescriptions": {
     "Runtime": "本机推理后端和库位置。",
     "Storage": "用于下载模型和临时文件的目录。",
-    "Auth": "访问控制和会话设置。在启用身份验证之前保留管理员凭据。",
+    "Auth": "强制 Bearer 身份验证和交互式会话设置。",
     "Telemetry": "导出到您的可观察性堆栈的度量、日志和跟踪。",
     "RequestHistory": "请求捕获限制和保留。",
     "Rest": "监听器、HTTP协议和连接限制。",
@@ -663,7 +664,7 @@
     "selectedTenant": "选定的租户",
     "selectTenant": "选择租户",
     "scopeHelp": "选择改变管理范围。它不会切换您的身份验证身份。",
-    "openAccess": "验证被禁用。在“设置”中打开“身份验证”→“已启用”之前，管理不受限制。",
+    "openAccess": "强制 Bearer 身份验证和交互式会话设置。",
     "accessFailed": "无法加载管理。如果启用了身份验证，请登录，或重试连接。",
     "denied": "您的帐户没有查看此管理页面的权限。",
     "createTenantFirst": "在租户页面上创建租户，然后选择它来管理其资源。",
@@ -716,7 +717,7 @@
     "noPermissions": "没有明确的政策规则。",
     "credentialCreated": "凭证已创建",
     "savedSecret": "我已经保存了这个秘密",
-    "secretOnce": "现在复制这些键。该秘密仅显示一次，并在您关闭此对话框时被清除。",
+    "secretOnce": "请立即复制此令牌。它仅显示一次，关闭对话框后将被清除。",
     "deleteConfirm": "确认删除{{name}}？",
     "deleteUserHelp": "这也删除了用户的凭证和角色分配。现有会话停止工作。",
     "deleteTenantHelp": "对该租户的所有访问停止。与租户相关联的记录可以保留在数据库中。",
@@ -781,7 +782,9 @@
     "copyAccessKey": "复制访问密钥",
     "copySecretKey": "复制密钥",
     "effectiveHelp": "这些是指定的策略规则。平台管理员绕过权限检查；租户管理员绕过租户内的检查。凭证访问也受到其所属用户的权限的限制。",
-    "id": "ID"
+    "id": "ID",
+    "bearerToken": "API 持有者令牌",
+    "copyBearerToken": "复制用于 Authorization 请求头的完整令牌"
   },
   "help": {
     "refresh": "重新加载服务器数据，保留当前筛选条件和租户。",
@@ -929,7 +932,7 @@
     "hostname": "主机名或 IP：监听器使用绑定地址，远程连接使用目标地址。",
     "port": "此组件的 TCP 或 UDP 端口，范围 0–65535；0 的含义取决于组件。",
     "configuration": "服务器配置 {{path}}，保存到设置文件；启动时初始化的组件需要重启。",
-    "authEnable": "要求受保护 API 进行身份验证；启用前请保留可用的管理员凭证。",
+    "authEnable": "强制 Bearer 身份验证和交互式会话设置。",
     "historyEnable": "为历史页面记录 HTTP 元数据和有限长度正文；正文捕获上限单独设置。",
     "nativeLogging": "在日志中包含 llama.cpp 原生诊断，输出可能很多；重启生效。",
     "console": "将应用日志同时写入服务器控制台；重启生效。",

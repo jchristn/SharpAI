@@ -1,3 +1,4 @@
+import { authenticatedPage } from './session-fixture';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {libraryFixture} from './library-fixture';
@@ -18,7 +19,9 @@ test.beforeEach(async ({ page }) => {
     if(await library(route))return;
     const path = new URL(route.request().url()).pathname;
     let body: unknown;
-    if (path === '/api/settings') body = route.request().method() === 'PUT' ? route.request().postDataJSON() : configuration;
+    if (path === '/v1.0/auth/context') body = {isAdmin:true,tenantId:'default',userId:'user-a',capabilities:{}};
+    else if (path === '/v1.0/tenants') body = {Objects:[{Guid:'default',Name:'default'}],EndOfResults:true};
+    else if (path === '/api/settings') body = route.request().method() === 'PUT' ? route.request().postDataJSON() : configuration;
     else if (path === '/health' || path === '/ready') body = { version: '4.0.1', backend: 'cpu' };
     else if (path === '/api/tags' || path === '/api/ps') body = { models: [] };
     else if (path === '/openapi.json') body = { paths: { '/health': { get: { tags: ['Health'], summary: 'Server health' } } } };
@@ -66,6 +69,7 @@ test('settings saves typed fields while preserving unrelated configuration', asy
 
 test('navigation works on phones and closes after selecting a page', async ({ page }) => {
   await page.goto('/');
+  await expect(page.getByRole('heading', {name:'Overview',exact:true})).toBeVisible();
   const toggle = page.getByRole('button', { name: 'Toggle navigation' });
   if (await toggle.isVisible()) await toggle.click();
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
@@ -74,8 +78,8 @@ test('navigation works on phones and closes after selecting a page', async ({ pa
 });
 
 test('branded login validates fields and traps keyboard focus', async ({ page }) => {
+  await page.addInitScript(() => localStorage.removeItem('sharpai.session'));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('img', { name: 'SharpAI' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -150,8 +154,8 @@ test('model pull shows progress', async ({ page }) => {
 
 test('login submits on Enter and sign out clears identity', async ({ page }) => {
   await page.route('**/v1.0/token', route => route.fulfill({ json: { token: 'test-token', userId: 'test-operator', tenantId: 'tenant', sessionId: 'session', expiresUtc: '2099-01-01' } }));
+  await page.addInitScript(() => localStorage.removeItem('sharpai.session'));
   await page.goto('/');
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('dialog').getByLabel('Email', { exact: true }).fill('operator@example.com');
   await page.getByRole('dialog').getByLabel('Password', { exact: true }).fill('test-password');
   await page.keyboard.press('Enter');
@@ -338,6 +342,7 @@ test('copy icons confirm successful insecure-context fallback without text butto
   await expect(button).toHaveAccessibleName('Copied');
   await expect(button).toHaveClass(/sa-copy-button--copied/);
   expect(await page.evaluate(()=>(window as unknown as {copied:string}).copied)).toContain('curl');
+  expect(await page.evaluate(()=>(window as unknown as {copied:string}).copied)).toContain('Authorization: Bearer $SHARPAI_BEARER_TOKEN');
 });
 
 for(const origin of ['http://sharpai.test','https://sharpai.test']) {
@@ -492,3 +497,6 @@ test('request history has three deep-linked tabs with independent server filters
  await expect(page.locator('.sa-sidebar').getByRole('link',{name:'Inference History',exact:true})).toHaveCount(0);
  await page.goto('/inference-history');await expect(page).toHaveURL(/\/request-history\/inference$/);
 });
+
+// Every protected workflow starts with a validated sign-in.
+test.beforeEach(async ({page}) => authenticatedPage(page));

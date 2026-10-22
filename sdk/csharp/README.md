@@ -511,19 +511,17 @@ This project is licensed under the MIT License.
 
 ## Authentication & admin surface (v5)
 
-The server is open by default. When authentication is enabled, pass credentials to the constructor, or
+The server requires bearer authentication. Pass a bearer token to the constructor, or
 sign in to obtain a bearer session token (stored on the client automatically):
 
 ```csharp
 using SharpAI.Sdk;
 
-// Up-front credentials (any one of):
+// API bearer credential (shown once on creation) or interactive session token:
 SharpAISdk sdk = new SharpAISdk("http://127.0.0.1:8000", token: "eyJ...");        // bearer token
-new SharpAISdk("http://127.0.0.1:8000", apiKey: "...");                            // admin API key
-new SharpAISdk("http://127.0.0.1:8000", accessKey: "access_...", secretKey: "secret_...");
 
 // Or interactive login -> stores the token on the client
-await sdk.Admin.LoginAsync("admin@sharpai.local", "password", "ten_...");
+await sdk.Admin.LoginAsync("admin@sharpai.local", "password", "default");
 ```
 
 All requests then carry the appropriate auth headers automatically. The `Admin` group covers the v5
@@ -538,7 +536,7 @@ control plane:
 
 ```csharp
 JsonElement? page = await sdk.Admin.RequestHistoryAsync(new Dictionary<string, string> { ["pageSize"] = "25" });
-CreatedCredential? cred = await sdk.Admin.CreateCredentialAsync("ten_...", "usr_...", "CI key"); // SecretKey shown once
+CreatedCredential? cred = await sdk.Admin.CreateCredentialAsync("ten_...", "usr_...", "CI key"); // Token shown once
 ```
 
 Read methods return the parsed `JsonElement` (or null on a non-success status).

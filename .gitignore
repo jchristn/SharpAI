@@ -384,3 +384,6 @@ test-models/
 
 # Local planning notes
 TENSORFOLD_LEARNINGS.md
+
+# Authentication bootstrap secrets and provisioning markers
+auth/

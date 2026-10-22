@@ -1,3 +1,4 @@
+import { authenticatedPage } from './session-fixture';
 import {test,expect,type Page} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type {LibraryItem,LibraryKind} from '../src/api/library';
@@ -105,8 +106,8 @@ test('expired stored sessions recover without leaving the library stuck',async({
  await install(page);
  await page.addInitScript(()=>localStorage.setItem('sharpai.session',JSON.stringify({token:'expired',userId:'old-user',tenantId:'tenant-a'})));
  await page.route('**/v1.0/library-context',route=>route.request().headers().authorization?route.fulfill({status:401,json:{Message:'Session expired'}}):route.fulfill({json:{IsAdmin:true,IsTenantAdmin:false,TenantId:'tenant-a'}}));
- await page.goto('/system-prompts');await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
- await expect(page.getByRole('button',{name:'Create',exact:true})).toBeEnabled();
+ await page.goto('/system-prompts');await expect(page.getByRole('button',{name:'Sign in',exact:true}).first()).toBeVisible();
+ await expect(page.getByRole('button',{name:'Create',exact:true})).toHaveCount(0);
  expect(await page.evaluate(()=>localStorage.getItem('sharpai.session'))).toBeNull();
 });
 
@@ -116,7 +117,7 @@ test('signing out during generation cannot restore the previous account conversa
  let release:()=>void=()=>{};const hold=new Promise<void>(resolve=>{release=resolve;});
  await page.route('**/api/chat',async route=>{await hold;try{await route.fulfill({json:{message:{content:'Old private reply'},done:true}});}catch{/* The old request is cancelled when its identity changes. */}});
  await page.goto('/playground');await page.getByLabel('Prompt',{exact:true}).fill('Sensitive old turn');await page.getByRole('button',{name:'Send',exact:true}).click();
- await expect(page.getByRole('button',{name:'Stop generating',exact:true})).toBeVisible();await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Stop generating',exact:true})).toBeVisible();await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true}).first()).toBeVisible();
  release();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  await expect(page.locator('.sa-chat-message')).toHaveCount(0);await expect(page.getByText('Old private reply',{exact:true})).toHaveCount(0);
 });
@@ -158,3 +159,6 @@ test('waiting quips sit beneath the response and turn telemetry forms aligned ro
  expect(Math.max(...starts)-Math.min(...starts)).toBeLessThan(1);expect(Math.max(...ends)-Math.min(...ends)).toBeLessThan(1);
  await page.screenshot({path:`test-results/screenshots/${test.info().project.name}-turn-telemetry.png`});
 });
+
+// Every protected workflow starts with a validated sign-in.
+test.beforeEach(async ({page}) => authenticatedPage(page));

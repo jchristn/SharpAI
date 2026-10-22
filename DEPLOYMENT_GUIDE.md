@@ -546,7 +546,7 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
     "Filename": "./sharpai.db"
   },
   "Auth": {
-    "Enabled": false,
+    "Enabled": true,
     "AdminApiKeys": [],
     "TokenSigningKey": "",
     "SessionTtlMinutes": 60
@@ -573,10 +573,10 @@ All settings are in `sharpai.json` (auto-created on first run if missing).
 - **`Database`** — the metadata store. `Type` is one of `Sqlite` (default), `Mysql`, `Postgresql`, or
   `SqlServer`. SQLite uses `Filename`; the server databases use `Hostname`/`Port`/`DatabaseName`/`Username`/
   `Password`. Schema migrations run automatically on startup.
-- **`Auth`** — authentication, authorization, and accounting. **Disabled by default** (the server behaves
-  like an open local Ollama). When `Enabled` is true, supply `AdminApiKeys` and/or sign in for a bearer
-  token; `TokenSigningKey` should be set to a stable secret so session tokens survive restarts. See
-  `AUTHENTICATION` in the requirements for the full model.
+- **`Auth`** requires bearer authentication for the dashboard and every API route except the exact
+  health/readiness probes and `POST /v1.0/token`. Legacy `Enabled: false` and `AdminApiKeys` values
+  cannot disable authentication or grant access. Set `TokenSigningKey` to a stable secret to keep
+  interactive sessions valid across restarts.
 - **`Telemetry`** — OpenTelemetry metrics/traces/logs over OTLP plus a Prometheus `/metrics` exposition.
   See [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md) for the metrics catalog and the bundled Grafana
   stack.
@@ -588,7 +588,7 @@ are additional tunables; the defaults are safe for a single-GPU or CPU host.
 
 ### Dashboard sign-in credentials
 
-Authentication is off by default (`Auth.Enabled: false`), so local dashboard access does not require signing in.
+Authentication is mandatory. The dashboard shows only the sign-in screen until a session is validated.
 On the first start with an initialized metadata database, SharpAI creates the `default` tenant and
 `admin@sharpai.local` with the initial password `password`. The seeded tenant ID is `default`.
 Existing accounts keep their saved password; startup does not reset credentials. Change the initial password
@@ -600,10 +600,37 @@ tenant organizations in **Tenants**, integration keys in **Credentials**, and RB
 [Dashboard administration](docs/DASHBOARD_ADMINISTRATION.md) for the complete workflow. The API also creates users through
 `POST /v1.0/tenants/{tenantGuid}/users` (available in API Explorer); tenant IDs are listed by
 `GET /v1.0/tenants`. User creation accepts `Email`, `Password`, `FirstName`, `LastName`, `IsAdmin`, and
-`IsTenantAdmin`. While authentication is disabled, you can create your own administrator account this way
-without needing the original password. Then configure **Settings → Auth → Enabled** and a persistent
-**Token Signing Key**. Sign-in uses email/password to obtain a bearer session; `AdminApiKeys` are separate
-API credentials and are not passwords for the sign-in form. Accounts persist in the configured metadata database.
+`IsTenantAdmin`. These operations require an authenticated administrator. Accounts persist in the configured
+metadata database. `AdminApiKeys`, `x-api-key`, `x-access-key`, `x-secret-key`, and `x-token` do not
+provide server API authentication.
+
+### API bearer credentials
+
+On first startup, SharpAI provisions **Default API bearer token** for the default administrator. Its grants
+allow model reads and inference execution; it cannot administer settings, tenants, or accounts. The
+256-bit random token is written to `auth/default-bearer-token` in the server working directory, with
+owner-only permissions on Unix. Docker Compose persists it at `docker/auth/default-bearer-token`.
+Only digests are stored in the database. Never commit or share this directory. Override its location with
+`SHARPAI_AUTH_DIRECTORY` when running the server directly; preserve it alongside database backups.
+
+Send the token as `Authorization: Bearer <token>` for both Ollama and OpenAI endpoints. For example,
+from the repository root:
+
+```bash
+SHARPAI_BEARER_TOKEN="$(cat docker/auth/default-bearer-token)"
+curl -H "Authorization: Bearer $SHARPAI_BEARER_TOKEN" http://localhost:8000/v1/models
+```
+
+Administrators can create additional bearer credentials in **Access → Credentials**, assign their
+permissions in **Assignments**, and copy the token from its creation result. It is shown once. Deactivate,
+expire, or delete credentials to revoke access. Startup does not reactivate or recreate a revoked/deleted
+bootstrap credential. The original private bootstrap file remains for provisioning/auditing and stops
+working when revoked. Interactive session tokens from `POST /v1.0/token` also work as bearer credentials
+with the signed-in user's permissions.
+
+The bundled Prometheus service reads the private bootstrap token through a read-only mount for `/metrics`.
+If you revoke that token, configure a replacement token file for Prometheus. Health/readiness probes
+continue to work without a token. API documentation, Swagger, and metrics require authentication.
 
 ### Dashboard & observability
 

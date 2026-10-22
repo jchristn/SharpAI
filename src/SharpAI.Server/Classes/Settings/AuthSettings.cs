@@ -4,23 +4,21 @@ namespace SharpAI.Server.Classes.Settings
     using System.Collections.Generic;
 
     /// <summary>
-    /// Authentication settings. Authentication is disabled by default, matching Ollama's open local-server
-    /// behavior; when disabled every request runs as an implicit, fully-authorized system principal. When
-    /// enabled, the OpenAPI document, Swagger UI, health, and readiness endpoints remain anonymous, and
-    /// other endpoints require a valid administrator API key (full user/credential/session/RBAC support is
-    /// layered on top of this foundation).
+    /// Server authentication settings. Bearer authentication is mandatory. Health/readiness probes and
+    /// POST /v1.0/token remain reachable anonymously. Legacy API key settings are retained only so older
+    /// configuration files deserialize; the server does not accept those keys.
     /// </summary>
     public class AuthSettings
     {
         #region Public-Members
 
         /// <summary>
-        /// Whether authentication is enabled. Default false (open server).
+        /// Authentication is mandatory. Legacy false values are ignored.
         /// </summary>
-        public bool Enabled { get; set; } = false;
+        public bool Enabled { get { return true; } set { } }
 
         /// <summary>
-        /// Valid administrator API keys (checked against the x-api-key header). Never null.
+        /// Legacy administrator API keys, ignored by the server. Never null.
         /// </summary>
         public List<string> AdminApiKeys
         {

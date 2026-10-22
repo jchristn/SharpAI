@@ -429,7 +429,7 @@
         </member>
         <member name="T:SharpAI.Sdk.Models.Admin.CreatedCredential">
             <summary>
-            The one-time credential creation response, including the plaintext secret key (shown only once).
+            The one-time credential creation response, including the plaintext bearer token (shown only once).
             </summary>
         </member>
         <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.Guid">
@@ -452,14 +452,14 @@
             Human-readable name.
             </summary>
         </member>
-        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.AccessKey">
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.Token">
             <summary>
-            Access key (safe to store).
+            Opaque bearer token, returned only once.
             </summary>
         </member>
-        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.SecretKey">
+        <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.TokenType">
             <summary>
-            Plaintext secret key, returned only once at creation.
+            Authorization scheme, always Bearer.
             </summary>
         </member>
         <member name="P:SharpAI.Sdk.Models.Admin.CreatedCredential.ExpiresUtc">

@@ -287,13 +287,14 @@
             the OpenAPI describe convention and runtime directory checks.
             </summary>
         </member>
-        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.Describe(WatsonWebserver.Core.OpenApi.OpenApiRouteMetadata,System.String,System.String)">
+        <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.Describe(WatsonWebserver.Core.OpenApi.OpenApiRouteMetadata,System.String,System.String,System.Boolean)">
             <summary>
             Apply the standard OpenAPI summary + tag to a route's metadata and return it for further chaining.
             </summary>
             <param name="api">Route metadata to annotate.</param>
             <param name="tag">OpenAPI tag grouping the route.</param>
             <param name="summary">Human-readable summary.</param>
+            <param name="anonymous">Whether this operation permits anonymous access.</param>
             <returns>The same metadata instance, annotated.</returns>
         </member>
         <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.DirectoryExistsAndWritable(System.String)">
@@ -329,7 +330,7 @@
         </member>
         <member name="M:SharpAI.Server.API.REST.Routes.RouteHelpers.ExtractBearerToken(WatsonWebserver.Core.HttpContextBase)">
             <summary>
-            Extract a bearer token from the Authorization header (Bearer scheme) or the x-token header.
+            Extract a bearer token from the Authorization header (Bearer scheme).
             </summary>
             <param name="ctx">HTTP context.</param>
             <returns>Token, or null.</returns>
@@ -530,14 +531,9 @@
         </member>
         <member name="T:SharpAI.Server.Classes.Runtime.AuthenticationService">
             <summary>
-            Establishes the authenticated <see cref="T:SharpAI.Security.RequestContext"/> for each request and attaches it to the
-            HTTP context metadata. Invoked from the Watson <c>PreRouting</c> hook (which fires for every request,
-            unlike the <c>AuthenticateRequest</c>/<c>AuthenticateApiRequest</c> hooks, which Watson only invokes
-            for routes registered with <c>requiresAuthentication: true</c>). When authentication is disabled this
-            installs the system principal; when enabled it resolves the request against the account store (admin
-            API key, bearer session token, or access-key / secret-key). The 401 challenge and RBAC authorization
-            are enforced per-route by the <c>Authorize</c> helper reading the attached context; unauthenticated
-            requests to non-anonymous endpoints are recorded to the security audit log here.
+            Resolves bearer authentication for every server request. Only exact health/readiness probes
+            and the login operation are anonymous. PreRouting sends authentication challenges before routing;
+            guarded routes apply RBAC to the attached principal. Legacy key headers are not accepted.
             </summary>
         </member>
         <member name="M:SharpAI.Server.Classes.Runtime.AuthenticationService.#ctor(SharpAI.Server.Classes.Settings.AuthSettings,SharpAI.Security.AuthenticationEngine,SharpAI.Database.DatabaseDriverBase,SyslogLogging.LoggingModule)">
@@ -556,10 +552,25 @@
             Invoked from the <c>PreRouting</c> hook, which — unlike the authentication hooks — fires for every
             request regardless of per-route configuration. When the resolved context indicates the request is
             unauthenticated against a non-anonymous path, the denial is recorded to the audit log here (the
-            actual 401 is thrown by the guarded route).
+            actual 401 is sent by PreRouting).
             </summary>
             <param name="ctx">HTTP context.</param>
             <returns>The attached request context.</returns>
+        </member>
+        <member name="T:SharpAI.Server.Classes.Runtime.BootstrapCredential">
+            <summary>
+            Provisions a revocable, inference-only bearer credential once per administrator account.
+            Plaintext is kept outside the database in an owner-readable bootstrap file. Not thread safe;
+            invoke once during startup before accepting requests.
+            </summary>
+        </member>
+        <member name="M:SharpAI.Server.Classes.Runtime.BootstrapCredential.Ensure(SharpAI.Database.DatabaseDriverBase,SharpAI.Security.User)">
+            <summary>
+            Create the initial API credential and its grant, recovering safely after interrupted startup.
+            An existing provisioning marker prevents deleted or revoked credentials from being recreated.
+            </summary>
+            <param name="database">Initialized account database.</param>
+            <param name="admin">Default administrator who owns the credential.</param>
         </member>
         <member name="T:SharpAI.Server.Classes.Runtime.LibraryPrivacy">
             <summary>Identifies library payloads that must not bypass item ownership through shared request history or debug body logs.</summary>
@@ -677,21 +688,19 @@
         </member>
         <member name="T:SharpAI.Server.Classes.Settings.AuthSettings">
             <summary>
-            Authentication settings. Authentication is disabled by default, matching Ollama's open local-server
-            behavior; when disabled every request runs as an implicit, fully-authorized system principal. When
-            enabled, the OpenAPI document, Swagger UI, health, and readiness endpoints remain anonymous, and
-            other endpoints require a valid administrator API key (full user/credential/session/RBAC support is
-            layered on top of this foundation).
+            Server authentication settings. Bearer authentication is mandatory. Health/readiness probes and
+            POST /v1.0/token remain reachable anonymously. Legacy API key settings are retained only so older
+            configuration files deserialize; the server does not accept those keys.
             </summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.Enabled">
             <summary>
-            Whether authentication is enabled. Default false (open server).
+            Authentication is mandatory. Legacy false values are ignored.
             </summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.AdminApiKeys">
             <summary>
-            Valid administrator API keys (checked against the x-api-key header). Never null.
+            Legacy administrator API keys, ignored by the server. Never null.
             </summary>
         </member>
         <member name="P:SharpAI.Server.Classes.Settings.AuthSettings.TokenSigningKey">

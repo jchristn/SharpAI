@@ -10,14 +10,13 @@ namespace Test.Server
     using Touchstone.Core;
 
     /// <summary>
-    /// Live HTTP contract suite for a server running with <c>Auth.Enabled = true</c> and a known admin API
-    /// key. Verifies 401 challenges on protected routes, that anonymous routes stay open, admin-key bypass,
-    /// the email/password login flow, and RBAC denial (403) for an unprivileged principal. Run with the
-    /// <c>--auth</c> flag against a server whose <c>AdminApiKeys</c> contains <see cref="AdminKey"/>.
+    /// Live HTTP contracts for mandatory bearer authentication. Verifies challenges, infrastructure
+    /// probes, rejection of legacy admin keys, interactive login and RBAC. Run with --auth against a
+    /// disposable test server. SHARPAI_TEST_ADMIN_EMAIL/PASSWORD may override initial credentials.
     /// </summary>
     public static class ServerAuthContractSuite
     {
-        /// <summary>The admin API key the auth-enabled test server must be configured with.</summary>
+        /// <summary>A legacy key that the server must reject.</summary>
         public const string AdminKey = "test-admin-key";
 
         /// <summary>
@@ -41,30 +40,31 @@ namespace Test.Server
                             Assert.Status(await Send(client, HttpMethod.Get, root + path, null, null, ct), 401);
                     }),
 
-                new TestCaseDescriptor("ServerAuth", "Anonymous_Open", "Health and OpenAPI stay open with auth on",
+                new TestCaseDescriptor("ServerAuth", "Anonymous_Open", "Health stays open and API documentation requires authentication",
                     async ct =>
                     {
                         HttpResponseMessage h = await Send(client, HttpMethod.Get, root + "/health", null, null, ct);
                         Assert.Status(h, 200);
                         HttpResponseMessage o = await Send(client, HttpMethod.Get, root + "/openapi.json", null, null, ct);
-                        Assert.Status(o, 200);
+                        Assert.Status(o, 401);
                     }),
 
-                new TestCaseDescriptor("ServerAuth", "AdminKey_Allows", "A valid admin API key is authorized",
+                new TestCaseDescriptor("ServerAuth", "Bearer_Allows", "A bearer session is authorized; legacy keys are rejected",
                     async ct =>
                     {
-                        HttpResponseMessage r = await Send(client, HttpMethod.Get, root + "/v1.0/tenants",
-                            new Dictionary<string, string> { { "x-api-key", AdminKey } }, null, ct);
+                        Dictionary<string, string> headers = await AdministratorHeaders(client, root, ct);
+                        Assert.Status(await Send(client, HttpMethod.Get, root + "/v1.0/tenants", new Dictionary<string, string> { { "x-api-key", AdminKey } }, null, ct), 401);
+                        HttpResponseMessage r = await Send(client, HttpMethod.Get, root + "/v1.0/tenants", headers, null, ct);
                         Assert.Status(r, 200);
                         foreach (string path in new[] { "/api/diagnostics/runtime", "/api/diagnostics/memory" })
-                            Assert.Status(await Send(client, HttpMethod.Get, root + path, new Dictionary<string, string> { { "x-api-key", AdminKey } }, null, ct), 200);
+                            Assert.Status(await Send(client, HttpMethod.Get, root + path, headers, null, ct), 200);
                         Assert.Contains(await r.Content.ReadAsStringAsync(ct), "default");
                     }),
 
                 new TestCaseDescriptor("ServerAuth", "Login_And_Rbac", "Login yields a token; an unprivileged user is denied (403)",
                     async ct =>
                     {
-                        Dictionary<string, string> adminHeader = new Dictionary<string, string> { { "x-api-key", AdminKey } };
+                        Dictionary<string, string> adminHeader = await AdministratorHeaders(client, root, ct);
 
                         // Resolve the seeded "default" tenant.
                         HttpResponseMessage tenantsResp = await Send(client, HttpMethod.Get, root + "/v1.0/tenants", adminHeader, null, ct);
@@ -106,6 +106,20 @@ namespace Test.Server
             };
 
             return new TestSuiteDescriptor("ServerAuth", "Live server auth/RBAC contracts", cases, null, null);
+        }
+
+        private static async Task<Dictionary<string, string>> AdministratorHeaders(HttpClient client, string root, CancellationToken ct)
+        {
+            Dictionary<string, string> credentials = new Dictionary<string, string>
+            {
+                { "x-email", Environment.GetEnvironmentVariable("SHARPAI_TEST_ADMIN_EMAIL") ?? "admin@sharpai.local" },
+                { "x-password", Environment.GetEnvironmentVariable("SHARPAI_TEST_ADMIN_PASSWORD") ?? "password" },
+                { "x-tenant-guid", "default" }
+            };
+            HttpResponseMessage response = await Send(client, HttpMethod.Post, root + "/v1.0/token", credentials, null, ct);
+            Assert.Status(response, 200);
+            string token = ReadStringProperty(await response.Content.ReadAsStringAsync(ct), "token");
+            return new Dictionary<string, string> { { "Authorization", "Bearer " + token } };
         }
 
         private static async Task<HttpResponseMessage> Send(

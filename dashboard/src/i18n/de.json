@@ -239,7 +239,8 @@
     "failed": "Die Anmeldung ist fehlgeschlagen.",
     "setupTitle": "Woher bekomme ich meine Anmeldeinformationen?",
     "setupHelp": "Neue Installation: admin@sharpai.local, Passwort password. Die Mandanten-ID ist default; das Feld darf leer bleiben. Passwort unter Zugriff → Benutzer ändern. Bestehende Konten behalten ihr Passwort.",
-    "setupConfig": "Die Anmeldung ist optional, solange „Auth“ → „Aktiviert“ deaktiviert ist. Aktivieren Sie die Authentifizierung in den Einstellungen und konfigurieren Sie einen dauerhaften Token-Signaturschlüssel, bevor eine Anmeldung erforderlich ist. Vorhandene Benutzer- und Passwort-Hashes werden in der konfigurierten Datenbank gespeichert."
+    "setupConfig": "Anmeldung und Bearer-Authentifizierung sind erforderlich. Ein beständiger Signaturschlüssel erhält Sitzungen nach Neustarts. Konten und Passwort-Hashes werden in der Datenbank gespeichert.",
+    "initialCredentials": "Anfängliche Anmeldedaten (bis zur Änderung):"
   },
   "inferenceHistory": {
     "title": "Inferenz- und Einbettungsgeschichte",
@@ -319,7 +320,7 @@
   "settingsDescriptions": {
     "Runtime": "Native Inference-Backend- und Bibliotheksstandorte.",
     "Storage": "Verzeichnisse, die für heruntergeladene Modelle und temporäre Dateien verwendet werden.",
-    "Auth": "Zugriffskontrolle und Sitzungseinstellungen. Bewahren Sie Ihre Administrator-Anmeldeinformationen auf, bevor Sie die Authentifizierung aktivieren.",
+    "Auth": "Verpflichtende Bearer-Authentifizierung und Sitzungseinstellungen.",
     "Telemetry": "Metriken, Protokolle und Traces werden in Ihren Observability-Stack exportiert.",
     "RequestHistory": "Erfassungsgrenzen und Aufbewahrung anfordern.",
     "Rest": "Listener, HTTP-Protokolle und Verbindungsbeschränkungen.",
@@ -663,7 +664,7 @@
     "selectedTenant": "Ausgewählter Mieter",
     "selectTenant": "Wählen Sie einen Mieter aus",
     "scopeHelp": "Durch Auswahl ändert sich der Verwaltungsumfang. Ihre authentifizierte Identität wird dadurch nicht geändert.",
-    "openAccess": "Die Authentifizierung ist deaktiviert. Die Verwaltung ist nicht eingeschränkt, bis „Auth“ → „Aktiviert“ in den Einstellungen aktiviert wird.",
+    "openAccess": "Verpflichtende Bearer-Authentifizierung und Sitzungseinstellungen.",
     "accessFailed": "Die Verwaltung konnte nicht geladen werden. Melden Sie sich an, wenn die Authentifizierung aktiviert ist, oder versuchen Sie erneut, eine Verbindung herzustellen.",
     "denied": "Ihr Konto verfügt nicht über die Berechtigung, diese Verwaltungsseite anzuzeigen.",
     "createTenantFirst": "Erstellen Sie auf der Seite „Mandanten“ einen Mandanten und wählen Sie ihn dann aus, um seine Ressourcen zu verwalten.",
@@ -716,7 +717,7 @@
     "noPermissions": "Keine expliziten Richtlinienregeln.",
     "credentialCreated": "Berechtigungsnachweis erstellt",
     "savedSecret": "Ich habe das Geheimnis gespeichert",
-    "secretOnce": "Kopieren Sie diese Schlüssel jetzt. Das Geheimnis wird nur einmal angezeigt und gelöscht, wenn Sie dieses Dialogfeld schließen.",
+    "secretOnce": "Dieses Token jetzt kopieren. Es wird nur einmal angezeigt und beim Schließen gelöscht.",
     "deleteConfirm": "Entfernen von {{name}} bestätigen?",
     "deleteUserHelp": "Dadurch werden auch die Anmeldeinformationen und Rollenzuweisungen des Benutzers entfernt. Vorhandene Sitzungen funktionieren nicht mehr.",
     "deleteTenantHelp": "Jeglicher Zugriff auf diesen Mandanten wird gestoppt. Mit dem Mandanten verknüpfte Datensätze können in der Datenbank verbleiben.",
@@ -781,7 +782,9 @@
     "copyAccessKey": "Zugriffsschlüssel kopieren",
     "copySecretKey": "Geheimen Schlüssel kopieren",
     "effectiveHelp": "Hierbei handelt es sich um zugewiesene Richtlinienregeln. Plattformadministratoren umgehen Berechtigungsprüfungen; Mandantenadministratoren umgehen Prüfungen innerhalb ihres Mandanten. Der Zugriff auf Anmeldeinformationen wird auch durch die Berechtigungen des besitzenden Benutzers eingeschränkt.",
-    "id": "ID"
+    "id": "ID",
+    "bearerToken": "API-Bearer-Token",
+    "copyBearerToken": "Vollständiges Token für den Authorization-Header kopieren"
   },
   "help": {
     "refresh": "Lädt Serverdaten neu, ohne Filter oder Mandant zu ändern.",
@@ -929,7 +932,7 @@
     "hostname": "Host oder IP: lokale Bind-Adresse für Listener, Zieladresse für entfernte Verbindungen.",
     "port": "TCP- oder UDP-Port dieser Komponente; Bereich 0–65535. Die Bedeutung von 0 ist komponentenabhängig.",
     "configuration": "Konfiguration {{path}} in der Serverdatei; beim Start initialisierte Komponenten benötigen einen Neustart.",
-    "authEnable": "Verlangt Anmeldung für geschützte APIs; vor Aktivierung funktionierenden Administratorzugang behalten.",
+    "authEnable": "Verpflichtende Bearer-Authentifizierung und Sitzungseinstellungen.",
     "historyEnable": "Erfasst HTTP-Metadaten und begrenzte Inhalte für den Verlauf; Größenlimits separat einstellen.",
     "nativeLogging": "Protokolliert native llama.cpp-Diagnosen; kann umfangreich sein. Neustart erforderlich.",
     "console": "Schreibt Anwendungslogs zusätzlich auf die Serverkonsole. Neustart erforderlich.",

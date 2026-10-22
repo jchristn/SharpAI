@@ -91,3 +91,8 @@ You do not need the bundled stack. To ship to your own observability platform:
 
 Keep `ServiceName` stable so the `service.name` resource attribute groups this deployment consistently in
 your backend.
+
+SharpAI `/metrics`, `/openapi.json`, and the dashboard `/engine-metrics` proxy require bearer authentication.
+The Compose Prometheus job reads `docker/auth/default-bearer-token` through a read-only mount. If this
+credential is revoked, replace the configured token file to keep HTTP metric scraping healthy. Engine
+metrics, logs and traces continue over OTLP. Health and readiness probes remain anonymous.

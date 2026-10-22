@@ -29,7 +29,7 @@ def main():
         settings = {'Rest': {'Hostname': '127.0.0.1', 'Port': port}, 'Database': {'Type': 'Sqlite', 'Filename': './test.db'},
                     'Storage': {'ModelsDirectory': './models/', 'TempDirectory': './temp/'},
                     'Auth': {'Enabled': True, 'AdminApiKeys': [admin_key], 'TokenSigningKey': secrets.token_hex(32)},
-                    'Telemetry': {'Enable': False}, 'RequestHistory': {'Enabled': True}, 'Runtime': {'ForceBackend': 'cpu'},
+                    'Telemetry': {'Enable': True, 'EnableMetrics': False, 'EnableTraces': False, 'EnableLogs': False}, 'RequestHistory': {'Enabled': True}, 'Runtime': {'ForceBackend': 'cpu'},
                     'Logging': {'LogDirectory': './logs/', 'ConsoleLogging': True}}
         (runtime / 'sharpai.json').write_text(json.dumps(settings))
         for name in ['models', 'temp', 'logs']:
@@ -67,7 +67,7 @@ def main():
         try:
             for _ in range(300):
                 if process.poll() is not None:
-                    raise RuntimeError('Private test server exited; production services were not touched.')
+                    raise RuntimeError('Private test server exited; production services were not touched.\n' + (runtime/'server.log').read_text()[-6000:])
                 try:
                     urllib.request.urlopen(root + '/health', timeout=1).close()
                     break
@@ -75,12 +75,36 @@ def main():
                     time.sleep(.1)
             request('GET', '/v1.0/auth/context', headers={}, expected=401)
             request('GET', '/v1.0/system-prompts', headers={}, expected=401)
+            for protected in ['/api/tags','/v1/models','/metrics','/openapi.json','/swagger','/','/health-extra','/v1.0/token-extra','/v1.0/token']:
+                request('GET', protected, headers={}, expected=401)
+            bootstrap_path = runtime / 'auth/default-bearer-token'
+            bootstrap_token = bootstrap_path.read_text().strip()
+            bootstrap_auth = {'Authorization': 'Bearer ' + bootstrap_token}
+            check(bootstrap_token.startswith('sharpai_') and len(bootstrap_token) == 72, 'Default credential is a 256-bit bearer token')
+            check(bootstrap_path.stat().st_mode & 0o077 == 0, 'Bootstrap token file is private to its owner')
+            request('GET','/v1/models',headers=bootstrap_auth)
+            with urllib.request.urlopen(urllib.request.Request(root+'/metrics',headers=bootstrap_auth),timeout=20) as metrics_response:
+                metrics_text=metrics_response.read().decode()
+                check(metrics_response.status==200 and '# TYPE' in metrics_text and '_total' in metrics_text,'Bearer-protected metrics expose real HTTP instruments with telemetry enabled')
+            request('GET','/api/settings',headers=bootstrap_auth,expected=403)
+            request('GET','/v1/models',headers={'x-token':bootstrap_token},expected=401)
+            request('GET','/v1/models',headers={'Authorization':'Bearer '+bootstrap_token+'invalid'},expected=401)
+            request('GET', '/v1.0/auth/context', headers=admin, expected=401)
+            admin = login('default', 'admin@sharpai.local', 'password')['headers']
             context = request('GET', '/v1.0/auth/context')
-            check(context['isAdmin'], 'API key receives platform administration context')
+            check(context['isAdmin'], 'Bearer session receives platform administration context')
             login_session = login('default', 'admin@sharpai.local', 'password')
             seeded = login_session['headers']
             seeded_context = request('GET', '/v1.0/auth/context', headers=seeded)
             check(seeded_context['isAdmin'], 'initial password signs in to the default tenant as platform administrator')
+            bootstrap_rows=request('GET','/v1.0/tenants/default/credentials')['Objects']
+            bootstrap_record=next(item for item in bootstrap_rows if item['Name']=='Default API bearer token')
+            check(bootstrap_token not in json.dumps(bootstrap_rows),'Credential listings never disclose bearer plaintext')
+            request('PUT','/v1.0/tenants/default/credentials/'+bootstrap_record['Guid'],{'Name':bootstrap_record['Name'],'Active':False})
+            request('GET','/v1/models',headers=bootstrap_auth,expected=401)
+            specification=request('GET','/openapi.json')
+            check(specification['components']['securitySchemes']['bearerAuth']['scheme']=='bearer','OpenAPI declares HTTP bearer authentication')
+            check(specification['paths']['/api/tags']['get']['security']==[{'bearerAuth':[]}],'OpenAPI model operations require bearer authentication')
             default_tenant = request('GET', '/v1.0/tenants/default')
             check(default_tenant['Guid'] == 'default' and default_tenant['IsProtected'], 'seeded tenant has stable protected default ID')
             a = request('POST', '/v1.0/tenants', {'Name': 'Tenant A'})['Guid']
@@ -131,7 +155,7 @@ def main():
                 check((edited['Content']!=unchanged['Content']) if library=='system-prompts' else edited['Configuration']['Temperature']!=unchanged['Configuration']['Temperature'],'Editing a duplicate leaves the shared source unchanged')
                 pages=[request('GET',endpoint+'?pageSize=1&pageNumber='+str(i),headers=user_auth)['Objects'][0]['Id'] for i in range(1,int(visible['TotalRecords'])+2)]
                 check(len(pages)==len(set(pages)) and private['Id'] in pages and admin_private['Id'] not in pages,'Pagination filters ownership before count and page boundaries')
-                request('POST',endpoint,{'Name':'No owner','Scope':'User',**payload},expected=400)
+                request('POST',endpoint,{'Name':'Current admin owner','Scope':'User',**payload})
                 if library=='model-configurations':
                     request('POST',endpoint,{'Name':'Invalid sampling','Scope':'User','Configuration':{'Temperature':3}},user_auth,400)
                 request('DELETE',endpoint+'/'+copy['Id'],headers=user_auth)
@@ -177,10 +201,10 @@ def main():
             request('DELETE',base+'/assignments/'+scoped_assignment['Guid'])
 
             cred = request('POST', base + '/credentials', {'UserGuid': user['Guid'], 'Name': 'Integration'})
-            credential_auth = {'x-access-key': cred['accessKey'], 'x-secret-key': cred['secretKey']}
-            check(bool(cred['secretKey']), 'Creation returns a one-time secret')
+            credential_auth = {'Authorization': 'Bearer ' + cred['token']}
+            check(cred['token'].startswith('sharpai_') and cred['tokenType']=='Bearer' and 'accessKey' not in cred and 'secretKey' not in cred, 'Creation returns a one-time bearer token rather than access keys')
             persisted = request('GET', base + '/credentials/' + cred['guid'])
-            check(cred['secretKey'] not in json.dumps(persisted) and not persisted.get('SecretSha256'), 'Credential reads never return secrets or hashes')
+            check(cred['token'] not in json.dumps(persisted) and not persisted.get('SecretSha256'), 'Credential reads never return secrets or hashes')
             request('GET', '/v1/models', headers=credential_auth, expected=403)
             request('GET', '/v1.0/system-prompts', headers=credential_auth, expected=403)
             scope = request('POST', base + '/credentials/' + cred['guid'] + '/assignments', {'RoleGuid': role['Guid'], 'ResourceScope': 'Tenant', 'InheritsToChildren': True})
@@ -216,6 +240,10 @@ def main():
             password_records = [item for item in history if item.get('Path', '').endswith('/password')]
             password_details = [request('GET', '/v1.0/api/request-history/' + item['Id']) for item in password_records]
             check(bool(password_details) and all('[redacted]' in str(item.get('RequestBody')) and new_password not in str(item.get('RequestBody')) for item in password_details), 'Password reset detail bodies are redacted in history')
+            credential_record=next(item for item in history if item.get('Path')==base+'/credentials' and item.get('Method')=='POST' and item.get('StatusCode')==200)
+            credential_detail=request('GET','/v1.0/api/request-history/'+credential_record['Id'])
+            check('[redacted]' in str(credential_detail.get('ResponseBody')) and cred['token'] not in json.dumps(credential_detail),'Credential bearer tokens are redacted before history persistence')
+            check(bootstrap_token.encode() not in (runtime/'test.db').read_bytes() and cred['token'].encode() not in (runtime/'test.db').read_bytes(),'Database contains no plaintext API bearer tokens')
             login_record = next(item for item in history if item.get('Path') == '/v1.0/token' and item.get('Method') == 'POST' and item.get('StatusCode') == 200)
             login_detail = request('GET', '/v1.0/api/request-history/' + login_record['Id'])
             check('[redacted]' in str(login_detail.get('ResponseBody')), 'Session-token response bodies are redacted before retention')
@@ -239,7 +267,7 @@ def main():
             library_history = next(item for item in history if item['Method']=='POST' and item['Path']=='/v1.0/system-prompts')
             library_detail=request('GET','/v1.0/api/request-history/'+library_history['Id'])
             check(library_detail.get('RequestBody')=='[private library payload withheld]','Shared request history cannot expose private library payloads')
-            # Open inference mode still resolves explicit identities for private libraries.
+            # Legacy auth-disabled configuration must not reopen inference or private libraries.
             login_session = login(b, foreign['Email'], password)
             foreign_auth = login_session['headers']
             settings['Auth']['Enabled'] = False
@@ -254,14 +282,14 @@ def main():
                     urllib.request.urlopen(root + '/health', timeout=1).close()
                     break
                 except (urllib.error.URLError, TimeoutError): time.sleep(.1)
-            open_context=request('GET','/v1.0/library-context',headers={})
-            check(open_context['IsAdmin'] and not open_context.get('UserId'),'Anonymous open mode has platform rights but no private account identity')
+            request('GET','/v1.0/library-context',headers={},expected=401)
+            request('GET','/v1/models',headers=bootstrap_auth,expected=401)
+            check(bootstrap_path.read_text().strip()==bootstrap_token,'Restart preserves the original token and its revocation')
             user_context=request('GET','/v1.0/library-context',headers=foreign_auth)
             check(not user_context['IsAdmin'] and user_context['UserId']==foreign['Guid'],'Explicit sign-in retains the real user identity when inference authentication is disabled')
             open_private=request('POST','/v1.0/system-prompts',{'Name':'Open mode private','Scope':'User','Content':'Private account instructions'},foreign_auth)
-            anonymous_rows=request('GET','/v1.0/system-prompts',headers={})['Objects']
-            check(open_private['Id'] not in {row['Id'] for row in anonymous_rows},'Open anonymous access does not enumerate private records')
-            request('GET','/v1.0/system-prompts/'+open_private['Id'],headers={},expected=404)
+            request('GET','/v1.0/system-prompts',headers={},expected=401)
+            request('GET','/v1.0/system-prompts/'+open_private['Id'],headers={},expected=401)
             request('POST','/v1.0/system-prompts',{'Name':'Not platform','Scope':'System','Content':'x'},foreign_auth,403)
             request('GET','/v1.0/library-context',headers={'Authorization':'Bearer invalid'},expected=401)
             persisted=request('GET','/v1.0/system-prompts?name=Shared%20system',headers=foreign_auth)

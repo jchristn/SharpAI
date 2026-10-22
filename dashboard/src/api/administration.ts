@@ -42,6 +42,6 @@ export function securityName(row: SecurityRecord): string {
 }
 export function safeRecord(row: SecurityRecord): SecurityRecord {
   return Object.fromEntries(
-    Object.entries(row).filter(([key]) => !/password|secret|token/i.test(key)),
+    Object.entries(row).filter(([key]) => !/password|secret|token|accesskey/i.test(key)),
   ) as SecurityRecord;
 }

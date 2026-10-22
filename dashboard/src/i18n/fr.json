@@ -239,7 +239,8 @@
     "failed": "La connexion a échoué.",
     "setupTitle": "Où puis-je obtenir mes informations d'identification ?",
     "setupHelp": "Nouvelle installation : admin@sharpai.local, mot de passe password. Le tenant est default ; le champ peut rester vide. Modifiez le mot de passe dans Accès → Utilisateurs. Les comptes existants conservent leur mot de passe.",
-    "setupConfig": "La connexion est facultative lorsque Auth → Enabled est désactivé. Activez l'authentification dans Paramètres et configurez une clé de signature de jeton persistante avant d'exiger la connexion. Les utilisateurs existants et les hachages de mots de passe sont stockés dans la base de données configurée."
+    "setupConfig": "La connexion et l’authentification Bearer sont obligatoires. Configurez une clé de signature persistante pour conserver les sessions après redémarrage. Les comptes et empreintes des mots de passe sont stockés en base.",
+    "initialCredentials": "Identifiants initiaux (avant modification) :"
   },
   "inferenceHistory": {
     "title": "Historique des inférences et des intégrations",
@@ -319,7 +320,7 @@
   "settingsDescriptions": {
     "Runtime": "Emplacements du backend d'inférence et de la bibliothèque natifs.",
     "Storage": "Répertoires utilisés pour les modèles téléchargés et les fichiers temporaires.",
-    "Auth": "Contrôle d'accès et paramètres de session. Conservez les informations d'identification d'administrateur avant d'activer l'authentification.",
+    "Auth": "Authentification Bearer obligatoire et paramètres de session.",
     "Telemetry": "Métriques, journaux et traces exportés vers votre pile d'observabilité.",
     "RequestHistory": "Demander des limites de capture et de rétention.",
     "Rest": "Écouteur, protocoles HTTP et limites de connexion.",
@@ -663,7 +664,7 @@
     "selectedTenant": "Locataire sélectionné",
     "selectTenant": "Sélectionner un locataire",
     "scopeHelp": "La sélection modifie la portée de l'administration. Cela ne change pas votre identité authentifiée.",
-    "openAccess": "L'authentification est désactivée. L'administration est illimitée jusqu'à ce qu'Authentification → Activé soit activé dans Paramètres.",
+    "openAccess": "Authentification Bearer obligatoire et paramètres de session.",
     "accessFailed": "L'administration n'a pas pu être chargée. Connectez-vous si l'authentification est activée ou réessayez la connexion.",
     "denied": "Votre compte n'est pas autorisé à afficher cette page d'administration.",
     "createTenantFirst": "Créez un locataire sur la page Locataires, puis sélectionnez-le pour gérer ses ressources.",
@@ -716,7 +717,7 @@
     "noPermissions": "Aucune règle de politique explicite.",
     "credentialCreated": "Identifiant créé",
     "savedSecret": "J'ai gardé le secret",
-    "secretOnce": "Copiez ces clés maintenant. Le secret n'est affiché qu'une seule fois et est effacé lorsque vous fermez cette boîte de dialogue.",
+    "secretOnce": "Copiez ce jeton maintenant. Il est affiché une seule fois et effacé à la fermeture.",
     "deleteConfirm": "Confirmer la suppression de {{name}} ?",
     "deleteUserHelp": "Cela supprime également les informations d’identification et les attributions de rôles de l’utilisateur. Les sessions existantes cessent de fonctionner.",
     "deleteTenantHelp": "Tout accès à ce locataire s'arrête. Les enregistrements associés au locataire peuvent rester dans la base de données.",
@@ -781,7 +782,9 @@
     "copyAccessKey": "Copier la clé d'accès",
     "copySecretKey": "Copier la clé secrète",
     "effectiveHelp": "Ce sont des règles de politique qui leur sont attribuées. Les administrateurs de plate-forme contournent les contrôles d'autorisation ; les administrateurs de locataires contournent les contrôles au sein de leur locataire. L’accès aux informations d’identification est également limité par les autorisations de son utilisateur propriétaire.",
-    "id": "ID"
+    "id": "ID",
+    "bearerToken": "Jeton Bearer API",
+    "copyBearerToken": "Copier le jeton complet pour l’en-tête Authorization"
   },
   "help": {
     "refresh": "Actualise les données sans effacer les filtres ni le tenant choisi.",
@@ -929,7 +932,7 @@
     "hostname": "Hôte ou IP : adresse d’écoute du serveur ou destination d’une connexion distante.",
     "port": "Port TCP ou UDP de ce composant ; plage 0–65535. Le sens de 0 dépend du composant.",
     "configuration": "Configuration {{path}} enregistrée sur le serveur ; les composants initialisés au démarrage nécessitent un redémarrage.",
-    "authEnable": "Exige une authentification des API protégées ; conservez un accès administrateur valide avant activation.",
+    "authEnable": "Authentification Bearer obligatoire et paramètres de session.",
     "historyEnable": "Enregistre métadonnées HTTP et corps limités pour l’historique ; limites configurées séparément.",
     "nativeLogging": "Inclut les diagnostics natifs llama.cpp ; peut produire beaucoup de messages. Redémarrage requis.",
     "console": "Écrit aussi les journaux dans la console du serveur. Redémarrage requis.",

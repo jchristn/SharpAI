@@ -39,17 +39,15 @@ for event in client.pull_model("my-model"):
 
 ## Authentication
 
-Authentication is off by default (open server). When enabled, choose one:
+Authentication is mandatory. Use an API bearer credential or sign in to obtain a bearer session:
 
 ```python
 # Interactive login -> stores a bearer session token on the client
 client = SharpAIClient()
-client.login("admin@sharpai.local", "password", tenant_guid="ten_...")
+client.login("admin@sharpai.local", "password", tenant_guid="default")
 
 # Or supply credentials up front
 client = SharpAIClient(token="eyJ...")                       # bearer session token
-client = SharpAIClient(api_key="...")                        # admin API key
-client = SharpAIClient(access_key="access_...", secret_key="secret_...")  # credential
 ```
 
 ## Endpoint coverage

@@ -11,21 +11,15 @@ namespace SharpAI.Server.Classes.Runtime
     using WatsonWebserver.Core;
 
     /// <summary>
-    /// Establishes the authenticated <see cref="RequestContext"/> for each request and attaches it to the
-    /// HTTP context metadata. Invoked from the Watson <c>PreRouting</c> hook (which fires for every request,
-    /// unlike the <c>AuthenticateRequest</c>/<c>AuthenticateApiRequest</c> hooks, which Watson only invokes
-    /// for routes registered with <c>requiresAuthentication: true</c>). When authentication is disabled this
-    /// installs the system principal; when enabled it resolves the request against the account store (admin
-    /// API key, bearer session token, or access-key / secret-key). The 401 challenge and RBAC authorization
-    /// are enforced per-route by the <c>Authorize</c> helper reading the attached context; unauthenticated
-    /// requests to non-anonymous endpoints are recorded to the security audit log here.
+    /// Resolves bearer authentication for every server request. Only exact health/readiness probes
+    /// and the login operation are anonymous. PreRouting sends authentication challenges before routing;
+    /// guarded routes apply RBAC to the attached principal. Legacy key headers are not accepted.
     /// </summary>
     public class AuthenticationService
     {
         #region Private-Members
 
         private readonly string _Header = "[Auth] ";
-        private readonly AuthSettings _Settings;
         private readonly AuthenticationEngine _Engine;
         private readonly DatabaseDriverBase _Database;
         private readonly LoggingModule _Logging;
@@ -47,7 +41,7 @@ namespace SharpAI.Server.Classes.Runtime
             DatabaseDriverBase database,
             LoggingModule logging)
         {
-            _Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            ArgumentNullException.ThrowIfNull(settings);
             _Engine = engine ?? throw new ArgumentNullException(nameof(engine));
             _Database = database ?? throw new ArgumentNullException(nameof(database));
             _Logging = logging ?? throw new ArgumentNullException(nameof(logging));
@@ -63,7 +57,7 @@ namespace SharpAI.Server.Classes.Runtime
         /// Invoked from the <c>PreRouting</c> hook, which — unlike the authentication hooks — fires for every
         /// request regardless of per-route configuration. When the resolved context indicates the request is
         /// unauthenticated against a non-anonymous path, the denial is recorded to the audit log here (the
-        /// actual 401 is thrown by the guarded route).
+        /// actual 401 is sent by PreRouting).
         /// </summary>
         /// <param name="ctx">HTTP context.</param>
         /// <returns>The attached request context.</returns>
@@ -85,19 +79,13 @@ namespace SharpAI.Server.Classes.Runtime
         private RequestContext ResolveContext(HttpContextBase ctx, out string path)
         {
             path = ExtractPath(ctx);
-            string apiKey = GetHeader(ctx, "x-api-key");
-            string bearer = ExtractBearer(ctx);
-            string accessKey = GetHeader(ctx, "x-access-key");
-            string secretKey = GetHeader(ctx, "x-secret-key");
-
-            // Personal libraries need a real identity even when inference is open. Anonymous open access
-            // retains the existing implicit platform principal and has no private user library.
-            bool libraryPath=path.StartsWith("/v1.0/system-prompts",StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith("/v1.0/model-configurations",StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith("/v1.0/library-context",StringComparison.OrdinalIgnoreCase);
-            bool suppliedIdentity=libraryPath && (!String.IsNullOrEmpty(bearer)||!String.IsNullOrEmpty(accessKey)||!String.IsNullOrEmpty(apiKey));
-            return _Engine.Authenticate(
-                _Settings.Enabled || suppliedIdentity, path, apiKey, _Settings.AdminApiKeys, bearer, accessKey, secretKey);
+            // Only exact infrastructure probes and the login operation are anonymous.
+            bool anonymous = path == "/health" || path == "/ready"
+                || (path == "/v1.0/token" && ctx.Request.Method.ToString() == "POST");
+            if (anonymous) return new RequestContext { IsAnonymousEndpoint = true };
+            // Resolve against a protected path so the library's legacy anonymous endpoints cannot
+            // expose server API documentation, metrics, or token/session operations.
+            return _Engine.Authenticate(true, "/__authenticated", null, null, ExtractBearer(ctx), null, null);
         }
 
         private void RecordDenial(HttpContextBase ctx, string path, string reason)
@@ -142,7 +130,7 @@ namespace SharpAI.Server.Classes.Runtime
                 return authorization.Substring(7).Trim();
             }
 
-            return GetHeader(ctx, "x-token");
+            return null;
         }
 
         private static string GetHeader(HttpContextBase ctx, string name)

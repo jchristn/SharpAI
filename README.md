@@ -842,3 +842,11 @@ and **Model configurations** pages. Playground selects these saved items using t
 edit actions. Users can duplicate shared defaults into their personal library; administrators may publish
 to their authorized shared scopes. See [Scoped libraries](docs/SCOPED_LIBRARIES.md) for ownership rules,
 API operations and migration behavior. Legacy model presets remain available independently.
+
+### Dashboard and API authentication
+
+Sign in with `admin@sharpai.local` / `password`, tenant `default`, on an initial installation.
+Dashboard access requires a validated session. All API calls require `Authorization: Bearer <token>`;
+only health/readiness probes and login are anonymous. The default model/inference bearer token is
+provisioned at `docker/auth/default-bearer-token` for Compose installations. Manage additional tokens
+and permissions under **Access**. See [authentication setup](DEPLOYMENT_GUIDE.md#api-bearer-credentials).

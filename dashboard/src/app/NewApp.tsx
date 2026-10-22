@@ -2,6 +2,7 @@ import type { AdministrationSection } from '../api/administration';
 import '../theme/tokens.css';
 import { ControlHelp } from './ControlHelp';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { AuthenticationGate } from './AuthenticationGate';
 import { AuthProvider } from './AuthProvider';
 import { AppShell } from './AppShell';
 import type { NavItem } from './AppShell';
@@ -44,7 +45,7 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
 
   return (
     <AuthProvider baseUrl={resolvedBaseUrl}>
-      <AdministrationProvider><BrowserRouter><ControlHelp/>
+      <ControlHelp/><AuthenticationGate><AdministrationProvider><BrowserRouter>
         <AppShell nav={NAV} serverUrl={resolvedBaseUrl} version={version}>
           <Routes>
             <Route path="/" element={<HomeView />} />
@@ -65,7 +66,7 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>
-      </BrowserRouter></AdministrationProvider>
+      </BrowserRouter></AdministrationProvider></AuthenticationGate>
     </AuthProvider>
   );
 }

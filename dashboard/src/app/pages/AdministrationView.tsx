@@ -338,11 +338,7 @@ function AdministrationRecords({
         header: t("admin.owner"),
         render: (r) => <CopyableId value={String(r.UserGuid ?? "")} />,
       },
-      {
-        key: "AccessKey",
-        header: t("admin.accessKey"),
-        render: (r) => <CopyableId value={String(r.AccessKey ?? "")} />,
-      },
+
     );
   else if (section === "permissions")
     columns.push(
@@ -746,18 +742,9 @@ function AdministrationRecords({
       >
         <p className="sa-admin-notice">{t("admin.secretOnce")}</p>
         <div className="sa-admin-secret">
-          <p>{t("admin.accessKey")}</p>
-          <code>{secret?.accessKey}</code>
-          <CopyButton
-            value={secret?.accessKey ?? ""}
-            label={t("admin.copyAccessKey")}
-          />
-          <p>{t("admin.secretKey")}</p>
-          <code>{secret?.secretKey}</code>
-          <CopyButton
-            value={secret?.secretKey ?? ""}
-            label={t("admin.copySecretKey")}
-          />
+          <p>{t("admin.bearerToken")}</p>
+          <code>{secret?.token}</code>
+          <CopyButton value={secret?.token ?? ""} label={t("admin.copyBearerToken")} />
         </div>
       </Modal>
       <Modal

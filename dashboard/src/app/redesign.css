@@ -329,3 +329,16 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-chat-metrics > div {display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:baseline;gap:16px;}
 .sa-chat-metrics dt {font-size:11px;font-weight:400;line-height:1.4;}
 .sa-chat-metrics dd {margin:0;text-align:end;white-space:nowrap;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.4;}
+
+/* Consistent border-box controls, including the method selector in every history tab. */
+.sa-filterbar__field input:not([type=checkbox]):not([type=radio]), .sa-filterbar__field select {
+  height:32px; min-height:32px; box-sizing:border-box; padding:5px 8px; line-height:20px;
+}
+.sa-btn--icon { padding:2px; }
+.sa-btn--icon svg,.sa-nav-item svg { flex-shrink:0; }
+.sa-sidebar__brand img,.sa-login-brand img { image-rendering:auto; }
+.sa-login-screen { min-height:100dvh;display:grid;place-content:center;gap:16px;justify-items:center;background:var(--sa-bg); }
+.sa-login-screen>img { width:96px;height:96px; }
+.sa-login-footer { width:100%; }
+.sa-login-actions { display:flex;justify-content:flex-end;gap:8px; }
+.sa-login-defaults { text-align:center;font-size:var(--sa-text-sm);line-height:1.6;margin:12px 0 0;color:var(--sa-text-muted); }

@@ -19,7 +19,16 @@ namespace SharpAI.Security
         #region Public-Methods
 
         /// <summary>
-        /// Generate an access key (prefix "access_", 32 random characters).
+        /// Generate an opaque API bearer token with 256 bits of cryptographic randomness.
+        /// </summary>
+        /// <returns>Bearer token, shown only on creation.</returns>
+        public static string GenerateBearerToken()
+        {
+            return "sharpai_" + Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Generate a legacy access key. Server API authentication requires bearer tokens.
         /// </summary>
         /// <returns>Access key.</returns>
         public static string GenerateAccessKey()

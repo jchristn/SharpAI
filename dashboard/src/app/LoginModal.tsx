@@ -5,6 +5,8 @@ import { Modal } from '../components/ui';
 import { ApiError } from '../api/ApiClient';
 import { useAuth } from './AuthProvider';
 
+const INITIAL_ACCOUNT = {email:'admin@sharpai.local', password:'password', tenant:'default'};
+
 export interface LoginModalProps {
   open: boolean;
   onClose: () => void;
@@ -40,18 +42,18 @@ export function LoginModal({ open, onClose }: LoginModalProps): JSX.Element {
       title={t('login.title')}
       onClose={onClose}
       footer={
-        <>
+        <div className="sa-login-footer"><div className="sa-login-actions">
           <button type="button" className="sa-btn" onClick={onClose}>
             {t('login.cancel')}
           </button>
           <button type="submit" form="sa-login" className="sa-btn sa-btn--primary" disabled={busy}>
             {busy ? t('login.signingIn') : t('login.signIn')}
           </button>
-        </>
+        </div><p className="sa-login-defaults">{t('login.initialCredentials')}<br/><strong>{INITIAL_ACCOUNT.email}</strong> / <strong>{INITIAL_ACCOUNT.password}</strong><br/>{t('login.tenant')}: <strong>{INITIAL_ACCOUNT.tenant}</strong></p></div>
       }
     >
       <form id="sa-login" onSubmit={(event) => { event.preventDefault(); void submit(); }} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sa-space-3)' }}>
-        <div style={{display:'flex',justifyContent:'flex-end'}}><LanguageSelector /></div><div className="sa-login-brand"><img src="/images/sharp-logo.png" alt="SharpAI" /><h2>{t('text.welcomeBack')}</h2><p>{t('text.signInToYourInferenceWorkspace')}</p></div>
+        <div style={{display:'flex',justifyContent:'flex-end'}}><LanguageSelector /></div><div className="sa-login-brand"><img src="/images/sharp-logo.svg" alt="SharpAI" /><h2>{t('text.welcomeBack')}</h2><p>{t('text.signInToYourInferenceWorkspace')}</p></div>
         <details className="sa-settings-note"><summary>{t('login.setupTitle')}</summary><p>{t('login.setupHelp')}</p><p>{t('login.setupConfig')}</p></details>
         <label className="sa-filterbar__field">
           <span className="sa-filterbar__label">{t('login.email')}</span>

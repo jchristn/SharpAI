@@ -6,6 +6,7 @@ reach server validation (400), rather than nginx static handling (405).
 """
 import argparse
 import json
+import os
 import datetime
 import urllib.parse
 import re
@@ -18,10 +19,11 @@ parser.add_argument('--engine-metrics', action='store_true', help='Require the f
 args = parser.parse_args()
 base = args.url.rstrip('/')
 checks = 0
+bearer_token = os.environ.get("SHARPAI_BEARER_TOKEN", "")
 
 
-def request(path, payload=None):
-    req = urllib.request.Request(base + path, data=payload, headers={'Content-Type': 'application/json'} if payload else {})
+def request(path, payload=None, headers=None, anonymous=False):
+    req = urllib.request.Request(base + path, data=payload, headers={**({'Authorization': 'Bearer ' + bearer_token} if bearer_token and not anonymous else {}), **({'Content-Type': 'application/json'} if payload else {}), **(headers or {})})
     try:
         response = urllib.request.urlopen(req, timeout=15)
     except urllib.error.HTTPError as error:
@@ -35,6 +37,17 @@ def verify(condition, message):
     checks += 1
     print('PASS', message)
 
+
+for protected in ['/api/settings','/api/tags','/v1/models','/openapi.json','/metrics'] + (['/engine-metrics'] if args.engine_metrics else []):
+    verify(request(protected, anonymous=True)['status'] == 401, protected + ' rejects anonymous access')
+if not bearer_token:
+    login = request('/v1.0/token', b'', headers={
+        'x-email': os.environ.get('SHARPAI_EMAIL', 'admin@sharpai.local'),
+        'x-password': os.environ.get('SHARPAI_PASSWORD', 'password'),
+        'x-tenant-guid': os.environ.get('SHARPAI_TENANT', 'default'),
+    }, anonymous=True)
+    verify(login['status'] == 200, 'administrator signs in for deployment checks')
+    bearer_token = json.loads(login['body'])['token']
 
 for path in ['/health', '/ready', '/api/tags', '/api/ps', '/api/settings', '/v1/models', '/v1.0/api/request-history?pageSize=1', '/openapi.json']:
     response = request(path)

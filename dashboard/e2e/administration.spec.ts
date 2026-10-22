@@ -1,3 +1,4 @@
+import { authenticatedPage } from './session-fixture';
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 const tenantA = {
@@ -254,8 +255,8 @@ test("one-time credential secret disappears after closing its result dialog", as
         route.request().method() === "POST"
           ? {
               guid: "new-credential",
-              accessKey: "access_once",
-              secretKey: "only-visible-once",
+              token: "only-visible-once",
+              tokenType: "Bearer",
             }
           : pageOf([]),
     }),
@@ -438,3 +439,6 @@ test('Access consolidates navigation and tabs preserve tenant scope',async({page
   await page.goBack();
   await expect(page).toHaveURL(/\/access\/users$/);
 });
+
+// Every protected workflow starts with a validated sign-in.
+test.beforeEach(async ({page}) => authenticatedPage(page));

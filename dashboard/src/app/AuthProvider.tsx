@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ApiClient } from '../api/ApiClient';
 import type { Credentials } from '../api/types';
@@ -36,6 +36,7 @@ function saveSession(session: StoredSession | null): void {
 export interface AuthState {
   session: StoredSession | null;
   isAuthenticated: boolean;
+  isCheckingSession: boolean;
   login: (email: string, password: string, tenantGuid?: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -48,12 +49,12 @@ export interface AuthProviderProps {
 }
 
 /**
- * Owns the dashboard's authentication session and the ApiClient bound to it. Auth is optional — when the
- * server runs open (auth disabled) the dashboard works with no session; when the operator signs in, the
- * bearer token flows into every request. The session is persisted so a refresh keeps the user signed in.
+ * Owns the required dashboard session and token-bound API client. Persisted sessions are validated
+ * before protected pages mount. Unauthorized responses clear the matching session.
  */
 export function AuthProvider({ baseUrl, children }: AuthProviderProps): JSX.Element {
   const [session, setSession] = useState<StoredSession | null>(() => loadSession());
+  const [verifiedToken, setVerifiedToken] = useState<string | null>(null);
 
   const credentials: Credentials = useMemo(
     () => (session ? { kind: 'bearer', token: session.token } : { kind: 'none' }),
@@ -76,6 +77,7 @@ export function AuthProvider({ baseUrl, children }: AuthProviderProps): JSX.Elem
     async (email: string, password: string, tenantGuid?: string): Promise<void> => {
       const result = await client.login(email, password, tenantGuid);
       const next: StoredSession = { token: result.token, userId: result.userId, tenantId: result.tenantId };
+      setVerifiedToken(next.token);
       saveSession(next);
       setSession(next);
     },
@@ -83,18 +85,30 @@ export function AuthProvider({ baseUrl, children }: AuthProviderProps): JSX.Elem
   );
 
   const logout = useCallback(async (): Promise<void> => {
+    saveSession(null);
+    setSession(null);
+    setVerifiedToken(null);
     try {
       await client.logout();
     } catch {
       // revoke best-effort; clear locally regardless
     }
-    saveSession(null);
-    setSession(null);
   }, [client]);
 
+  useEffect(() => {
+    if (!session || verifiedToken === session.token) return;
+    let cancelled = false;
+    client.session().then(() => {
+      if (!cancelled) setVerifiedToken(session.token);
+    }).catch(() => {
+      if (!cancelled) setSession(current => { if (current?.token !== session.token) return current; saveSession(null); return null; });
+    });
+    return () => { cancelled = true; };
+  }, [client, session, verifiedToken]);
+
   const authValue: AuthState = useMemo(
-    () => ({ session, isAuthenticated: session !== null, login, logout }),
-    [session, login, logout],
+    () => ({ session, isAuthenticated: session !== null && verifiedToken === session.token, isCheckingSession: session !== null && verifiedToken !== session.token, login, logout }),
+    [session, verifiedToken, login, logout],
   );
 
   return (

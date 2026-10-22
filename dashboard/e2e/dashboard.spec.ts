@@ -1,7 +1,21 @@
+import { libraryFixture } from './library-fixture';
+import { authenticatedPage } from './session-fixture';
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('dashboard shell', () => {
+  test.beforeEach(async ({page}) => {
+    await authenticatedPage(page);
+    const library = libraryFixture();
+    await page.route('**/*', async route => {
+      if (await library(route)) return;
+      const path = new URL(route.request().url()).pathname;
+      if (path === '/v1.0/token') return route.fallback();
+      if (path === '/v1.0/auth/context') return route.fulfill({json:{isAdmin:true,tenantId:'tenant-a',userId:'user-a',capabilities:{}}});
+      if (path.startsWith('/api/') || path.startsWith('/v1.0/')) return route.fulfill({json:{models:[],Objects:[],Buckets:[],TotalCount:0}});
+      return route.fallback();
+    });
+  });
   test('renders semantic landmarks', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('header')).toBeVisible(); // topbar (banner)
@@ -11,6 +25,7 @@ test.describe('dashboard shell', () => {
 
   test('navigates between routes via the sidebar', async ({ page }) => {
     await page.goto('/');
+    await expect(page.getByRole('heading', {name:'Overview',exact:true})).toBeVisible();
     const menu = page.getByRole('button', { name: 'Toggle navigation' });
     if (await menu.isVisible()) await menu.click();
     await expect(page.getByRole('link', { name: 'SharpAI Inference workspace', exact: true })).toBeVisible();

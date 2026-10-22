@@ -193,6 +193,13 @@ namespace SharpAI.Security
 
         private RequestContext ResolveBearerToken(string bearerToken)
         {
+            if (bearerToken.StartsWith("sharpai_", StringComparison.Ordinal))
+            {
+                RequestContext credentialContext = ResolveAccessKey("bearer_" + PasswordHasher.Hash(bearerToken), bearerToken);
+                if (credentialContext != null) credentialContext.AuthScheme = AuthSchemeEnum.BearerToken;
+                return credentialContext;
+            }
+
             AuthSession session = ReadSession(bearerToken);
             if (session == null) return null;
 
