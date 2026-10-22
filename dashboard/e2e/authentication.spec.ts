@@ -21,7 +21,12 @@ for (const path of ['/', '/settings', '/access/users', '/playground']) {
     const actions = await footer.locator('.sa-login-actions').boundingBox();
     const credentials = await footer.locator('.sa-login-defaults').boundingBox();
     expect(credentials!.y).toBeGreaterThan(actions!.y + actions!.height);
-    await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+    await expect(dialog.getByRole('button',{name:'Close',exact:true})).toHaveCount(0);
+    await expect(dialog.getByRole('button',{name:'Cancel',exact:true})).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeVisible();
+    await page.locator('.sa-modal__overlay').click({position:{x:2,y:2}});
+    await expect(dialog).toBeVisible();
     await expect(page.locator('.sa-app')).toHaveCount(0);
     await expect(page.getByRole('navigation')).toHaveCount(0);
     expect(protectedRequests).toEqual([]);

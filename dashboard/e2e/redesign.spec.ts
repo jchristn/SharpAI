@@ -86,12 +86,12 @@ test('branded login validates fields and traps keyboard focus', async ({ page })
   expect(await dialog.locator('input[type=email]').evaluate((el: HTMLInputElement) => el.validity.valid)).toBe(false);
   await dialog.getByRole('button', { name: 'Sign in', exact: true }).focus();
   await page.keyboard.press('Tab');
-  await expect(dialog.getByRole('button', { name: 'Close', exact: true })).toBeFocused();
+  await expect(dialog.getByRole('combobox', { name: 'Language', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
   await expect(dialog.getByRole('button', { name: 'Sign in', exact: true })).toBeFocused();
   await page.screenshot({ path: `test-results/screenshots/${test.info().project.name}-login.png` });
   await page.keyboard.press('Escape');
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeVisible();
 });
 
 test('playground streams a response and generates an embedding', async ({ page }) => {

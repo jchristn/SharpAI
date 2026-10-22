@@ -11,14 +11,15 @@ export interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   wide?: boolean;
+  dismissible?: boolean;
   className?: string;
 }
 
 /**
  * A portaled modal dialog. Replaces the browser's native alert/confirm/prompt. Closes on Escape and on
- * overlay click; the panel scrolls internally so long content never breaks the page layout.
+ * overlay click when dismissible; the panel scrolls internally so long content never breaks the page layout.
  */
-export function Modal({ open, title, onClose, children, footer, wide = false, className = '' }: ModalProps): JSX.Element | null {
+export function Modal({ open, title, onClose, children, footer, wide = false, dismissible = true, className = '' }: ModalProps): JSX.Element | null {
   const { t } = useTranslation();
   const titleId = useId();
   const dialog = useRef<HTMLDivElement>(null);
@@ -30,7 +31,7 @@ export function Modal({ open, title, onClose, children, footer, wide = false, cl
     const focusable = (): HTMLElement[] => Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]') ?? []);
     focusable()[0]?.focus();
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') closeRef.current();
+      if (event.key === 'Escape' && dismissible) closeRef.current();
       if (event.key === 'Tab') {
         const elements = focusable();
         const first = elements[0]; const last = elements[elements.length - 1];
@@ -40,12 +41,12 @@ export function Modal({ open, title, onClose, children, footer, wide = false, cl
     };
     window.addEventListener('keydown', onKey);
     return () => { window.removeEventListener('keydown', onKey); previous?.focus(); };
-  }, [open]);
+  }, [open, dismissible]);
 
   if (!open) return null;
 
   return createPortal(
-    <div className="sa-modal__overlay" onClick={onClose} role="presentation">
+    <div className="sa-modal__overlay" onClick={dismissible ? onClose : undefined} role="presentation">
       <div
         ref={dialog}
         aria-labelledby={titleId}
@@ -56,9 +57,9 @@ export function Modal({ open, title, onClose, children, footer, wide = false, cl
       >
         <div className="sa-modal__header">
           <span id={titleId}>{title}</span>
-          <button type="button" className="sa-modal__close" aria-label={t('text.close')} onClick={onClose}>
+          {dismissible && <button type="button" className="sa-modal__close" aria-label={t('text.close')} onClick={onClose}>
             ×
-          </button>
+          </button>}
         </div>
         <div className="sa-modal__body">{children}</div>
         {footer ? <div className="sa-modal__footer">{footer}</div> : null}

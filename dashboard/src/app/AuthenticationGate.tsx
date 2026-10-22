@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from './AuthProvider';
@@ -17,14 +17,12 @@ export function AuthenticationGate({ children }: { children: ReactNode }): JSX.E
   return <SignInScreen/>;
 }
 
-/** Each signed-out visit starts with the form open, independently of earlier cancellations. */
+/** Required authentication stays visible until the server validates a session. */
 function SignInScreen(): JSX.Element {
   const {t}=useTranslation();
-  const [open,setOpen]=useState(true);
   return <main className="sa-login-screen">
     <img src="/images/sharp-logo.svg" alt="SharpAI"/>
     <h1>{t('login.title')}</h1>
-    {!open && <button className="sa-btn sa-btn--primary" onClick={()=>setOpen(true)}>{t('login.signIn')}</button>}
-    <LoginModal open={open} onClose={()=>setOpen(false)}/>
+    <LoginModal open dismissible={false} onClose={() => undefined}/>
   </main>;
 }

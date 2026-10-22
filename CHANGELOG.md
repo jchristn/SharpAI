@@ -1,5 +1,9 @@
 # Changelog
 
+### Unreleased dashboard fixes
+
+- Keep required sign-in visible until authentication succeeds; remove its close and Cancel controls and ignore Escape/backdrop dismissal.
+
 ### Unreleased terminal dashboard work
 
 - Add an HTTP-only C#/TUIKit terminal client, a provider-neutral C# transport, shared terminal tests, benchmarks and packaging infrastructure.

@@ -9,11 +9,12 @@ const INITIAL_ACCOUNT = {email:'admin@sharpai.local', password:'password', tenan
 
 export interface LoginModalProps {
   open: boolean;
+  dismissible?: boolean;
   onClose: () => void;
 }
 
 /** Sign-in dialog. Posts email/password (+ optional tenant) to obtain a bearer session token. */
-export function LoginModal({ open, onClose }: LoginModalProps): JSX.Element {
+export function LoginModal({ open, onClose, dismissible = true }: LoginModalProps): JSX.Element {
   const { t } = useTranslation();
   const { login } = useAuth();
   const [email, setEmail] = useState<string>('');
@@ -40,13 +41,14 @@ export function LoginModal({ open, onClose }: LoginModalProps): JSX.Element {
     <Modal
       className="sa-modal--login"
       open={open}
+      dismissible={dismissible}
       title={t('login.title')}
       onClose={onClose}
       footer={
         <div className="sa-login-footer"><div className="sa-login-actions">
-          <button type="button" className="sa-btn" onClick={onClose}>
+          {dismissible && <button type="button" className="sa-btn" onClick={onClose}>
             {t('login.cancel')}
-          </button>
+          </button>}
           <button type="submit" form="sa-login" className="sa-btn sa-btn--primary" disabled={busy}>
             {busy ? t('login.signingIn') : t('login.signIn')}
           </button>
