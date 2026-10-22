@@ -35,7 +35,7 @@ async function install(page:Page,role:'User'|'Tenant'|'System'='User'){
 }
 for(const kind of ['system-prompts','model-configurations'] satisfies LibraryKind[]){
  test(`${kind} management fits and is accessible`,async({page})=>{
-  await install(page);await page.goto('/'+kind);await expect(page.locator('main h1')).toHaveText(kind==='system-prompts'?'System prompts':'Model configurations');
+  await install(page);await page.goto('/'+kind);await expect(page.locator('main h1')).toHaveText(kind==='system-prompts'?'System Prompts':'Model Configurations');
   await expect(page.locator('tbody tr')).not.toHaveCount(0);
   expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
   const violations=(await new AxeBuilder({page}).analyze()).violations.filter(v=>['critical','serious'].includes(v.impact??''));expect(violations).toEqual([]);
