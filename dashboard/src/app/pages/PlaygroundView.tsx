@@ -1,3 +1,4 @@
+import { Icon } from '../Icon';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InfoPopover } from '../../components/ui/InfoPopover';
@@ -124,7 +125,7 @@ export function PlaygroundView(): JSX.Element {
           {mode==='embeddings' && vector && <article className="sa-chat-message"><strong>{t('playground.dimensions')}: {number(vector.length)} — {t('playground.preview')}</strong><pre>{`[${vector.slice(0,12).map(n=>n.toFixed(4)).join(', ')}${vector.length>12?', …':''}]`}</pre></article>}
         </div>
         {error && <p role="alert" className="sa-error">{error}</p>}
-        <form id="sa-chat-form" onInvalidCapture={()=>{const parameters=document.querySelector<HTMLDetailsElement>('.sa-chat-settings');if(parameters)parameters.open=true;}} className="sa-chat-composer" onSubmit={e=>{e.preventDefault();void send();}}><label className="sa-filterbar__field"><textarea rows={1} aria-label={t(mode==='chat'?'playground.prompt':'playground.input')} disabled={busy} value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={t('chat.promptHelp')} onKeyDown={e=>{if(!e.shiftKey && e.key==='Enter'){e.preventDefault();void send();}}}/></label>{busy?<button type="button" className="sa-btn" onClick={()=>controller.current?.abort()}>{t('text.stopGenerating')}</button>:<button className="sa-btn sa-btn--primary" disabled={!model || !prompt.trim()}>{t(mode==='chat'?'playground.send':'playground.embed')}</button>}<small className="sa-chat-warning">{t('chat.warning')}</small></form>
+        <form id="sa-chat-form" onInvalidCapture={()=>{const parameters=document.querySelector<HTMLDetailsElement>('.sa-chat-settings');if(parameters)parameters.open=true;}} className="sa-chat-composer" onSubmit={e=>{e.preventDefault();void send();}}><label className="sa-filterbar__field"><textarea rows={1} aria-label={t(mode==='chat'?'playground.prompt':'playground.input')} disabled={busy} value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder={t('chat.promptHelp')} onKeyDown={e=>{if(!e.shiftKey && e.key==='Enter'){e.preventDefault();void send();}}}/></label>{busy?<button type="button" className="sa-btn sa-btn--icon sa-chat-stop" aria-label={t('text.stopGenerating')} onClick={()=>controller.current?.abort()}><Icon name="stop"/></button>:<button className="sa-btn sa-btn--primary" disabled={!model || !prompt.trim()}>{t(mode==='chat'?'playground.send':'playground.embed')}</button>}<small className="sa-chat-warning">{t('chat.warning')}</small></form>
       </section>
 
     </div>

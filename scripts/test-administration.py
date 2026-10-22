@@ -74,6 +74,11 @@ def main():
             request('GET', '/v1.0/auth/context', headers={}, expected=401)
             context = request('GET', '/v1.0/auth/context')
             check(context['isAdmin'], 'API key receives platform administration context')
+            seeded, _ = login('default', 'admin@sharpai.local', 'password')
+            seeded_context = request('GET', '/v1.0/auth/context', headers=seeded)
+            check(seeded_context['isAdmin'], 'initial password signs in to the default tenant as platform administrator')
+            default_tenant = request('GET', '/v1.0/tenants/default')
+            check(default_tenant['Guid'] == 'default' and default_tenant['IsProtected'], 'seeded tenant has stable protected default ID')
             a = request('POST', '/v1.0/tenants', {'Name': 'Tenant A'})['Guid']
             b = request('POST', '/v1.0/tenants', {'Name': 'Tenant B'})['Guid']
             base = '/v1.0/tenants/' + a

@@ -15,16 +15,22 @@ export function ControlHelp():null {
     const labels=new Map(sources.map(([key,value])=>[t(key),`${key} ${value}`]));
     const identify=(element:HTMLElement):string=>{
       const label=element.closest('label');
-      return element.getAttribute('aria-label') || (label?.querySelector('span')?.textContent) || (element.tagName==='LABEL'?element.querySelector('span')?.textContent:'') || element.textContent?.trim() || '';
+      return element.getAttribute('aria-label') || (label?.querySelector('span')?.textContent || label?.textContent?.trim()) || (element.tagName==='LABEL'?element.querySelector('span')?.textContent:'') || element.textContent?.trim() || '';
     };
     const apply=():void=>{
       document.querySelectorAll<HTMLElement>('button,label,legend,dt,th,select,input,textarea,summary,a,meter,[role=menuitem],.sa-kpi__label,.sa-detail-tokens span,.sa-detail-timings span').forEach(element=>{
         if(element instanceof HTMLInputElement && element.type==='hidden')return;
+        // Form authors own explicit help. Do not overwrite it with a label heuristic.
+        const setting=element.closest<HTMLElement>('label[data-setting-path]');
+        if(setting?.title){element.title=setting.title;delete element.dataset.autoHelp;return;}
+        if(element.title && !element.dataset.autoHelp && element.title!==identify(element) && !element.classList.contains('sa-copy-button'))return;
         const label=identify(element);
         const semantic=(labels.get(label)||label)+' '+(element.getAttribute('data-help')||'');
         let kind='text';
         if(element.tagName==='METER')kind='timing';
         else if(element.tagName==='SUMMARY' && element.closest('.sa-chat-settings'))kind='sampling';
+        else if(element.tagName==='LEGEND' && element.closest('fieldset[data-setting-path]')){element.title=element.closest<HTMLElement>('fieldset[data-setting-path]')!.title;return;}
+        else if(element.tagName==='DT' && !element.closest('.sa-payload-fields'))kind='readonly';
         else if(element.matches('.sa-kpi__label,.sa-detail-tokens span,.sa-detail-timings span'))kind='readonly';
         else if(/stopGenerating|stop generating/i.test(semantic))kind='stopGeneration';
         else if(element.tagName==='TEXTAREA' && window.location.pathname==='/api-explorer')kind='requestBody';
@@ -40,7 +46,19 @@ export function ControlHelp():null {
           else if(key==='actions')kind='inspect';
           else kind='column';
         }
+        else if(element.closest('.sa-http-headers'))kind='headers';
         else if(element.closest('.sa-payload-fields'))kind='body';
+        else if(element.matches('a[href]'))kind='navigate';
+        else if(element.closest('.sa-settings-fields') && element.tagName==='BUTTON')kind=element.dataset.help==='delete'?'listRemove':element.dataset.help==='create'?'listAdd':'save';
+        else if(element.tagName==='LABEL' && element.querySelector('textarea') && window.location.pathname==='/api-explorer')kind='requestBody';
+        else if(window.location.pathname==='/api-explorer' && /apiExplorer\.(send|sending)/.test(semantic))kind='save';
+        else if(/chat\.clear\b/.test(semantic))kind='clearConversation';
+        else if(/models\.unload\b/.test(semantic))kind='unload';
+        else if(/playground\.chat\b/.test(semantic))kind='chatMode';
+        else if(/playground\.embeddings\b/.test(semantic))kind='embeddingMode';
+        else if(/admin\.platformAdmin\b/.test(semantic))kind='platformAdmin';
+        else if(/admin\.tenantAdmin\b/.test(semantic))kind='tenantAdmin';
+        else if(element.closest('.sa-admin-form') && /login\.email\b/.test(semantic))kind='text';
         else if(/refresh|reload/i.test(semantic))kind='refresh';
         else if(/pull|download/i.test(semantic))kind='download';
         else if(/copy|copied/i.test(semantic))kind='copy';
@@ -48,7 +66,7 @@ export function ControlHelp():null {
         else if(/save|submit|apply/i.test(semantic))kind='save';
         else if(/cancel|close/i.test(semantic))kind='cancel';
         else if(/\b(create|add|new conversation)\b/i.test(semantic))kind='create';
-        else if(/sign.?in|email/i.test(semantic))kind='signin';
+        else if(/sign.?in|login\.(email|password|tenant)/i.test(semantic))kind='signin';
         else if(/sign.?out/i.test(semantic))kind='signout';
         else if(/password|secret|api.?key|signing.?key/i.test(semantic) || element.getAttribute('type')==='password')kind='secret';
         else if(/theme|dark|light|language/i.test(semantic))kind='preferences';
@@ -70,7 +88,7 @@ export function ControlHelp():null {
         else if(/model/i.test(semantic))kind='model';
         else if(/details|inspect|view|effective|telemetry|actions|more/i.test(semantic))kind='inspect';
         else if(/edit|reset/i.test(semantic))kind='edit';
-        else if(/id|guid|key/i.test(semantic))kind='id';
+        else if(/\bid\b|guid|identifier/i.test(semantic))kind='id';
         else if(element.tagName==='A')kind='navigate';
         else if(element.tagName==='TH' || element.tagName==='DT')kind='column';
         else if(element.tagName==='SELECT' || element.querySelector('select'))kind='select';

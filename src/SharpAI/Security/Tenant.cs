@@ -12,7 +12,7 @@ namespace SharpAI.Security
         #region Public-Members
 
         /// <summary>
-        /// Tenant identifier (prefix "ten_").
+        /// Tenant identifier (prefix "ten_", or "default" for the seeded default tenant).
         /// </summary>
         public string Guid { get; set; } = IdGenerator.GenerateTenantId();
 

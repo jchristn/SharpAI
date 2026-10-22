@@ -380,3 +380,68 @@ test('streamed history reconstructs readable output and preserves frame inspecti
  await page.getByText('Inspect captured stream frames (2)',{exact:true}).click();
  await expect(page.getByRole('dialog')).toContainText('done');
 });
+
+test('settings provider choices preserve connections and compact syslog has real gutters',async({page})=>{
+ await page.route('**/api/settings',route=>route.fulfill({json:{...configuration,Database:{Type:'Sqlite',Filename:'./sharpai.db',Hostname:'db.internal',Port:0,DatabaseName:'sharpai',Username:'dbuser',Password:''},Logging:{Servers:[{Hostname:'127.0.0.1',Port:514,RandomizePorts:false,MinimumPort:65000,MaximumPort:65535}],LogDirectory:'./logs/',LogFilename:'sharpai.log',MinimumSeverity:0},Rest:{Headers:{DefaultHeaders:{'Access-Control-Allow-Origin':'*'}}},Telemetry:{OtlpProtocol:'grpc'}}}));
+ await page.goto('/settings');
+ const database=page.locator('fieldset[data-setting-path="Database"]');
+ await expect(database.getByRole('combobox',{name:'Type',exact:true})).toHaveValue('Sqlite');
+ await expect(database.getByLabel('Filename',{exact:true})).toBeVisible();
+ await expect(database.getByLabel('Hostname',{exact:true})).toHaveCount(0);
+ await database.getByRole('combobox',{name:'Type',exact:true}).selectOption('Postgresql');
+ await expect(database.getByLabel('Filename',{exact:true})).toHaveCount(0);
+ await expect(database.getByLabel('Hostname',{exact:true})).toHaveValue('db.internal');
+ await expect(database.getByLabel('Port',{exact:true})).toHaveAttribute('title',/5432/);
+ await database.getByRole('combobox',{name:'Type',exact:true}).selectOption('Sqlite');
+ await expect(database.getByLabel('Filename',{exact:true})).toHaveValue('./sharpai.db');
+ await expect(page.locator('.sa-syslog-row').getByRole('combobox',{name:'Randomize Ports',exact:true})).toHaveAttribute('title',/destination port/);
+ const logging=page.locator('fieldset[data-setting-path="Logging"]');
+ const syslogInputs=await logging.locator('.sa-syslog-row input,.sa-syslog-row select').evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};}));
+ for(let i=0;i<syslogInputs.length;i++)for(let j=i+1;j<syslogInputs.length;j++)if(Math.abs(syslogInputs[i].y-syslogInputs[j].y)<4)expect(Math.abs(syslogInputs[j].x-syslogInputs[i].x)).toBeGreaterThanOrEqual(Math.min(syslogInputs[i].width,syslogInputs[j].width)+8);
+ await expect(logging.getByRole('combobox',{name:'Minimum Severity'})).toHaveValue('0');
+ await expect(logging.getByRole('combobox',{name:'Minimum Severity'})).toHaveAttribute('title',/0 debug/);
+ const dir=await logging.getByLabel('Log Directory',{exact:true}).boundingBox();
+ const file=await logging.getByLabel('Log Filename',{exact:true}).boundingBox();
+ expect(dir && file && (file.y>=dir.y+dir.height+8 || file.x>=dir.x+dir.width+8)).toBeTruthy();
+ if(test.info().project.name.startsWith('desktop')) {
+  const row=logging.locator('.sa-syslog-row');
+  const host=await row.getByLabel('Hostname',{exact:true}).boundingBox();
+  const port=await row.getByLabel('Port',{exact:true}).boundingBox();
+  const min=await row.getByLabel('Minimum Port',{exact:true}).boundingBox();
+  const trash=await row.getByRole('button').boundingBox();
+  expect(Math.abs(host!.y-port!.y)).toBeLessThan(2);expect(min!.y).toBeGreaterThan(host!.y);
+  expect(Math.abs(trash!.y+trash!.height-min!.y-min!.height)).toBeLessThan(3);
+ }
+ await logging.scrollIntoViewIfNeeded();
+ await page.screenshot({path:`test-results/screenshots/${test.info().project.name}-compact-settings.png`,fullPage:true});
+});
+
+test('history retains raw request whitespace and copies headers as JSON',async({page})=>{
+ const row={Id:'req-raw-copy',Method:'POST',Path:'/api/chat',StatusCode:200,DurationMs:20,CreatedUtc:'2026-10-21T12:00:00Z'};
+ const raw='{ "messages": [\n  {"role":"user", "content":"hello"}\n] }';
+ await page.route('**/v1.0/api/request-history**',route=>route.fulfill({json:route.request().url().includes('/summary')?{TotalCount:1,Buckets:[]}:route.request().url().includes('/req-raw-copy')?{...row,RequestHeaders:{'content-type':'application/json','x-secret':'[redacted]'},ResponseHeaders:{'content-type':'application/json'},RequestBody:raw,ResponseBody:'{"message":"hello"}'}:{Objects:[row],TotalCount:1}}));
+ await page.addInitScript(()=>Object.defineProperty(navigator,'clipboard',{value:{writeText:async(text:string)=>{(window as unknown as {copied:string}).copied=text;}}}));
+ await page.goto('/request-history');await page.getByRole('cell',{name:'/api/chat',exact:true}).click();
+ const request=page.getByRole('dialog').locator('.sa-detail-exchange > section').first();
+ expect(await request.locator(':scope > pre').textContent()).toBe(raw);
+ await request.locator('.sa-payload-heading').first().getByRole('button').click();
+ await expect.poll(()=>page.evaluate(()=>(window as unknown as {copied:string}).copied)).toBe(JSON.stringify({'content-type':'application/json','x-secret':'[redacted]'},null,2));
+ await expect(request.locator('.sa-copy-button--copied')).toHaveCount(1);
+});
+
+test('playground uses a red square stop control and content-sized replies',async({page})=>{
+ let release:()=>void=()=>{};
+ const pending=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/api/tags',route=>route.fulfill({json:{models:[{name:'test-model'}]}}));
+ await page.route('**/api/chat',async route=>{await pending;await route.fulfill({contentType:'application/x-ndjson',body:'{"message":{"content":"Hi!"},"done":true}\n'});});
+ await page.goto('/playground');await page.locator('.sa-chat-settings summary').click();
+ await expect(page.getByLabel('Stream response',{exact:true})).toHaveAttribute('title',/tokens as they arrive/);
+ await page.getByLabel('Prompt',{exact:true}).fill('Hello');await page.getByRole('button',{name:'Send',exact:true}).click();
+ const stop=page.getByRole('button',{name:'Stop generating',exact:true});await expect(stop).toBeVisible();
+ await expect(stop.locator('rect')).toHaveAttribute('fill','currentColor');
+ await page.mouse.move(0,0);await expect.poll(()=>stop.evaluate(node=>getComputedStyle(node).backgroundColor)).toBe('rgb(198, 40, 40)');
+ release();await expect(page.locator('.sa-chat-message--assistant')).toContainText('Hi!');
+ const bubble=await page.locator('.sa-chat-message--assistant').boundingBox();
+ const chat=await page.locator('.sa-chat-messages').boundingBox();
+ expect(bubble!.width).toBeLessThan(chat!.width-30);
+});

@@ -38,7 +38,7 @@ namespace SharpAI.Server
         #region Private-Members
 
         private static string _Header = "[SharpAI] ";
-        private static string _Version = "2.0.0";
+        private static string _Version = "4.0.1";
         private static Serializer _Serializer = new Serializer();
         private static Settings _Settings = null;
         private static LoggingModule _Logging = null;
@@ -227,6 +227,7 @@ namespace SharpAI.Server
                 {
                     tenant = _Database.Tenants.Create(new SharpAI.Security.Tenant
                     {
+                        Guid = "default",
                         Name = "default",
                         IsProtected = true
                     });
@@ -236,7 +237,7 @@ namespace SharpAI.Server
                 SharpAI.Security.User admin = _Database.Users.GetByEmail(tenant.Guid, "admin@sharpai.local");
                 if (admin == null)
                 {
-                    string initialPassword = Guid.NewGuid().ToString("N").Substring(0, 16);
+                    string initialPassword = "password";
                     _Database.Users.Create(new SharpAI.Security.User
                     {
                         TenantGuid = tenant.Guid,
@@ -251,7 +252,7 @@ namespace SharpAI.Server
 
                     SharpAI.Logging.JsonLog.Warn(_Logging,
                         _Header + "seeded default administrator 'admin@sharpai.local' with initial password '" +
-                        initialPassword + "' — change it after first login (this is shown only once)");
+                        initialPassword + "' - change it after first login (this is shown only once)");
                 }
             }
             catch (Exception ex)

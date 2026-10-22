@@ -223,7 +223,7 @@
         #region Private-Members
 
         private string _SchemaVersion = "2.0.0";
-        private string _SoftwareVersion = "unknown";
+        private string _SoftwareVersion = "4.0.1";
         private LoggingSettings _Logging = new LoggingSettings();
         private StorageSettings _Storage = new StorageSettings();
         private DatabaseSettings _Database = new DatabaseSettings(Constants.DatabaseFile);

@@ -252,3 +252,42 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-table__wrap {max-width:100%;min-width:0;}.sa-copy{max-width:100%;}.sa-copy__id{white-space:nowrap;}.sa-admin-scope>label{min-width:0;max-width:100%;}
 
 .sa-copy-button {position:relative;}
+
+/* Settings use an actual grid so adjacent inputs always have a gutter. */
+.sa-settings-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;align-items:start;}
+.sa-settings-grid > .sa-settings-section {grid-column:1/-1;margin:0;}
+.sa-settings-grid > .sa-setting-field {width:auto;margin:0;min-width:0;}
+.sa-settings-grid > .sa-setting-field label {min-width:0;}
+.sa-settings-section > .sa-page-description {margin-bottom:10px;}
+.sa-settings-grid .sa-array-row {margin-bottom:8px;padding:10px;}
+.sa-syslog-row {display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;}
+.sa-syslog-row .sa-syslog-grid {grid-template-columns:repeat(3,minmax(0,1fr));grid-column:1/-1;}
+.sa-syslog-grid [data-field=MinimumPort],.sa-syslog-grid [data-field=MaximumPort] {grid-row:2;}
+.sa-syslog-row > button {grid-column:2;grid-row:1;align-self:end;margin-bottom:0;}
+.sa-syslog-row {position:relative;padding-inline-end:48px!important;}
+.sa-syslog-row > button {position:absolute;inset-inline-end:10px;bottom:10px;}
+.sa-dictionary-row {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;gap:12px;align-items:center;margin-bottom:8px;}
+.sa-dictionary-row label {display:flex;flex-direction:row;align-items:center;gap:8px;min-width:0;}
+.sa-dictionary-row label > span {flex:0 0 auto;}
+.sa-dictionary-row input {min-width:0;width:100%;}
+.sa-chat-stop {background:#c62828!important;color:#fff!important;border-color:#c62828!important;}
+.sa-chat-stop:hover {background:#a51f1f!important;}
+.sa-chat-message {width:fit-content;max-width:100%;min-width:140px;flex:0 0 auto;align-self:flex-start;}
+.sa-chat-message--user {align-self:flex-end;margin-inline-start:8%;}
+.sa-chat-message--assistant {margin-inline-end:3%;}
+.sa-detail-metadata > div {display:flex;align-items:baseline;gap:8px;min-width:0;}
+.sa-detail-metadata dt {flex:0 0 auto;}
+.sa-detail-metadata dd {margin:0;min-width:0;}
+.sa-detail-exchange .sa-payload-fields > div {display:grid;grid-template-columns:minmax(110px,auto) minmax(0,1fr);gap:12px;align-items:baseline;border-bottom:1px solid var(--sa-border);padding:5px 0;}
+.sa-detail-exchange .sa-payload-fields dd {margin:0;}
+@media(max-width:760px) {
+ .sa-settings-grid {grid-template-columns:1fr;}
+ .sa-dictionary-row {grid-template-columns:minmax(0,1fr) auto;}
+ .sa-dictionary-row label {grid-column:1;}
+ .sa-dictionary-row button {grid-column:2;grid-row:1/3;}
+ .sa-detail-metadata {grid-template-columns:1fr;}
+}
+@media(max-width:500px) {.sa-syslog-row .sa-syslog-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.sa-syslog-grid [data-field=MinimumPort],.sa-syslog-grid [data-field=MaximumPort]{grid-row:auto;}.sa-dictionary-row label{flex-direction:column;align-items:stretch;gap:3px;}}
+.sa-settings-fields .sa-filterbar__field input,.sa-settings-fields .sa-filterbar__field select {min-width:0;width:100%;box-sizing:border-box;}
+.sa-chat-message--user {max-width:92%;margin-inline-start:0;}
+.sa-chat-message--assistant {max-width:97%;margin-inline-end:0;}

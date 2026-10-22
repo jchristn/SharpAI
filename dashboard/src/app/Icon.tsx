@@ -16,6 +16,7 @@ const paths: Record<string, ReactNode> = {
   '/assignments': <><path d="M3 6h8m-8 6h8m-8 6h8m4-6h6m-3-3 3 3-3 3"/></>,
   '/sessions': <><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></>,
   '/audit': <><path d="M5 3h14v18H5zM8 7h8m-8 5h8m-8 5h5"/></>,
+  stop: <rect x="6" y="6" width="12" height="12" fill="currentColor" stroke="none"/>,
   refresh: <><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6 7a7 7 0 0 1 12-2l2 3M4 16l2 3a7 7 0 0 0 12-2"/></>,
   download: <><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></>,
   copy: <><rect x="8" y="8" width="13" height="13" rx="1"/><path d="M16 8V3H3v13h5"/></>,

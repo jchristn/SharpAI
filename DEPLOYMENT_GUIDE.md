@@ -590,11 +590,11 @@ are additional tunables; the defaults are safe for a single-GPU or CPU host.
 
 Authentication is off by default (`Auth.Enabled: false`), so local dashboard access does not require signing in.
 On the first start with an initialized metadata database, SharpAI creates the `default` tenant and
-`admin@sharpai.local`. Its random initial password is printed once in the server log. From the repository root,
-find the original entry with `rg "seeded default administrator" docker/logs/`. If that log has rotated away,
-the password cannot be recovered from the database hash.
+`admin@sharpai.local` with the initial password `password`. The seeded tenant ID is `default`.
+Existing accounts keep their saved password; startup does not reset credentials. Change the initial password
+under **Access → Users** after signing in. Passwords are stored as hashes and cannot be recovered.
 
-Leave the dashboard's Tenant field blank for the default tenant. Manage accounts in **Administration → Users**,
+Leave the dashboard's Tenant field blank for the default tenant. Manage accounts in **Access → Users**,
 tenant organizations in **Tenants**, integration keys in **Credentials**, and RBAC through **Roles**,
 **Permissions**, and **Assignments**. Select the tenant before managing its records. See
 [Dashboard administration](docs/DASHBOARD_ADMINISTRATION.md) for the complete workflow. The API also creates users through
