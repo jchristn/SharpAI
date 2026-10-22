@@ -1,7 +1,7 @@
 import { LibrarySelectors } from './LibrarySelectors';
 import { defaultGeneration, generationRequest } from '../../api/library';
 import { Icon } from '../Icon';
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { InfoPopover } from '../../components/ui/InfoPopover';
 import { ApiError } from '../../api/ApiClient';
@@ -33,8 +33,9 @@ export function PlaygroundView(): JSX.Element {
   const [libraryReady,setLibraryReady]=useState(false);
   const streaming=configuration.StreamResponse;
   const [quip,setQuip]=useState(0);
+  const ownerRef=useRef(api);useLayoutEffect(()=>{ownerRef.current=api;},[api]);
   const [owner,setOwner]=useState(api);
-  if(owner!==api){setOwner(api);setMessages([]);setSystem('');setConfiguration(defaultGeneration());setLibraryReady(false);}
+  if(owner!==api){setOwner(api);setMessages([]);setSystem('');setConfiguration(defaultGeneration());setLibraryReady(false);setBusy(false);setPrompt('');setVector(null);setError(null);}
   useEffect(()=>{if(!busy)return;const interval=window.setInterval(()=>setQuip(current=>(current+1)%6),4000);return ()=>window.clearInterval(interval);},[busy]);
   useEffect(() => {
     void api.listModels().then((value) => {
@@ -47,6 +48,7 @@ export function PlaygroundView(): JSX.Element {
   const number = (n:number) => new Intl.NumberFormat(i18n.language,{maximumFractionDigits:2}).format(n);
   const send = async (): Promise<void> => {
     if (!model || !prompt.trim() || busy || (mode==='chat'&&!libraryReady)) return;
+    const requestClient=api;
     controller.current = new AbortController();
     setBusy(true); setQuip(current=>(current+1+Math.floor(Math.random()*5))%6); setError(null); setVector(null);
     const form = document.getElementById('sa-chat-form') as HTMLFormElement | null;
@@ -58,12 +60,13 @@ export function PlaygroundView(): JSX.Element {
     let response = '';
     let stats: Metrics = {elapsed:0};
     let done=false;
-    const timer=mode==='chat'?window.setInterval(()=>setMessages([...conversation,{role:'assistant',content:response,metrics:{...stats,elapsed:performance.now()-started}}]),200):undefined;
+    const timer=mode==='chat'?window.setInterval(()=>{if(ownerRef.current===requestClient)setMessages([...conversation,{role:'assistant',content:response,metrics:{...stats,elapsed:performance.now()-started}}]);},200):undefined;
     if(mode==='chat') {setMessages([...conversation,{role:'assistant',content:'',metrics:stats}]);setPrompt('');}
     try {
       if (mode === 'chat') {
         const request={model,messages:[...(system.trim() ? [{role:'system',content:system}] : []),...conversation.map(({role,content})=>({role,content}))],...generationRequest(configuration)};
         const receive = (event:unknown):void => {
+          if(ownerRef.current!==requestClient)return;
           const record = event as Record<string,unknown>;
           if(record.done===true) done=true;
           if(record.error) throw new Error(String(record.error));
@@ -83,14 +86,16 @@ export function PlaygroundView(): JSX.Element {
       } else {
         const result=await api.embeddings({model,input},controller.current.signal);
         const record=result as {embedding?:number[];embeddings?:number[][]};
-        setVector(record.embedding ?? record.embeddings?.[0] ?? null);
+        if(ownerRef.current===requestClient)setVector(record.embedding ?? record.embeddings?.[0] ?? null);
       }
     } catch (err) {
-      if (!(err instanceof DOMException && err.name==='AbortError')) setError(err instanceof ApiError ? `${err.status}: ${err.message}` : err instanceof Error ? err.message : t('playground.failed'));
+      if (ownerRef.current===requestClient && !(err instanceof DOMException && err.name==='AbortError')) setError(err instanceof ApiError ? `${err.status}: ${err.message}` : err instanceof Error ? err.message : t('playground.failed'));
     } finally {
       window.clearInterval(timer);
-      if(mode==='chat') setMessages([...conversation,{role:'assistant',content:response,metrics:{...stats,elapsed:performance.now()-started}}]);
-      setBusy(false);
+      if(ownerRef.current===requestClient){
+        if(mode==='chat') setMessages([...conversation,{role:'assistant',content:response,metrics:{...stats,elapsed:performance.now()-started}}]);
+        setBusy(false);
+      }
     }
   };
   return <div className="sa-playground-page">

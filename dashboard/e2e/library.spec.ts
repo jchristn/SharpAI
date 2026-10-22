@@ -100,3 +100,23 @@ test('opting out of saved defaults persists and sends genuine engine defaults',a
  await page.reload();await expect(page.getByRole('combobox',{name:'Model configuration',exact:true})).toHaveValue('');await page.getByLabel('Prompt',{exact:true}).fill('Hello');await page.getByRole('button',{name:'Send',exact:true}).click();await expect(page.getByText('Done',{exact:true})).toBeVisible();
  expect(submitted.messages).toEqual([{role:'user',content:'Hello'}]);expect(submitted.options).toEqual({display_thinking:false});expect(submitted.stream).toBe(true);
 });
+
+test('expired stored sessions recover without leaving the library stuck',async({page})=>{
+ await install(page);
+ await page.addInitScript(()=>localStorage.setItem('sharpai.session',JSON.stringify({token:'expired',userId:'old-user',tenantId:'tenant-a'})));
+ await page.route('**/v1.0/library-context',route=>route.request().headers().authorization?route.fulfill({status:401,json:{Message:'Session expired'}}):route.fulfill({json:{IsAdmin:true,IsTenantAdmin:false,TenantId:'tenant-a'}}));
+ await page.goto('/system-prompts');await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Create',exact:true})).toBeEnabled();
+ expect(await page.evaluate(()=>localStorage.getItem('sharpai.session'))).toBeNull();
+});
+
+test('signing out during generation cannot restore the previous account conversation',async({page})=>{
+ await install(page);await page.addInitScript(()=>localStorage.setItem('sharpai.session',JSON.stringify({token:'valid',userId:'user-a',tenantId:'tenant-a'})));
+ await page.route('**/v1.0/token',route=>route.fulfill({json:{revoked:true}}));
+ let release:()=>void=()=>{};const hold=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/api/chat',async route=>{await hold;try{await route.fulfill({json:{message:{content:'Old private reply'},done:true}});}catch{/* The old request is cancelled when its identity changes. */}});
+ await page.goto('/playground');await page.getByLabel('Prompt',{exact:true}).fill('Sensitive old turn');await page.getByRole('button',{name:'Send',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Stop generating',exact:true})).toBeVisible();await page.getByRole('button',{name:'Sign out',exact:true}).click();await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeVisible();
+ release();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await expect(page.locator('.sa-chat-message')).toHaveCount(0);await expect(page.getByText('Old private reply',{exact:true})).toHaveCount(0);
+});

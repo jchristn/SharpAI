@@ -61,7 +61,14 @@ export function AuthProvider({ baseUrl, children }: AuthProviderProps): JSX.Elem
   );
 
   const client = useMemo(
-    () => new ApiClient(baseUrl, credentials, () => i18n.language),
+    () => new ApiClient(baseUrl, credentials, () => i18n.language, () => {
+      if(credentials.kind!=='bearer')return;
+      const rejectedToken=credentials.token;
+      setSession(current=>{
+        if(current?.token!==rejectedToken)return current;
+        saveSession(null);return null;
+      });
+    }),
     [baseUrl, credentials],
   );
 

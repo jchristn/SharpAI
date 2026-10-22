@@ -37,11 +37,13 @@ export class ApiClient {
   private baseUrl: string;
   private credentials: Credentials;
   private getLocale?: () => string;
+  private onUnauthorized?: () => void;
 
-  constructor(baseUrl: string, credentials: Credentials = { kind: 'none' }, getLocale?: () => string) {
+  constructor(baseUrl: string, credentials: Credentials = { kind: 'none' }, getLocale?: () => string, onUnauthorized?: () => void) {
     this.baseUrl = baseUrl.replace(/\/+$/, '');
     this.credentials = credentials;
     this.getLocale = getLocale;
+    this.onUnauthorized = onUnauthorized;
   }
 
   private localeHeader(): Record<string, string> {
@@ -99,6 +101,7 @@ export class ApiClient {
     }
 
     const response = await fetch(this.buildUrl(path, options?.query), { method, headers, body, signal:options?.signal });
+    if(response.status===401 && !(method==='POST'&&path==='/v1.0/token'))this.onUnauthorized?.();
     const text = await response.text();
     let parsed: unknown;
     try {

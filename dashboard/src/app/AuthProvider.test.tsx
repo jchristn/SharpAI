@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import {useApi} from './ApiProvider';
 import { AuthProvider, useAuth } from './AuthProvider';
 
 describe('AuthProvider', () => {
@@ -27,6 +28,23 @@ describe('AuthProvider', () => {
   it('starts unauthenticated', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
     expect(result.current.isAuthenticated).toBe(false);
+  });
+
+  it('clears only a rejected stored session so library requests can recover after redeployment', async()=>{
+    localStorage.setItem('sharpai.session',JSON.stringify({token:'stale',userId:'user-old',tenantId:'default'}));
+    globalThis.fetch=vi.fn().mockResolvedValue({ok:false,status:401,statusText:'Unauthorized',text:async()=>JSON.stringify({Message:'Expired'})}) as unknown as typeof fetch;
+    const {result}=renderHook(()=>({auth:useAuth(),api:useApi()}),{wrapper});
+    await act(async()=>{await expect(result.current.api.libraryContext()).rejects.toThrow();});
+    await waitFor(()=>expect(result.current.auth.isAuthenticated).toBe(false));expect(localStorage.getItem('sharpai.session')).toBeNull();
+  });
+
+  it('an old request cannot clear a newer sign-in session',async()=>{
+    localStorage.setItem('sharpai.session',JSON.stringify({token:'old',userId:'user-old',tenantId:'default'}));
+    const {result}=renderHook(()=>({auth:useAuth(),api:useApi()}),{wrapper});const old=result.current.api;
+    await act(async()=>{await result.current.auth.login('admin@sharpai.local','pw');});
+    globalThis.fetch=vi.fn().mockResolvedValue({ok:false,status:401,statusText:'Unauthorized',text:async()=>JSON.stringify({Message:'Expired'})}) as unknown as typeof fetch;
+    await act(async()=>{await expect(old.libraryContext()).rejects.toThrow();});
+    expect(result.current.auth.session?.token).toBe('tok123');
   });
 
   it('logs in, persists the session, then clears on logout', async () => {
