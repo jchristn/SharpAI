@@ -13,6 +13,7 @@ for (const path of ['/', '/settings', '/access/users', '/playground']) {
       return route.continue();
     });
     await page.goto(path);
+    await expect(page).toHaveURL(/\/sign-in$/);
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText('admin@sharpai.local', {exact:true})).toBeVisible();
@@ -49,7 +50,7 @@ for (const section of ['api','inference','embeddings']) {
     expect(methodHeight).toBe(32);
     expect(controls.every(height => height === methodHeight)).toBe(true);
     await expect(page.locator('.sa-sidebar__brand img')).toHaveAttribute('src','/images/sharp-logo.svg');
-    const iconSizes=await page.locator('.sa-topbar__actions svg').evaluateAll(elements=>elements.map(element=>({width:element.getBoundingClientRect().width,height:element.getBoundingClientRect().height})));
+    const iconSizes=await page.locator('.sa-topbar__actions svg:not(.sa-utility-icon)').evaluateAll(elements=>elements.map(element=>({width:element.getBoundingClientRect().width,height:element.getBoundingClientRect().height})));
     expect(iconSizes.length).toBeGreaterThanOrEqual(3);
     expect(iconSizes.every(size=>size.width===24 && size.height===24)).toBe(true);
   });
@@ -72,4 +73,27 @@ test('sign-in fits short viewports without an internal scrollbar', async ({page}
     await dialog.locator('summary').click();
     expect(await dialog.locator('.sa-modal__body').evaluate(element=>getComputedStyle(element).overflowY)).toBe('visible');
   }
+});
+
+
+test('sign-out opens the sign-in form at its own URL and removes identity chrome', async ({page}) => {
+  await page.route('**/api/**',route=>route.fulfill({json:{}}));
+  await page.route('**/v1.0/**',route=>route.fulfill({json:{}}));
+  await authenticatedPage(page);
+  await page.route('**/v1.0/auth/context',route=>route.fulfill({json:{isAdmin:false,tenantId:'tenant-a',userId:'user-a',capabilities:{}}}));
+  await page.goto('/playground');
+  const signOut=page.getByRole('button',{name:'Sign out',exact:true});
+  await expect(signOut).toBeVisible();
+  await expect(signOut.locator('svg')).toBeVisible();
+  expect(await signOut.innerText()).toBe('');
+  await expect(page.locator('.sa-topbar__actions')).not.toContainText('user-a');
+  await signOut.click();
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('textbox',{name:'Email',exact:true})).toBeVisible();
+  await expect(page.locator('.sa-app')).toHaveCount(0);
+  expect(await page.evaluate(()=>localStorage.getItem('sharpai.session'))).toBeNull();
+  await page.evaluate(()=>{history.pushState({},'', '/settings');window.dispatchEvent(new PopStateEvent('popstate'));});
+  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page.locator('.sa-app')).toHaveCount(0);
 });

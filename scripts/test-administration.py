@@ -78,6 +78,18 @@ def main():
             request('GET', '/v1.0/system-prompts', headers={}, expected=401)
             for protected in ['/api/tags','/v1/models','/metrics','/openapi.json','/swagger','/','/health-extra','/v1.0/token-extra','/v1.0/token']:
                 request('GET', protected, headers={}, expected=401)
+            # Every API family must challenge before parsing a request or checking RBAC.
+            protected_operations = [
+                {'method':'GET','path':'/v1.0/tenants'},
+                {'method':'POST','path':'/api/chat'},
+                {'method':'POST','path':'/api/generate'},
+                {'method':'POST','path':'/api/embed'},
+                {'method':'POST','path':'/v1/chat/completions'},
+                {'method':'POST','path':'/v1/embeddings'},
+            ]
+            for operation in protected_operations:
+                for authentication in [{}, {'Authorization':'Bearer invalid'}, {'x-token':'invalid'}]:
+                    request(operation['method'],operation['path'],headers=authentication,expected=401)
             bootstrap_path = runtime / 'auth/default-bearer-token'
             bootstrap_token = bootstrap_path.read_text().strip()
             bootstrap_auth = {'Authorization': 'Bearer ' + bootstrap_token}
@@ -250,6 +262,8 @@ def main():
             request('GET', '/v1/models', headers=user_auth)
             request('PUT', base + '/credentials/' + cred['guid'], {'Name': 'Disabled integration', 'Active': False})
             request('GET', '/v1/models', headers=credential_auth, expected=401)
+            for operation in protected_operations:
+                request(operation['method'],operation['path'],headers=credential_auth,expected=401)
             sessions = request('GET', base + '/sessions')['Objects']
             check(old_token not in json.dumps(sessions), 'Session inspection has no bearer token material')
             session = next(item for item in sessions if item['UserGuid'] == user['Guid'])

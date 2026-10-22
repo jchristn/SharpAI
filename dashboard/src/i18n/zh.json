@@ -848,7 +848,10 @@
     "platformAdmin": "授予平台范围管理员权限，绕过租户边界和 RBAC 检查。",
     "tenantAdmin": "授予该用户所在租户的管理员权限，绕过该租户 RBAC 检查。",
     "pagination": "浏览当前结果或更改每页行数，保留筛选条件和租户选择。",
-    "embeddingText": "发送到所选嵌入模型以生成数值向量的文本，不发送对话轮次或聊天采样参数。"
+    "embeddingText": "发送到所选嵌入模型以生成数值向量的文本，不发送对话轮次或聊天采样参数。",
+    "revealCredential": "获取并显示此凭据的密钥。此授权操作将记录在审计日志中。",
+    "hideCredential": "隐藏显示的密钥，但不撤销凭据。",
+    "rotateCredential": "立即替换密钥；现有集成必须使用新令牌。"
   },
   "details": {
     "CreatedUtc": "开始（UTC）",

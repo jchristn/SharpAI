@@ -848,7 +848,10 @@
     "platformAdmin": "Grant platform-wide administrator access, bypassing tenant boundaries and RBAC checks.",
     "tenantAdmin": "Grant administrator access within this user’s tenant, bypassing that tenant’s RBAC checks.",
     "pagination": "Move through this result set or change rows per page. The current filters and tenant selection stay in effect.",
-    "embeddingText": "Text sent to the selected embedding model to produce a numeric vector. Conversation turns and chat sampling parameters are not sent."
+    "embeddingText": "Text sent to the selected embedding model to produce a numeric vector. Conversation turns and chat sampling parameters are not sent.",
+    "revealCredential": "Retrieve and display this credential’s secret. This authorized action is audited.",
+    "hideCredential": "Conceal the displayed secret without revoking the credential.",
+    "rotateCredential": "Replace this secret immediately; existing integrations must use the new token."
   },
   "details": {
     "CreatedUtc": "Started (UTC)",

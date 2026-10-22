@@ -160,7 +160,8 @@ test('login submits on Enter and sign out clears identity', async ({ page }) => 
   await page.getByRole('dialog').getByLabel('Password', { exact: true }).fill('test-password');
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByText('test-operator')).toBeVisible();
+  await expect(page.locator('.sa-topbar__actions')).not.toContainText('test-operator');
+  await expect(page).toHaveURL(/\/$/);
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expect(page.getByText('test-operator')).toHaveCount(0);
 });

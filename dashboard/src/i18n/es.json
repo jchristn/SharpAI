@@ -848,7 +848,10 @@
     "platformAdmin": "Concede administración global, omitiendo límites de tenant y RBAC.",
     "tenantAdmin": "Concede administración dentro del tenant del usuario, omitiendo su RBAC.",
     "pagination": "Recorre los resultados o cambia filas por página; conserva filtros y tenant.",
-    "embeddingText": "Texto enviado al modelo de embeddings para producir un vector; no envía conversación ni parámetros de chat."
+    "embeddingText": "Texto enviado al modelo de embeddings para producir un vector; no envía conversación ni parámetros de chat.",
+    "revealCredential": "Recuperar y mostrar el secreto de esta credencial. Esta acción autorizada queda auditada.",
+    "hideCredential": "Ocultar el secreto mostrado sin revocar la credencial.",
+    "rotateCredential": "Reemplazar el secreto inmediatamente; las integraciones deben usar el nuevo token."
   },
   "details": {
     "CreatedUtc": "Inicio (UTC)",

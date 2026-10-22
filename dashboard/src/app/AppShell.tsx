@@ -42,7 +42,7 @@ export function AppShell({ nav, serverUrl, version, children }: AppShellProps): 
   const {access} = useAdministration();
   const visibleNav = nav.filter(item=>item.path!=='/access' || (access && (access.isAdmin || Object.values(administrationResources).some(resource=>access.capabilities[resource]?.read))));
   const { theme, toggle } = useTheme();
-  const { session, isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [healthy, setHealthy] = useState<boolean | null>(null);
   const [loginOpen, setLoginOpen] = useState<boolean>(false);
@@ -116,11 +116,8 @@ export function AppShell({ nav, serverUrl, version, children }: AppShellProps): 
         <div className="sa-topbar__actions">
           {isAuthenticated ? (
             <>
-              <span className="sa-topbar__url" title={session?.userId}>
-                {session?.userId}
-              </span>
-              <button type="button" className="sa-btn sa-btn--ghost" onClick={() => void logout()}>
-                {t('topbar.signOut')}
+              <button type="button" className="sa-btn sa-btn--ghost sa-btn--icon" aria-label={t('topbar.signOut')} title={t('help.signout')} onClick={() => void logout()}>
+                <Icon name="logout"/>
               </button>
             </>
           ) : (

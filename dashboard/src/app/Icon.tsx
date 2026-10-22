@@ -18,6 +18,7 @@ const paths: Record<string, ReactNode> = {
   '/audit': <><path d="M5 3h14v18H5zM8 7h8m-8 5h8m-8 5h5"/></>,
   '/system-prompts': <><path d="M4 3h16v14H8l-4 4V3Z"/><path d="M8 7h8m-8 4h6"/></>,
   '/model-configurations': <><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></>,
+  logout: <><path d="M9 3H4v18h5M9 12h12m-4-4 4 4-4 4"/></>,
   edit: <><path d="m15 4 5 5-10 10-6 1 1-6L15 4Z"/><path d="m13 6 5 5"/></>,
   stop: <rect x="6" y="6" width="12" height="12" fill="currentColor" stroke="none"/>,
   eye: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></>,
@@ -36,5 +37,6 @@ const paths: Record<string, ReactNode> = {
   github: <path d="M9 19c-4 1-4-2-6-2m12 5v-4c0-1-.3-2-1-2 3-.4 6-1.5 6-6 0-1.3-.5-2.5-1.3-3.4.1-.9.1-2-.4-3.1 0 0-1.2-.4-3.5 1.3a12 12 0 0 0-6.6 0C6 3.1 4.8 3.5 4.8 3.5c-.5 1.1-.5 2.2-.4 3.1A5 5 0 0 0 3 10c0 4.5 3 5.6 6 6-.7.5-1 1.3-1 2v4"/>,
 };
 export function Icon({ name }: { name: string }): JSX.Element {
-  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths['/']}</svg>;
+  const utility = ['refresh','copy','eye','eye-off','logout','check'].includes(name);
+  return <svg className={utility ? `sa-utility-icon sa-utility-icon--${name}` : undefined} width={utility ? 16 : 24} height={utility ? 16 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name] ?? paths['/']}</svg>;
 }

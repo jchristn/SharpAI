@@ -848,7 +848,10 @@
     "platformAdmin": "Gewährt plattformweite Administration ohne Mandantenbegrenzung und RBAC-Prüfung.",
     "tenantAdmin": "Gewährt Administration im Mandanten des Benutzers ohne dessen RBAC-Prüfung.",
     "pagination": "Ergebnisse durchblättern oder Zeilenanzahl ändern; Filter und Mandant bleiben erhalten.",
-    "embeddingText": "Text für das Embedding-Modell zur Vektorberechnung; Gespräch und Chat-Parameter werden nicht gesendet."
+    "embeddingText": "Text für das Embedding-Modell zur Vektorberechnung; Gespräch und Chat-Parameter werden nicht gesendet.",
+    "revealCredential": "Geheimnis dieser Anmeldedaten abrufen und anzeigen. Diese autorisierte Aktion wird protokolliert.",
+    "hideCredential": "Angezeigtes Geheimnis verbergen, ohne die Anmeldedaten zu widerrufen.",
+    "rotateCredential": "Geheimnis sofort ersetzen; Integrationen müssen das neue Token verwenden."
   },
   "details": {
     "CreatedUtc": "Start (UTC)",

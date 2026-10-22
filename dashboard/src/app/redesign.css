@@ -368,3 +368,8 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-credential-token>div { display:flex;align-items:center;gap:4px; }
 .sa-credential-token code { max-width:220px;min-width:0;white-space:normal;overflow-wrap:anywhere;user-select:all; }
 .sa-credential-token small { display:block;color:var(--sa-danger);white-space:normal; }
+
+/* Compact utility artwork, independent of navigation and brand icon sizes. */
+.sa-btn svg.sa-utility-icon { width:16px; height:16px; color:#59616b; }
+:root[data-theme='dark'] .sa-btn svg.sa-utility-icon { color:#a3adba; }
+:root .sa-copy-button--copied svg.sa-utility-icon, :root[data-theme='dark'] .sa-copy-button--copied svg.sa-utility-icon { color:var(--sa-success); }

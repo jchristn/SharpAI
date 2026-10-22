@@ -27,14 +27,14 @@ export function ControlHelp():null {
         if(authored?.title){element.title=authored.title;delete element.dataset.autoHelp;return;}
         const setting=element.closest<HTMLElement>('label[data-setting-path]');
         if(setting?.title){element.title=setting.title;delete element.dataset.autoHelp;return;}
-        if(element.title && !element.dataset.autoHelp && element.title!==identify(element) && !element.classList.contains('sa-copy-button'))return;
+        if(element.title && element.title !== element.dataset.autoHelpTitle && element.title!==identify(element))return;
         const label=identify(element);
         const semantic=(labels.get(label)||label)+' '+(element.getAttribute('data-help')||'');
         let kind='text';
         if(element.tagName==='METER')kind='timing';
         else if(element.tagName==='SUMMARY' && element.closest('.sa-chat-settings'))kind='sampling';
         else if(element.tagName==='LEGEND' && element.closest('fieldset[data-setting-path]')){element.title=element.closest<HTMLElement>('fieldset[data-setting-path]')!.title;return;}
-        else if(element.tagName==='DT' && !element.closest('.sa-payload-fields'))kind='readonly';
+        else if(element.tagName==='DT' && !element.closest('.sa-payload-fields'))kind=/token|cached/i.test(semantic)?'tokens':/time|duration|ttft|latency/i.test(semantic)?'timing':'readonly';
         else if(element.matches('.sa-kpi__label,.sa-detail-tokens span,.sa-detail-timings span'))kind='readonly';
         else if(/stopGenerating|stop generating/i.test(semantic))kind='stopGeneration';
         else if(element.tagName==='TEXTAREA' && window.location.pathname==='/api-explorer')kind='requestBody';
@@ -50,13 +50,18 @@ export function ControlHelp():null {
           else if(key==='actions')kind='inspect';
           else kind='column';
         }
+        else if(element.classList.contains('sa-copy-button'))kind='copy';
+        else if(element.closest('.sa-settings-fields') && element.tagName==='BUTTON')kind=element.dataset.help==='delete'?'listRemove':element.dataset.help==='create'?'listAdd':'save';
+        else if(element.tagName==='BUTTON' && /refresh|reload/i.test(semantic))kind='refresh';
+        else if(element.tagName==='BUTTON' && /save|submit|apply/i.test(semantic))kind='save';
+        else if(element.tagName==='BUTTON' && /cancel|close/i.test(semantic))kind='cancel';
+        else if(element.tagName==='BUTTON' && /delete|remove|revoke/i.test(semantic))kind='delete';
         else if(element.closest('.sa-http-headers'))kind='headers';
         else if(element.closest('.sa-payload-fields'))kind='body';
         else if(element.closest('.sa-pagination'))kind='pagination';
         else if(element.closest('.sa-filterbar'))kind='filter';
         else if(element.closest('[data-help=embeddingText]'))kind='embeddingText';
         else if(element.matches('a[href],[role=tab]'))kind='navigate';
-        else if(element.closest('.sa-settings-fields') && element.tagName==='BUTTON')kind=element.dataset.help==='delete'?'listRemove':element.dataset.help==='create'?'listAdd':'save';
         else if(element.tagName==='LABEL' && element.querySelector('textarea') && window.location.pathname==='/api-explorer')kind='requestBody';
         else if(window.location.pathname==='/api-explorer' && /apiExplorer\.(send|sending)/.test(semantic))kind='save';
         else if(/chat\.clear\b/.test(semantic))kind='clearConversation';
@@ -86,6 +91,7 @@ export function ControlHelp():null {
         else if(/filter|range|last hour|last day|last week|last month|clear/i.test(semantic))kind='filter';
         else if(/tenant|admin.owner|principal|admin.user/i.test(semantic))kind='tenant';
         else if(/role|permission|scope|inherit|admin.active|admin.status|admin.account/i.test(semantic))kind='security';
+        else if(/admin\.(token|copyBearer|reveal|hide|regenerate)|bearer|credential.*secret/i.test(semantic))kind='secret';
         else if(/token|cached/i.test(semantic))kind='tokens';
         else if(/duration|time|ttft|latency|queue|generation|speed|created|expires|utc/i.test(semantic))kind='timing';
         else if(/bytes|size|memory|budget/i.test(semantic))kind='size';
@@ -93,6 +99,7 @@ export function ControlHelp():null {
         else if(/body|payload/i.test(semantic))kind='body';
         else if(/url|hostname|endpoint|port|path|directory/i.test(semantic))kind='endpoint';
         else if(/model/i.test(semantic))kind='model';
+        else if(/duplicate/i.test(semantic)){element.title=t('library.duplicateHelp');element.dataset.autoHelpTitle=element.title;return;}
         else if(/details|inspect|view|effective|telemetry|actions|more/i.test(semantic))kind='inspect';
         else if(/edit|reset/i.test(semantic))kind='edit';
         else if(/\bid\b|guid|identifier/i.test(semantic))kind='id';
@@ -111,6 +118,7 @@ export function ControlHelp():null {
         const bounds=element instanceof HTMLInputElement && element.type==='number' ? t('help.bounds',{min:element.min||'−∞',max:element.max||'∞',step:element.step||1}) : '';
         element.title=title+(bounds?` ${bounds}`:'');
         element.dataset.autoHelp=kind;
+        element.dataset.autoHelpTitle=element.title;
       });
     };
     apply();

@@ -45,7 +45,7 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
 
   return (
     <AuthProvider baseUrl={resolvedBaseUrl}>
-      <ControlHelp/><AuthenticationGate><AdministrationProvider><BrowserRouter>
+      <BrowserRouter><ControlHelp/><AuthenticationGate><AdministrationProvider>
         <AppShell nav={NAV} serverUrl={resolvedBaseUrl} version={version}>
           <Routes>
             <Route path="/" element={<HomeView />} />
@@ -66,7 +66,7 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AppShell>
-      </BrowserRouter></AdministrationProvider></AuthenticationGate>
+      </AdministrationProvider></AuthenticationGate></BrowserRouter>
     </AuthProvider>
   );
 }

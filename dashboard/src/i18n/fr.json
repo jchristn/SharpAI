@@ -848,7 +848,10 @@
     "platformAdmin": "Accorde l’administration globale sans limites de tenant ni contrôles RBAC.",
     "tenantAdmin": "Accorde l’administration dans le tenant de cet utilisateur sans contrôles RBAC locaux.",
     "pagination": "Parcourez les résultats ou changez les lignes par page ; filtres et tenant restent actifs.",
-    "embeddingText": "Texte envoyé au modèle d’embedding pour produire un vecteur ; conversation et paramètres de chat ne sont pas envoyés."
+    "embeddingText": "Texte envoyé au modèle d’embedding pour produire un vecteur ; conversation et paramètres de chat ne sont pas envoyés.",
+    "revealCredential": "Récupérer et afficher le secret de cet identifiant. Cette action autorisée est auditée.",
+    "hideCredential": "Masquer le secret affiché sans révoquer l’identifiant.",
+    "rotateCredential": "Remplacer immédiatement le secret ; les intégrations doivent utiliser le nouveau jeton."
   },
   "details": {
     "CreatedUtc": "Début (UTC)",

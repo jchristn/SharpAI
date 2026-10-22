@@ -449,8 +449,13 @@ test('credential tokens reveal, hide, copy and regenerate only after explicit ac
  await page.route('**/credentials/cred-a/token/rotate',route=>{rotations++;return route.fulfill({json:{token:'sharpai_replacement',tokenType:'Bearer'}});});
  await page.goto('/access/credentials');
  const row=page.locator('tbody tr').first();await expect(row.getByText('CI',{exact:true})).toBeVisible();expect(reveals).toBe(0);
+ await expect(row.getByRole('button',{name:'Reveal bearer token',exact:true})).toHaveAttribute('title',/credential.*secret/);
+ await expect(row.getByRole('button',{name:'Regenerate bearer token',exact:true})).toHaveAttribute('title',/Replace this secret/);
+ const utility=await row.locator('svg.sa-utility-icon').evaluateAll(elements=>elements.map(element=>({width:element.getBoundingClientRect().width,color:getComputedStyle(element).color})));
+ expect(utility.every(icon=>icon.width===16 && icon.color!=='rgb(0, 0, 0)')).toBe(true);
  await row.getByRole('button',{name:'Reveal bearer token',exact:true}).click();await expect(row.getByText('sharpai_retained',{exact:true})).toBeVisible();
  await row.getByRole('button',{name:'Copy the complete bearer token for the Authorization header',exact:true}).click();await expect(row.getByRole('button',{name:'Copied',exact:true})).toBeVisible();
+ expect(await row.locator('.sa-copy-button--copied svg').evaluate(element=>getComputedStyle(element).color)).toBe(await page.evaluate(()=>{const probe=document.createElement('span');probe.style.color='var(--sa-success)';document.body.append(probe);const color=getComputedStyle(probe).color;probe.remove();return color;}));
  await row.getByRole('button',{name:'Hide bearer token',exact:true}).click();await expect(page.getByText('sharpai_retained',{exact:true})).toHaveCount(0);
  await row.getByRole('button',{name:'Regenerate bearer token',exact:true}).click();expect(rotations).toBe(0);await page.getByRole('dialog').getByRole('button',{name:'Regenerate bearer token',exact:true}).click();await expect(row.getByText('sharpai_replacement',{exact:true})).toBeVisible();expect(rotations).toBe(1);
  await page.getByRole('combobox',{name:'Selected tenant',exact:true}).selectOption('tenant-b');await expect(page.getByText('sharpai_replacement',{exact:true})).toHaveCount(0);

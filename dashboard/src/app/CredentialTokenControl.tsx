@@ -17,9 +17,9 @@ export function CredentialTokenControl({tenant, id, canManage, protectedCredenti
  };
  return <div className="sa-credential-token" onClick={event=>event.stopPropagation()}>
   <div><code>{token??'••••••••'}</code>{canManage&&<>
-   <button type="button" className="sa-btn sa-btn--ghost sa-btn--icon" disabled={busy} title={t(token?'admin.hideToken':'admin.revealToken')} aria-label={t(token?'admin.hideToken':'admin.revealToken')} onClick={()=>token?setToken(null):void load()}><Icon name={token?'eye-off':'eye'}/></button>
+   <button type="button" className="sa-btn sa-btn--ghost sa-btn--icon" disabled={busy} title={t(token?'help.hideCredential':'help.revealCredential')} aria-label={t(token?'admin.hideToken':'admin.revealToken')} onClick={()=>token?setToken(null):void load()}><Icon name={token?'eye-off':'eye'}/></button>
    {token&&<CopyButton value={token} label={t('admin.copyBearerToken')}/>}
-   {!protectedCredential&&<button type="button" className="sa-btn sa-btn--ghost sa-btn--icon" disabled={busy} title={t('admin.regenerateToken')} aria-label={t('admin.regenerateToken')} onClick={()=>setConfirm(true)}><Icon name="refresh"/></button>}
+   {!protectedCredential&&<button type="button" className="sa-btn sa-btn--ghost sa-btn--icon" disabled={busy} title={t('help.rotateCredential')} aria-label={t('admin.regenerateToken')} onClick={()=>setConfirm(true)}><Icon name="refresh"/></button>}
   </>}</div>
   {error&&<small role="alert">{error}</small>}
   <ConfirmModal open={confirm} danger title={t('admin.regenerateToken')} message={t('admin.regenerateTokenConfirm')} confirmLabel={t('admin.regenerateToken')} onCancel={()=>setConfirm(false)} onConfirm={()=>{setConfirm(false);setToken(null);void load(true);}}/>
