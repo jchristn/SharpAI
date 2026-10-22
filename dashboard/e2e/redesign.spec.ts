@@ -419,7 +419,7 @@ test('settings provider choices preserve connections and compact syslog has real
 test('history retains raw request whitespace and copies headers as JSON',async({page})=>{
  const row={Id:'req-raw-copy',Method:'POST',Path:'/api/chat',StatusCode:200,DurationMs:20,CreatedUtc:'2026-10-21T12:00:00Z'};
  const raw='{ "messages": [\n  {"role":"user", "content":"hello"}\n] }';
- await page.route('**/v1.0/api/request-history**',route=>route.fulfill({json:route.request().url().includes('/summary')?{TotalCount:1,Buckets:[]}:route.request().url().includes('/req-raw-copy')?{...row,RequestHeaders:{'content-type':'application/json','x-secret':'[redacted]'},ResponseHeaders:{'content-type':'application/json'},RequestBody:raw,ResponseBody:'{"message":"hello"}'}:{Objects:[row],TotalCount:1}}));
+ await page.route('**/v1.0/api/request-history**',route=>route.fulfill({json:route.request().url().includes('/summary')?{TotalCount:1,Buckets:[]}:route.request().url().includes('/req-raw-copy')?{...row,RequestHeaders:{'content-type':'application/json','x-secret':'[redacted]'},ResponseHeaders:{'content-type':'application/json','X-Empty':'','X-Literal':'{\"enabled\":true}'},RequestBody:raw,ResponseBody:'{"message":"hello"}'}:{Objects:[row],TotalCount:1}}));
  await page.addInitScript(()=>Object.defineProperty(navigator,'clipboard',{value:{writeText:async(text:string)=>{(window as unknown as {copied:string}).copied=text;}}}));
  await page.goto('/request-history');await page.getByRole('cell',{name:'/api/chat',exact:true}).click();
  const request=page.getByRole('dialog').locator('.sa-detail-exchange > section').first();
@@ -427,6 +427,9 @@ test('history retains raw request whitespace and copies headers as JSON',async({
  await request.locator('.sa-payload-heading').first().getByRole('button').click();
  await expect.poll(()=>page.evaluate(()=>(window as unknown as {copied:string}).copied)).toBe(JSON.stringify({'content-type':'application/json','x-secret':'[redacted]'},null,2));
  await expect(request.locator('.sa-copy-button--copied')).toHaveCount(1);
+ const response=page.getByRole('dialog').locator('.sa-detail-exchange > section').last();
+ await expect(response.locator('.sa-http-headers')).not.toContainText('No content retained');
+ await expect(response.locator('.sa-http-headers')).toContainText('{"enabled":true}');
 });
 
 test('playground uses a red square stop control and content-sized replies',async({page})=>{

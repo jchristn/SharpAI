@@ -291,3 +291,5 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-settings-fields .sa-filterbar__field input,.sa-settings-fields .sa-filterbar__field select {min-width:0;width:100%;box-sizing:border-box;}
 .sa-chat-message--user {max-width:92%;margin-inline-start:0;}
 .sa-chat-message--assistant {max-width:97%;margin-inline-end:0;}
+
+.sa-detail-exchange {align-items:start;}
