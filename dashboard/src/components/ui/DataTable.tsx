@@ -65,6 +65,8 @@ export function DataTable<T>(props: DataTableProps<T>): JSX.Element {
               {columns.map((column) => (
                 <th
                   key={column.key}
+                  data-column-key={column.key}
+                  aria-label={typeof column.header === 'string' ? column.header || (column.key==='actions' ? t('common.actions') : undefined) : undefined}
                   className={column.sortable ? 'sa-sortable' : undefined}
                   style={column.width ? { width: column.width } : undefined}
                   onClick={() => headerClick(column)}

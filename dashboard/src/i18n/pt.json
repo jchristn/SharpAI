@@ -788,7 +788,14 @@
     "number": "Insira um número válido. Campos opcionais vazios usam os padrões.",
     "boolean": "Ativa ou desativa a opção. Salve o formulário para persistir.",
     "text": "Edite o valor; a validação ocorre no envio. Alterações pendentes ficam nesta página.",
-    "bounds": "Intervalo: {{min}} a {{max}}; incremento: {{step}}."
+    "bounds": "Intervalo: {{min}} a {{max}}; incremento: {{step}}.",
+    "httpMethod": "Verbo HTTP: GET lê, POST envia trabalho, PUT substitui e DELETE remove.",
+    "httpStatus": "Resultado HTTP: 2xx sucesso, 4xx rejeição, 5xx falha no servidor. Um fluxo pode falhar após um 200.",
+    "httpPath": "Endpoint que recebeu a solicitação. Os detalhes mostram URL completa, consulta e conteúdo.",
+    "sourceIP": "Endereço observado pelo servidor. Pode ser o proxy sem encaminhamento confiável configurado.",
+    "stopGeneration": "Cancela a solicitação ao modelo. O texto recebido permanece; o motor pode levar um momento para parar.",
+    "requestBody": "Insira JSON válido para a operação. Parâmetros de rota são separados; o corpo só é enviado ao executar.",
+    "readonly": "Valor informado pelo servidor. Indisponível não é zero; atualize os dados para obter uma leitura atual."
   },
   "details": {
     "CreatedUtc": "Início (UTC)",

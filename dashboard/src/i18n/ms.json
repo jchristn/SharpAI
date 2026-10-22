@@ -788,7 +788,14 @@
     "number": "Masukkan nombor dalam had. Medan pilihan kosong menggunakan lalai.",
     "boolean": "Aktif atau nyahaktifkan pilihan. Simpan borang untuk mengekalkannya.",
     "text": "Edit nilai; disahkan semasa dihantar. Perubahan belum disimpan kekal pada halaman ini.",
-    "bounds": "Julat: {{min}} hingga {{max}}; langkah: {{step}}."
+    "bounds": "Julat: {{min}} hingga {{max}}; langkah: {{step}}.",
+    "httpMethod": "Kaedah HTTP: GET membaca, POST menghantar kerja, PUT mengganti dan DELETE memadam.",
+    "httpStatus": "Hasil HTTP: 2xx berjaya, 4xx ditolak, 5xx gagal pada pelayan. Strim boleh gagal selepas respons 200.",
+    "httpPath": "Titik akhir yang menerima permintaan. Butiran menunjukkan URL penuh, parameter dan kandungan.",
+    "sourceIP": "Alamat diperhatikan pelayan. Tanpa pemajuan dipercayai ia mungkin alamat proksi.",
+    "stopGeneration": "Batalkan permintaan model. Teks diterima kekal; enjin mungkin mengambil masa untuk berhenti.",
+    "requestBody": "Masukkan JSON sah untuk operasi. Parameter laluan berasingan; badan dihantar hanya semasa pelaksanaan.",
+    "readonly": "Nilai dilaporkan pelayan. Tidak tersedia bukan sifar; muat semula data untuk bacaan terkini."
   },
   "details": {
     "CreatedUtc": "Mula (UTC)",

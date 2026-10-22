@@ -788,7 +788,14 @@
     "number": "Saisissez un nombre valide. Les champs facultatifs vides utilisent les valeurs par défaut.",
     "boolean": "Active ou désactive cette option. Enregistrez pour la conserver.",
     "text": "Modifiez la valeur ; elle est validée à l’envoi. Les changements restent locaux jusque-là.",
-    "bounds": "Plage : {{min}} à {{max}} ; pas : {{step}}."
+    "bounds": "Plage : {{min}} à {{max}} ; pas : {{step}}.",
+    "httpMethod": "Verbe HTTP : GET lit, POST soumet, PUT remplace et DELETE supprime.",
+    "httpStatus": "Résultat HTTP : 2xx réussi, 4xx rejeté, 5xx erreur serveur. Un flux peut échouer après une réponse 200.",
+    "httpPath": "Point de terminaison sollicité. Les détails montrent URL complète, paramètres et contenu.",
+    "sourceIP": "Adresse observée par le serveur. Sans transfert fiable configuré, il peut s’agir de celle du proxy.",
+    "stopGeneration": "Annule la requête au modèle. Le texte déjà reçu reste visible ; l’arrêt du moteur peut prendre un instant.",
+    "requestBody": "Saisissez un JSON valide pour l’opération. Les paramètres de route sont séparés ; le corps est envoyé à l’exécution.",
+    "readonly": "Valeur fournie par le serveur. Une donnée indisponible n’est pas zéro ; actualisez pour une nouvelle mesure."
   },
   "details": {
     "CreatedUtc": "Début (UTC)",

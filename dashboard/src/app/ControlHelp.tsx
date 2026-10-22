@@ -18,18 +18,36 @@ export function ControlHelp():null {
       return element.getAttribute('aria-label') || (label?.querySelector('span')?.textContent) || (element.tagName==='LABEL'?element.querySelector('span')?.textContent:'') || element.textContent?.trim() || '';
     };
     const apply=():void=>{
-      document.querySelectorAll<HTMLElement>('button,label,legend,dt,th,select,input,textarea,summary,a,meter,[role=menuitem]').forEach(element=>{
+      document.querySelectorAll<HTMLElement>('button,label,legend,dt,th,select,input,textarea,summary,a,meter,[role=menuitem],.sa-kpi__label,.sa-detail-tokens span,.sa-detail-timings span').forEach(element=>{
         if(element instanceof HTMLInputElement && element.type==='hidden')return;
         const label=identify(element);
         const semantic=(labels.get(label)||label)+' '+(element.getAttribute('data-help')||'');
         let kind='text';
-        if(/refresh|reload/i.test(semantic))kind='refresh';
+        if(element.tagName==='METER')kind='timing';
+        else if(element.tagName==='SUMMARY' && element.closest('.sa-chat-settings'))kind='sampling';
+        else if(element.matches('.sa-kpi__label,.sa-detail-tokens span,.sa-detail-timings span'))kind='readonly';
+        else if(/stopGenerating|stop generating/i.test(semantic))kind='stopGeneration';
+        else if(element.tagName==='TEXTAREA' && window.location.pathname==='/api-explorer')kind='requestBody';
+        else if(element.tagName==='TH') {
+          const key=element.dataset.columnKey || '';
+          const history=window.location.pathname.includes('history');
+          if(/created|modified|expires|duration|time/i.test(key))kind='timing';
+          else if(key==='method')kind='httpMethod';
+          else if(history && key==='status')kind='httpStatus';
+          else if(history && key==='path')kind='httpPath';
+          else if(history && key==='ip')kind='sourceIP';
+          else if(/guid|^id$/i.test(key))kind='id';
+          else if(key==='actions')kind='inspect';
+          else kind='column';
+        }
+        else if(element.closest('.sa-payload-fields'))kind='body';
+        else if(/refresh|reload/i.test(semantic))kind='refresh';
         else if(/pull|download/i.test(semantic))kind='download';
         else if(/copy|copied/i.test(semantic))kind='copy';
         else if(/delete|remove|revoke/i.test(semantic))kind='delete';
         else if(/save|submit|apply/i.test(semantic))kind='save';
         else if(/cancel|close/i.test(semantic))kind='cancel';
-        else if(/create|add|new conversation/i.test(semantic))kind='create';
+        else if(/\b(create|add|new conversation)\b/i.test(semantic))kind='create';
         else if(/sign.?in|email/i.test(semantic))kind='signin';
         else if(/sign.?out/i.test(semantic))kind='signout';
         else if(/password|secret|api.?key|signing.?key/i.test(semantic) || element.getAttribute('type')==='password')kind='secret';

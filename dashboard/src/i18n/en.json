@@ -788,7 +788,14 @@
     "number": "Enter a numeric value within the supported bounds. Empty optional fields use server defaults.",
     "boolean": "Enable or disable this option. Submit the form to persist configuration changes.",
     "text": "Edit this value in the current form. It is validated before submission; unsaved changes remain local to this page.",
-    "bounds": "Allowed range: {{min}} to {{max}}; increment: {{step}}."
+    "bounds": "Allowed range: {{min}} to {{max}}; increment: {{step}}.",
+    "httpMethod": "HTTP verb used for this request: GET reads, POST submits work, PUT replaces values and DELETE removes a resource.",
+    "httpStatus": "HTTP outcome: 2xx succeeded, 4xx was rejected and 5xx failed on the server. A stream can still contain an error after a 200 response.",
+    "httpPath": "Endpoint that received the request. Open details to inspect its complete URL, query parameters and payload.",
+    "sourceIP": "Client address observed by the server. Behind a proxy this may be the proxy address unless trusted forwarding is configured.",
+    "stopGeneration": "Cancel the active model request. Any response text already received stays visible; cancellation may take a moment to reach the engine.",
+    "requestBody": "Enter valid JSON for the selected API operation. Path parameters are entered separately and this body is sent only when you execute the request.",
+    "readonly": "Server-reported value. Unavailable data is distinct from zero; refresh the page data to obtain a current reading."
   },
   "details": {
     "CreatedUtc": "Started (UTC)",

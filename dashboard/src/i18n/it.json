@@ -788,7 +788,14 @@
     "number": "Inserisci un numero nei limiti. I campi facoltativi vuoti usano i valori predefiniti.",
     "boolean": "Attiva o disattiva. Salva il modulo per mantenere la modifica.",
     "text": "Modifica il valore; viene validato all’invio. Le modifiche pendenti restano locali.",
-    "bounds": "Intervallo: {{min}} a {{max}}; incremento: {{step}}."
+    "bounds": "Intervallo: {{min}} a {{max}}; incremento: {{step}}.",
+    "httpMethod": "Verbo HTTP: GET legge, POST invia, PUT sostituisce e DELETE elimina.",
+    "httpStatus": "Esito HTTP: 2xx riuscito, 4xx rifiutato, 5xx errore server. Un flusso può fallire dopo un 200.",
+    "httpPath": "Endpoint della richiesta. I dettagli mostrano URL completo, parametri e contenuto.",
+    "sourceIP": "Indirizzo osservato dal server. Senza inoltro attendibile può essere quello del proxy.",
+    "stopGeneration": "Annulla la richiesta al modello. Il testo ricevuto resta visibile; il motore può impiegare un momento a fermarsi.",
+    "requestBody": "Inserisci JSON valido per l’operazione. I parametri del percorso sono separati; il corpo viene inviato solo all’esecuzione.",
+    "readonly": "Valore riportato dal server. Non disponibile non significa zero; aggiorna i dati per una lettura attuale."
   },
   "details": {
     "CreatedUtc": "Inizio (UTC)",

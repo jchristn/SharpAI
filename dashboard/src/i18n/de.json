@@ -788,7 +788,14 @@
     "number": "Zahl innerhalb der Grenzen eingeben. Leere optionale Felder verwenden Standardwerte.",
     "boolean": "Option ein- oder ausschalten. Zum dauerhaften Ändern Formular speichern.",
     "text": "Wert bearbeiten; Prüfung erfolgt beim Senden. Ungespeicherte Werte bleiben auf dieser Seite.",
-    "bounds": "Bereich: {{min}} bis {{max}}; Schritt: {{step}}."
+    "bounds": "Bereich: {{min}} bis {{max}}; Schritt: {{step}}.",
+    "httpMethod": "HTTP-Methode: GET liest, POST sendet Arbeit, PUT ersetzt und DELETE entfernt.",
+    "httpStatus": "HTTP-Ergebnis: 2xx erfolgreich, 4xx abgelehnt, 5xx Serverfehler. Streams können nach Status 200 noch Fehler enthalten.",
+    "httpPath": "Zielendpunkt der Anfrage. Details zeigen vollständige URL, Abfrageparameter und Inhalt.",
+    "sourceIP": "Vom Server beobachtete Adresse. Ohne vertrauenswürdige Weiterleitung kann dies die Proxyadresse sein.",
+    "stopGeneration": "Bricht die Modellanfrage ab. Empfangener Text bleibt sichtbar; der Abbruch kann die Engine verzögert erreichen.",
+    "requestBody": "Gültiges JSON für die Operation eingeben. Pfadparameter sind getrennt; gesendet wird erst beim Ausführen.",
+    "readonly": "Vom Server gemeldeter Wert. Nicht verfügbar ist nicht null; aktualisieren Sie für einen neuen Messwert."
   },
   "details": {
     "CreatedUtc": "Start (UTC)",
