@@ -978,6 +978,17 @@
     "duplicateHelp": "Erstellt eine bearbeitbare Kopie ohne Quelländerung; angemeldet standardmäßig persönlich.",
     "promptSelectorHelp": "Wählen Sie sichtbare Anweisungen; gemeinsame und private Prompts sind getrennt gruppiert.",
     "configurationSelectorHelp": "Wählen Sie gespeicherte Sampling-, Stopp-, Format-, Denk- und Streaming-Parameter.",
-    "editSelectionHelp": "Bearbeitet eigene Einträge oder öffnet eine Kopie eines schreibgeschützten gemeinsamen Standards."
+    "editSelectionHelp": "Bearbeitet eigene Einträge oder öffnet eine Kopie eines schreibgeschützten gemeinsamen Standards.",
+    "tenantFilterHelp": "Den Mandanten auswählen, dessen gemeinsame Vorgaben zusammen mit Systemvorgaben und Ihren persönlichen Einträgen erscheinen."
+  },
+  "history": {
+    "tabs": "Ansichten des Anfrageverlaufs",
+    "api": "API-Verlauf",
+    "inference": "Inferenzverlauf",
+    "embeddings": "Embedding-Verlauf",
+    "completions": "Textvervollständigungen",
+    "apiHelp": "Alle erfassten HTTP-Anfragen einschließlich Modelloperationen anzeigen.",
+    "inferenceHelp": "Chat- und Textvervollständigungsanfragen ohne Embedding-Aufrufe anzeigen.",
+    "embeddingsHelp": "Embedding-Anfragen der Ollama- und OpenAI-APIs anzeigen."
   }
 }

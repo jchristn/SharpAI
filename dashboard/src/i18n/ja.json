@@ -978,6 +978,17 @@
     "duplicateHelp": "元を変更せず編集可能なコピーを作成。ログイン時は個人用が既定です。",
     "promptSelectorHelp": "利用可能な指示を選択。共有の既定と個人用を別グループで表示します。",
     "configurationSelectorHelp": "保存したサンプリング、停止、形式、思考、ストリーミングの設定を選択。",
-    "editSelectionHelp": "所有項目を編集。読み取り専用の共有既定の場合は編集可能なコピーを開きます。"
+    "editSelectionHelp": "所有項目を編集。読み取り専用の共有既定の場合は編集可能なコピーを開きます。",
+    "tenantFilterHelp": "共有の既定項目をシステムの既定項目や個人項目とともに表示するテナントを選択します。"
+  },
+  "history": {
+    "tabs": "リクエスト履歴の表示",
+    "api": "API 履歴",
+    "inference": "推論履歴",
+    "embeddings": "埋め込み履歴",
+    "completions": "テキスト補完",
+    "apiHelp": "モデル操作を含むすべての記録済み HTTP リクエストを確認します。",
+    "inferenceHelp": "埋め込み呼び出しを除くチャットとテキスト補完リクエストを確認します。",
+    "embeddingsHelp": "Ollama と OpenAI API の埋め込みリクエストを確認します。"
   }
 }

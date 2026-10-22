@@ -11,7 +11,6 @@ import { ModelsView } from './pages/ModelsView';
 import { ObservabilityView } from './pages/ObservabilityView';
 import { PlaygroundView } from './pages/PlaygroundView';
 import { RequestHistoryView } from './pages/RequestHistoryView';
-import { InferenceHistoryView } from './pages/InferenceHistoryView';
 import { AdministrationProvider } from './AdministrationProvider';
 import { AccessView } from './pages/AccessView';
 import { LibraryView } from './pages/LibraryView';
@@ -24,7 +23,6 @@ const NAV: NavItem[] = [
   {path:'/model-configurations',labelKey:'library.configurationsTitle',group:'models'},
   { path: '/playground', labelKey: 'nav.playground', group: 'models' },
   { path: '/request-history', labelKey: 'nav.requestHistory', group: 'operations' },
-  { path: '/inference-history', labelKey: 'nav.inferenceHistory', group: 'operations' },
   { path: '/api-explorer', labelKey: 'nav.apiExplorer', group: 'operations' },
   { path: '/observability', labelKey: 'nav.observability', group: 'operations' },
   {path:'/access',labelKey:'nav.access',group:'system'},
@@ -55,7 +53,9 @@ export function NewApp({ baseUrl, version = '4.0.1' }: NewAppProps): JSX.Element
             <Route path="/model-configurations" element={<LibraryView kind="model-configurations"/>}/>
             <Route path="/playground" element={<PlaygroundView />} />
             <Route path="/request-history" element={<RequestHistoryView />} />
-            <Route path="/inference-history" element={<InferenceHistoryView />} />
+            <Route path="/request-history/:section" element={<RequestHistoryView />} />
+            <Route path="/inference-history" element={<Navigate to="/request-history/inference" replace/>} />
+            <Route path="/embeddings-history" element={<Navigate to="/request-history/embeddings" replace/>} />
             <Route path="/api-explorer" element={<ApiExplorerView />} />
             <Route path="/observability" element={<ObservabilityView />} />
             {(['tenants','users','credentials','roles','permissions','assignments','sessions','audit'] satisfies AdministrationSection[]).map(section=><Route key={section} path={`/${section}`} element={<AccessView section={section}/>}/>)}

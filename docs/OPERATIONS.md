@@ -258,3 +258,13 @@ python3 scripts/test-metal-library.py --model /path/to/model.gguf --output /tmp/
 
 Each successful model case validates native offload counts as well as generated output. Both .NET
 frameworks run by default; use `--framework net8.0` or `--framework net10.0` to select one.
+
+### Request history workspace
+
+The dashboard has one Request History navigation item with API History, Inference History, and
+Embeddings History tabs. `/request-history/api` shows all captured HTTP requests;
+`/request-history/inference` sends `category=generation` for chat and text completions;
+`/request-history/embeddings` sends `category=embeddings` for Ollama/OpenAI embedding operations.
+The list, pagination count, and chart summary apply the category on the server before aggregation.
+The existing `category=inference` API filter retains its combined generation/embedding behavior for
+existing consumers. The old `/inference-history` dashboard URL redirects to the Inference History tab.

@@ -313,3 +313,19 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-quick-card:nth-child(2n) > svg{color:#16a36c;}.sa-quick-card:nth-child(3n) > svg{color:#328fdf;}.sa-quick-card:nth-child(4n) > svg{color:#bd841f;}
 @media(max-width:760px){.sa-library-selectors,.sa-library-form{grid-template-columns:1fr;}}
 .sa-scope {color:var(--sa-text);}
+
+/* Shared compact library control geometry across selectors and all editor modes. */
+.sa-library-form input:not([type=checkbox]),.sa-library-form select,.sa-library-picker select,.sa-library-picker button,.sa-library-tenant select {
+ height:32px;min-height:32px;box-sizing:border-box;line-height:20px;padding:5px 8px;
+}
+.sa-library-picker button {width:32px;padding:0;}
+.sa-chat-turn {width:fit-content;max-width:97%;align-self:flex-start;flex:0 0 auto;min-width:0;}
+.sa-chat-turn--user {align-self:flex-end;max-width:92%;}
+.sa-chat-turn .sa-chat-message {max-width:100%;margin:0;}
+.sa-chat-quip {margin:5px 2px 0;font-size:11px;line-height:1.5;color:var(--sa-text-muted);}
+.sa-info-popover {width:320px;}
+.sa-metrics-title {display:block;font-size:12px;margin-bottom:8px;}
+.sa-chat-metrics {display:grid;grid-template-columns:1fr;gap:6px;margin:0;padding:0;}
+.sa-chat-metrics > div {display:grid;grid-template-columns:minmax(0,1fr) max-content;align-items:baseline;gap:16px;}
+.sa-chat-metrics dt {font-size:11px;font-weight:400;line-height:1.4;}
+.sa-chat-metrics dd {margin:0;text-align:end;white-space:nowrap;font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.4;}

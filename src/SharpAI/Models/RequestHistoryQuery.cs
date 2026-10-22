@@ -68,8 +68,8 @@ namespace SharpAI.Models
 
         /// <summary>
         /// High-level category filter. <c>"inference"</c> restricts results to the inference/embeddings
-        /// endpoints (Ollama and OpenAI chat/generate/embeddings). Null or <c>"all"</c> applies no category
-        /// restriction. Combine with <see cref="PathContains"/> to narrow to a single endpoint.
+        /// endpoints (Ollama and OpenAI chat/generate/embeddings). <c>"generation"</c> includes only chat
+        /// and text completions; <c>"embeddings"</c> includes only embedding operations. Null or <c>"all"</c> applies no category restriction. Combine with <see cref="PathContains"/> to narrow to a single endpoint.
         /// </summary>
         public string Category { get; set; } = null;
 

@@ -74,11 +74,11 @@ function readSummary(value: unknown): Summary {
 export interface RequestHistoryPanelProps {
   /** i18n key for the panel title. */
   titleKey: string;
-  /** Optional server category filter (e.g. "inference" for inference/embeddings endpoints). */
+  /** Optional server category filter: generation or embeddings. */
   category?: string;
   /**
    * Optional endpoint sub-filter options rendered as a select (value = pathContains substring).
-   * Used by the inference panel to narrow to chat / completions / embeddings.
+   * Used by the inference tab to narrow to chat or completion operations.
    */
   endpointOptions?: { label: string; value: string }[];
 }
@@ -86,7 +86,7 @@ export interface RequestHistoryPanelProps {
 /**
  * Reusable request-history panel: time-range presets (last hour/day/week/month with the product-standard
  * bucket sizes), KPI strip, click-to-drill activity chart, backend filters, paginated table, and a details
- * modal. Rendered once for all API requests and once (with category="inference") for inference/embeddings.
+ * modal. Shared by the API, inference, and embeddings history tabs.
  */
 export function RequestHistoryPanel({ titleKey, category, endpointOptions }: RequestHistoryPanelProps): JSX.Element {
   const { t, i18n } = useTranslation();
@@ -190,7 +190,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
         );
       },
     },
-    { key: 'duration', header: t('requestHistory.colDuration'), render: (row) => <span className="sa-duration-cell">{formatDurationMs(Number(pick(row, 'DurationMs', 'durationMs') ?? 0), i18n.language)}{category==='inference' && <meter min={0} max={Math.max(1,...page.objects.map(item=>Number(pick(item,'DurationMs','durationMs')??0)))} value={Number(pick(row,'DurationMs','durationMs')??0)}/>}</span> },
+    { key: 'duration', header: t('requestHistory.colDuration'), render: (row) => <span className="sa-duration-cell">{formatDurationMs(Number(pick(row, 'DurationMs', 'durationMs') ?? 0), i18n.language)}{!!category && <meter min={0} max={Math.max(1,...page.objects.map(item=>Number(pick(item,'DurationMs','durationMs')??0)))} value={Number(pick(row,'DurationMs','durationMs')??0)}/>}</span> },
     { key: 'ip', header: t('requestHistory.colSourceIp'), render: (row) => asText(pick(row, 'SourceIp', 'sourceIp')) },
 
     {
@@ -302,7 +302,7 @@ export function RequestHistoryPanel({ titleKey, category, endpointOptions }: Req
       />
 
       <Modal wide open={detail !== null} title={t('requestHistory.detailsTitle')} onClose={() => setDetail(null)}>
-        {detail ? <RequestDetails row={detail} inference={category==='inference'}/> : null}
+        {detail ? <RequestDetails row={detail} inference={!!category}/> : null}
       </Modal>
     </div>
   );

@@ -978,6 +978,17 @@
     "duplicateHelp": "Crea una copia editable sin cambiar el origen; por defecto es personal al iniciar sesión.",
     "promptSelectorHelp": "Seleccione instrucciones disponibles para su cuenta; los valores compartidos y privados se agrupan por separado.",
     "configurationSelectorHelp": "Selecciona parámetros guardados de muestreo, paradas, formato, pensamiento y streaming.",
-    "editSelectionHelp": "Edita un elemento propio o abre una copia editable de un valor compartido de solo lectura."
+    "editSelectionHelp": "Edita un elemento propio o abre una copia editable de un valor compartido de solo lectura.",
+    "tenantFilterHelp": "Elige el inquilino cuyos valores compartidos se muestran junto con los del sistema y tus elementos personales."
+  },
+  "history": {
+    "tabs": "Vistas del historial de solicitudes",
+    "api": "Historial de API",
+    "inference": "Historial de inferencia",
+    "embeddings": "Historial de embeddings",
+    "completions": "Completado de texto",
+    "apiHelp": "Revisa todas las solicitudes HTTP registradas, incluidas las operaciones de modelos.",
+    "inferenceHelp": "Revisa solicitudes de chat y completado de texto sin llamadas de embeddings.",
+    "embeddingsHelp": "Revisa solicitudes de embeddings de las API de Ollama y OpenAI."
   }
 }

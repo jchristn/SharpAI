@@ -120,3 +120,41 @@ test('signing out during generation cannot restore the previous account conversa
  release();await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
  await expect(page.locator('.sa-chat-message')).toHaveCount(0);await expect(page.getByText('Old private reply',{exact:true})).toHaveCount(0);
 });
+
+test('library selectors align with their edit icons',async({page})=>{
+ await install(page);await page.goto('/playground');
+ for(const picker of await page.locator('.sa-library-picker').all()){
+  const select=await picker.locator('select').boundingBox();const button=await picker.locator('button').boundingBox();
+  expect(select).not.toBeNull();expect(button).not.toBeNull();expect(Math.abs(select!.height-button!.height)).toBeLessThan(1);expect(Math.abs(select!.y-button!.y)).toBeLessThan(1);
+ }
+});
+for(const kind of ['system-prompts','model-configurations'] satisfies Array<'system-prompts'|'model-configurations'>){
+ test(`${kind} preview offers edit and all editor modes use matching control heights`,async({page})=>{
+  await install(page,'System');await page.goto('/'+kind);
+  const row=page.getByRole('row').filter({has:page.getByRole('cell',{name:kind==='system-prompts'?'System starter':'Saved sampling',exact:true})});await expect(row).toBeVisible();await row.getByRole('cell',{name:kind==='system-prompts'?'System starter':'Saved sampling',exact:true}).click();let dialog=page.getByRole('dialog');await expect(dialog.getByRole('button',{name:'Edit',exact:true})).toBeEnabled();await dialog.getByRole('button',{name:'Edit',exact:true}).click();
+  async function aligned(){const modal=page.getByRole('dialog');const name=await modal.getByLabel('Name',{exact:true}).boundingBox();const scope=await modal.getByRole('combobox',{name:'Visibility'}).boundingBox();expect(Math.abs(name!.height-scope!.height)).toBeLessThan(1);await modal.getByRole('button',{name:'Cancel',exact:true}).click();}
+  await aligned();await page.getByRole('button',{name:'Create',exact:true}).click();await aligned();
+  await row.getByRole('cell',{name:kind==='system-prompts'?'System starter':'Saved sampling',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Duplicate',exact:true}).click();await aligned();
+  await expect(page.getByRole('combobox',{name:'Selected tenant',exact:true})).toBeVisible();await expect(page.getByText('Entire tenant',{exact:true})).toHaveCount(0);
+ });
+}
+test('model configuration numeric inputs clamp every range and preserve fractional sampling',async({page})=>{
+ const {configurations}=await install(page,'System');await page.goto('/model-configurations');await page.getByRole('button',{name:'Create',exact:true}).click();const dialog=page.getByRole('dialog');await dialog.getByLabel('Name',{exact:true}).fill('Clamped configuration');
+ for(const input of await dialog.locator('input[type=number]').all()){
+  const min=Number(await input.getAttribute('min'));const max=Number(await input.getAttribute('max'));
+  await input.fill(String(max+100));await expect(input).toHaveValue(String(max));await input.fill(String(min-100));await expect(input).toHaveValue(String(min));
+ }
+ await dialog.getByLabel('Top-k',{exact:true}).fill('2.6');await expect(dialog.getByLabel('Top-k',{exact:true})).toHaveValue('3');
+ await dialog.getByLabel('Top-p',{exact:true}).fill('0.333');await dialog.getByRole('button',{name:'Save',exact:true}).click();await expect(dialog).toHaveCount(0);
+ expect(configurations.find(item=>item.Name==='Clamped configuration')?.Configuration).toMatchObject({TopK:3,TopP:.333,Temperature:0,MaxTokens:1,Seed:0});
+});
+test('waiting quips sit beneath the response and turn telemetry forms aligned rows',async({page})=>{
+ await install(page);let release:()=>void=()=>{};const hold=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/api/chat',async route=>{await hold;await route.fulfill({json:{message:{content:'A tidy answer'},done:true,prompt_eval_count:12,eval_count:4,eval_duration:1000000000,total_duration:1300000000}});});
+ await page.goto('/playground');await page.getByLabel('Prompt',{exact:true}).fill('Hello');await page.getByRole('button',{name:'Send',exact:true}).click();const quip=page.locator('.sa-chat-quip');await expect(quip).toBeVisible();expect(await quip.evaluate(element=>element.closest('article')===null)).toBe(true);expect(await quip.locator('em').evaluate(element=>getComputedStyle(element).fontStyle)).toBe('italic');
+ release();await expect(quip).toHaveCount(0);await expect(page.getByText('A tidy answer',{exact:true})).toBeVisible();await page.getByRole('button',{name:'Response telemetry',exact:true}).hover();const tooltip=page.getByRole('tooltip');await expect(tooltip).toBeVisible();
+ const rows=await tooltip.locator('dl > div').all();expect(rows).toHaveLength(7);const starts:number[]=[];const ends:number[]=[];
+ for(const row of rows){const label=await row.locator('dt').boundingBox();const value=await row.locator('dd').boundingBox();expect(label!.x+label!.width).toBeLessThan(value!.x);starts.push(label!.x);ends.push(value!.x+value!.width);}
+ expect(Math.max(...starts)-Math.min(...starts)).toBeLessThan(1);expect(Math.max(...ends)-Math.min(...ends)).toBeLessThan(1);
+ await page.screenshot({path:`test-results/screenshots/${test.info().project.name}-turn-telemetry.png`});
+});

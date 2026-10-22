@@ -978,6 +978,17 @@
     "duplicateHelp": "Cria cópia editável sem mudar a origem; pessoal por padrão quando conectado.",
     "promptSelectorHelp": "Selecione instruções visíveis à sua conta; padrões compartilhados e privados são agrupados separadamente.",
     "configurationSelectorHelp": "Selecione parâmetros salvos de amostragem, paradas, formato, pensamento e streaming.",
-    "editSelectionHelp": "Edita item próprio ou abre cópia editável de padrão compartilhado somente leitura."
+    "editSelectionHelp": "Edita item próprio ou abre cópia editável de padrão compartilhado somente leitura.",
+    "tenantFilterHelp": "Escolha o locatário cujos padrões compartilhados aparecem junto dos padrões do sistema e dos seus itens pessoais."
+  },
+  "history": {
+    "tabs": "Visualizações do histórico de solicitações",
+    "api": "Histórico da API",
+    "inference": "Histórico de inferência",
+    "embeddings": "Histórico de embeddings",
+    "completions": "Conclusões de texto",
+    "apiHelp": "Revise todas as solicitações HTTP registradas, incluindo operações de modelos.",
+    "inferenceHelp": "Revise solicitações de chat e conclusão de texto sem chamadas de embeddings.",
+    "embeddingsHelp": "Revise solicitações de embeddings das APIs Ollama e OpenAI."
   }
 }

@@ -978,6 +978,17 @@
     "duplicateHelp": "Crée une copie modifiable sans changer la source ; personnelle par défaut après connexion.",
     "promptSelectorHelp": "Choisissez les instructions visibles pour votre compte ; valeurs partagées et privées sont groupées séparément.",
     "configurationSelectorHelp": "Choisissez des paramètres enregistrés : échantillonnage, arrêts, format, réflexion et streaming.",
-    "editSelectionHelp": "Modifie un élément possédé ou ouvre une copie modifiable d’une valeur partagée en lecture seule."
+    "editSelectionHelp": "Modifie un élément possédé ou ouvre une copie modifiable d’une valeur partagée en lecture seule.",
+    "tenantFilterHelp": "Choisissez le locataire dont les paramètres partagés apparaissent avec ceux du système et vos éléments personnels."
+  },
+  "history": {
+    "tabs": "Vues de l’historique des requêtes",
+    "api": "Historique API",
+    "inference": "Historique des inférences",
+    "embeddings": "Historique des embeddings",
+    "completions": "Complétions de texte",
+    "apiHelp": "Consultez toutes les requêtes HTTP enregistrées, y compris les opérations sur les modèles.",
+    "inferenceHelp": "Consultez les requêtes de chat et de complétion de texte, sans les appels d’embeddings.",
+    "embeddingsHelp": "Consultez les requêtes d’embeddings des API Ollama et OpenAI."
   }
 }

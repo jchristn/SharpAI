@@ -9,7 +9,7 @@ export function InfoPopover({label,children}: {label:string;children:ReactNode})
   const [position,setPosition]=useState<{left:number;top:number}|null>(null);
   const show=():void=>{
     const rect=anchor.current?.getBoundingClientRect();
-    if(rect)setPosition({left:Math.max(8,Math.min(rect.left,window.innerWidth-296)),top:Math.max(8,Math.min(rect.bottom+6,window.innerHeight-240))});
+    if(rect)setPosition({left:Math.max(8,Math.min(rect.left,window.innerWidth-336)),top:Math.max(8,Math.min(rect.bottom+6,window.innerHeight-240))});
   };
   return <span className="sa-telemetry" onMouseEnter={show} onMouseLeave={()=>setPosition(null)}>
     <button ref={anchor} type="button" className="sa-btn sa-btn--ghost sa-btn--icon" aria-label={label} aria-describedby={position?id:undefined} onFocus={show} onBlur={()=>setPosition(null)} onClick={show} onKeyDown={event=>{if(event.key==='Escape')setPosition(null);}}><Icon name="info"/></button>

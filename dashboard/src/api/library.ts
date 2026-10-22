@@ -31,3 +31,15 @@ export function generationRequest(configuration:GenerationConfiguration):{option
  if(configuration.Stop.length)options.stop=configuration.Stop;
  return {options,...(configuration.JsonOutput?{format:'json'}:{}),stream:configuration.StreamResponse};
 }
+
+/** Keep editor values within the server contract; blank/non-finite values use engine defaults. */
+export function clampGenerationValue(field:GenerationField,value:number|null|undefined):number|null {
+ if(value==null||!Number.isFinite(value))return null;
+ const bounded=Math.max(field.min,Math.min(field.max,value));
+ return field.step===1?Math.round(bounded):bounded;
+}
+export function clampGeneration(configuration:GenerationConfiguration):GenerationConfiguration {
+ const normalized={...configuration};
+ for(const field of generationFields)normalized[field.field]=clampGenerationValue(field,configuration[field.field]);
+ return normalized;
+}

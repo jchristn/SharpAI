@@ -978,6 +978,17 @@
     "duplicateHelp": "Crea una copia modificabile senza alterare l’origine; personale per impostazione predefinita dopo l’accesso.",
     "promptSelectorHelp": "Scegli istruzioni visibili al tuo account; prompt condivisi e privati sono raggruppati separatamente.",
     "configurationSelectorHelp": "Scegli parametri salvati di campionamento, arresto, formato, ragionamento e streaming.",
-    "editSelectionHelp": "Modifica un elemento proprio o apre una copia di un predefinito condiviso in sola lettura."
+    "editSelectionHelp": "Modifica un elemento proprio o apre una copia di un predefinito condiviso in sola lettura.",
+    "tenantFilterHelp": "Scegli il tenant i cui valori condivisi vengono mostrati insieme a quelli del sistema e ai tuoi elementi personali."
+  },
+  "history": {
+    "tabs": "Viste della cronologia delle richieste",
+    "api": "Cronologia API",
+    "inference": "Cronologia inferenze",
+    "embeddings": "Cronologia embedding",
+    "completions": "Completamenti di testo",
+    "apiHelp": "Consulta tutte le richieste HTTP registrate, comprese le operazioni sui modelli.",
+    "inferenceHelp": "Consulta le richieste di chat e completamento del testo senza le chiamate di embedding.",
+    "embeddingsHelp": "Consulta le richieste di embedding delle API Ollama e OpenAI."
   }
 }

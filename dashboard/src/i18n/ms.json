@@ -978,6 +978,17 @@
     "duplicateHelp": "Cipta salinan boleh sunting tanpa menukar sumber; peribadi secara lalai selepas log masuk.",
     "promptSelectorHelp": "Pilih arahan akaun anda; lalai dikongsi dan prom peribadi dalam kumpulan berasingan.",
     "configurationSelectorHelp": "Pilih tetapan pensampelan, hentian, format, pemikiran dan penstriman disimpan.",
-    "editSelectionHelp": "Sunting item sendiri atau buka salinan berasingan lalai dikongsi baca sahaja."
+    "editSelectionHelp": "Sunting item sendiri atau buka salinan berasingan lalai dikongsi baca sahaja.",
+    "tenantFilterHelp": "Pilih penyewa yang nilai lalai kongsinya dipaparkan bersama nilai lalai sistem dan item peribadi anda."
+  },
+  "history": {
+    "tabs": "Paparan sejarah permintaan",
+    "api": "Sejarah API",
+    "inference": "Sejarah inferens",
+    "embeddings": "Sejarah pembenaman",
+    "completions": "Pelengkapan teks",
+    "apiHelp": "Semak semua permintaan HTTP yang direkodkan, termasuk operasi model.",
+    "inferenceHelp": "Semak permintaan sembang dan pelengkapan teks tanpa panggilan pembenaman.",
+    "embeddingsHelp": "Semak permintaan pembenaman daripada API Ollama dan OpenAI."
   }
 }

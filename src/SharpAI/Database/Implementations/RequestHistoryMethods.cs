@@ -250,19 +250,27 @@ namespace SharpAI.Database.Implementations
             if (query.StatusCode.HasValue) { clauses.Add("statuscode = @f_status"); parameters["@f_status"] = query.StatusCode.Value; }
             if (!String.IsNullOrEmpty(query.PathContains)) { clauses.Add("path LIKE @f_path"); parameters["@f_path"] = "%" + query.PathContains + "%"; }
 
-            if (!String.IsNullOrEmpty(query.Category) && query.Category.Equals("inference", StringComparison.OrdinalIgnoreCase))
+            string[] patterns = null;
+            switch (query.Category?.Trim().ToLowerInvariant())
             {
-                // Inference/embeddings endpoints across the Ollama and OpenAI surfaces.
-                string[] patterns = new string[]
-                {
-                    "/api/chat%", "/api/generate%", "/api/embed%",
-                    "/v1/chat/completions%", "/v1/completions%", "/v1/embeddings%"
-                };
+                // Preserve the existing combined category for API consumers.
+                case "inference":
+                    patterns = new string[] { "/api/chat%", "/api/generate%", "/api/embed%", "/v1/chat/completions%", "/v1/completions%", "/v1/embeddings%" };
+                    break;
+                case "generation":
+                    patterns = new string[] { "/api/chat", "/api/generate", "/v1/chat/completions", "/v1/completions" };
+                    break;
+                case "embeddings":
+                    patterns = new string[] { "/api/embed", "/api/embeddings", "/v1/embeddings" };
+                    break;
+            }
+            if (patterns != null)
+            {
                 List<string> ors = new List<string>();
                 for (int i = 0; i < patterns.Length; i++)
                 {
                     string key = "@f_cat" + i;
-                    ors.Add("path LIKE " + key);
+                    ors.Add((query.Category.Trim().Equals("inference", StringComparison.OrdinalIgnoreCase) ? "path LIKE " : "path = ") + key);
                     parameters[key] = patterns[i];
                 }
                 clauses.Add("(" + String.Join(" OR ", ors) + ")");

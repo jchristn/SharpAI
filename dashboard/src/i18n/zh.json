@@ -978,6 +978,17 @@
     "duplicateHelp": "创建可编辑副本且不改变原件；登录后默认保存为个人项目。",
     "promptSelectorHelp": "选择您可见的指令，共享默认项和个人提示词分别分组显示。",
     "configurationSelectorHelp": "选择已保存的采样、停止序列、格式、思考和流式响应设置。",
-    "editSelectionHelp": "编辑自己的项目；若为只读共享默认项，则打开独立可编辑副本。"
+    "editSelectionHelp": "编辑自己的项目；若为只读共享默认项，则打开独立可编辑副本。",
+    "tenantFilterHelp": "选择租户，以查看其共享默认项、系统默认项和您的个人项。"
+  },
+  "history": {
+    "tabs": "请求历史视图",
+    "api": "API 历史",
+    "inference": "推理历史",
+    "embeddings": "嵌入历史",
+    "completions": "文本补全",
+    "apiHelp": "查看所有已记录的 HTTP 请求，包括模型操作。",
+    "inferenceHelp": "查看聊天和文本补全请求，不包含嵌入调用。",
+    "embeddingsHelp": "查看 Ollama 和 OpenAI API 的嵌入请求。"
   }
 }

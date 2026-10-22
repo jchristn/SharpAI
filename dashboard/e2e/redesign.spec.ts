@@ -34,12 +34,12 @@ for (const {path, heading} of [
   {path:'/models',heading:'Models'},
   {path:'/playground',heading:'Playground'},
   {path:'/request-history',heading:'Request History'},
-  {path:'/inference-history',heading:'Inference & Embeddings History'},
+  {path:'/inference-history',heading:'Request History'},
   {path:'/api-explorer',heading:'API Explorer'},
   {path:'/observability',heading:'Observability'},
   {path:'/settings',heading:'Settings'},
 ]) {
-  test(`${heading} fits and remains accessible`, async ({ page }) => {
+  test(`${heading} at ${path} fits and remains accessible`, async ({ page }) => {
     await page.goto(path);
     await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
     await expect(page.locator('main')).toBeVisible();
@@ -278,7 +278,7 @@ test('chat reports a terminal server error without treating it as a successful r
   await expect(page.getByRole('button',{name:'Response telemetry'})).toHaveCount(0);
 });
 
-test('invalid sampling values prevent submission',async({page})=>{
+test('out-of-range sampling values are clamped before saving',async({page})=>{
   await page.route('**/api/tags',route=>route.fulfill({json:{models:[{name:'test-model'}]}}));
   let requests=0;
   await page.route('**/api/chat',route=>{requests++;return route.fulfill({contentType:'application/x-ndjson',body:'{"done":true}\n'});});
@@ -286,8 +286,11 @@ test('invalid sampling values prevent submission',async({page})=>{
   await page.getByLabel('Prompt',{exact:true}).fill('Hello');
   await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
   await page.getByLabel('Temperature',{exact:true}).fill('3');
+  await expect(page.getByLabel('Temperature',{exact:true})).toHaveValue('2');
   await page.getByRole('dialog').getByRole('button',{name:'Save',exact:true}).click();
-  expect(await page.getByLabel('Temperature',{exact:true}).evaluate((input:HTMLInputElement)=>input.validity.rangeOverflow)).toBe(true);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button',{name:'Edit selected model configuration',exact:true}).click();
+  await expect(page.getByLabel('Temperature',{exact:true})).toHaveValue('2');
   expect(requests).toBe(0);
   await expect(page.locator('.sa-chat-message')).toHaveCount(0);
 });
@@ -473,4 +476,19 @@ test('playground uses a red square stop control and content-sized replies',async
  const bubble=await page.locator('.sa-chat-message--assistant').boundingBox();
  const chat=await page.locator('.sa-chat-messages').boundingBox();
  expect(bubble!.width).toBeLessThan(chat!.width-30);
+});
+
+test('request history has three deep-linked tabs with independent server filters',async({page})=>{
+ const seen:string[]=[];
+ await page.route('**/v1.0/api/request-history**',route=>{
+  const url=new URL(route.request().url());const category=url.searchParams.get('category')??'api';seen.push(category);
+  const row={Id:'history-'+category,Path:category==='embeddings'?'/api/embed':category==='generation'?'/api/chat':'/api/tags',Method:'POST',StatusCode:200,CreatedUtc:'2026-10-22T00:00:00Z',DurationMs:12};
+  return route.fulfill({json:url.pathname.endsWith('/summary')?{TotalCount:1,TotalSuccess:1,Buckets:[]}:{Objects:[row],TotalRecords:1}});
+ });
+ await page.goto('/request-history');await expect(page.getByRole('tab')).toHaveCount(3);await expect(page.getByRole('tab',{name:'API History',exact:true})).toHaveAttribute('aria-selected','true');await expect(page.getByRole('cell',{name:'/api/tags',exact:true})).toBeVisible();
+ await page.getByRole('tab',{name:'Inference History',exact:true}).click();await expect(page).toHaveURL(/\/request-history\/inference$/);await expect(page.getByRole('cell',{name:'/api/chat',exact:true})).toBeVisible();await expect(page.locator('tbody meter')).toHaveCount(1);
+ await page.getByRole('tab',{name:'Embeddings History',exact:true}).click();await expect(page.getByRole('cell',{name:'/api/embed',exact:true})).toBeVisible();await expect(page.locator('tbody meter')).toHaveCount(1);expect(seen).toEqual(expect.arrayContaining(['api','generation','embeddings']));
+ await page.reload();await expect(page.getByRole('tab',{name:'Embeddings History',exact:true})).toHaveAttribute('aria-selected','true');await page.getByRole('tab',{name:'Embeddings History',exact:true}).focus();await page.keyboard.press('Home');await expect(page.getByRole('tab',{name:'API History',exact:true})).toBeFocused();
+ await expect(page.locator('.sa-sidebar').getByRole('link',{name:'Inference History',exact:true})).toHaveCount(0);
+ await page.goto('/inference-history');await expect(page).toHaveURL(/\/request-history\/inference$/);
 });

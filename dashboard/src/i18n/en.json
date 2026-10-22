@@ -978,6 +978,17 @@
     "duplicateHelp": "Create an editable copy without changing the source. Copies default to personal visibility when signed in.",
     "promptSelectorHelp": "Choose instructions visible to your account. Shared defaults and your private prompts appear in separate groups.",
     "configurationSelectorHelp": "Choose saved generation parameters. This controls sampling, stop sequences, output format, thinking and streaming.",
-    "editSelectionHelp": "Edit an owned item. For a read-only shared default, this opens a new editable copy; saving keeps the original unchanged."
+    "editSelectionHelp": "Edit an owned item. For a read-only shared default, this opens a new editable copy; saving keeps the original unchanged.",
+    "tenantFilterHelp": "Choose the tenant whose shared defaults appear alongside system defaults and your personal items."
+  },
+  "history": {
+    "tabs": "Request history views",
+    "api": "API History",
+    "inference": "Inference History",
+    "embeddings": "Embeddings History",
+    "completions": "Completions",
+    "apiHelp": "Review all captured HTTP requests, including model operations.",
+    "inferenceHelp": "Review chat and text completion requests without embedding calls.",
+    "embeddingsHelp": "Review embedding requests from the Ollama and OpenAI APIs."
   }
 }

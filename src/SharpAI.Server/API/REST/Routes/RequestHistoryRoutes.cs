@@ -31,7 +31,7 @@ namespace SharpAI.Server.API.REST.Routes
                 BindTenant(ctx, req, query);
                 return ctx.Database.RequestHistory.Enumerate(query);
             }, api => RouteHelpers.Describe(api, "Request History", "List captured requests")
-                .WithDescription("Paginated list of captured requests (bodies omitted). Filters: method, statusCode, pathContains, fromUtc, toUtc, tenantId, userId, pageNumber, pageSize.")
+                .WithDescription("Paginated list of captured requests (bodies omitted). Filters: method, statusCode, pathContains, category (generation, embeddings, or legacy combined inference), fromUtc, toUtc, tenantId, userId, pageNumber, pageSize.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Request history page", OpenApiSchemaMetadata.Create("object"))));
 
             ctx.Server.Get("/v1.0/api/request-history/summary", async (req) =>

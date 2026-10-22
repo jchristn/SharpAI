@@ -110,8 +110,8 @@ export function PlaygroundView(): JSX.Element {
         {!modelError && !available.length && <p className="sa-settings-note">{t('chat.noModels')}</p>}
         <div ref={log} tabIndex={0} className="sa-chat-messages" role="log" aria-label={t('chat.conversation')}>
           {mode==='chat' && !messages.length && <div className="sa-chat-empty"><img src="/images/sharp-logo.png" alt="SharpAI"/><h2>{t('chat.start')}</h2><p>{t('chat.startHelp')}</p></div>}
-          {mode==='chat' && messages.map((message,index)=><article key={index} className={`sa-chat-message sa-chat-message--${message.role}`}><header><strong>{t(message.role==='user'?'chat.you':'playground.response')}</strong>{message.content && <CopyButton value={message.content}/>}</header><div className="sa-chat-content">{message.role==='assistant' && message.content ? <Suspense fallback={message.content}><ChatMarkdown text={message.content}/></Suspense> : message.content || (busy?t(`quips.${quip}`):'—')}</div>
-            {message.metrics && message.content && <InfoPopover label={t('chat.telemetry')}><dl className="sa-chat-metrics">{[
+          {mode==='chat' && messages.map((message,index)=><div key={index} className={`sa-chat-turn sa-chat-turn--${message.role}`}><article className={`sa-chat-message sa-chat-message--${message.role}`}><header><strong>{t(message.role==='user'?'chat.you':'playground.response')}</strong>{message.content && <CopyButton value={message.content}/>}</header><div className="sa-chat-content">{message.role==='assistant' && message.content ? <Suspense fallback={message.content}><ChatMarkdown text={message.content}/></Suspense> : message.content || (busy&&index===messages.length-1?'':'—')}</div>
+            {message.metrics && message.content && <InfoPopover label={t('chat.telemetry')}><strong className="sa-metrics-title">{t('chat.telemetry')}</strong><dl className="sa-chat-metrics">{[
   {label:'chat.ttft',value:message.metrics.ttft===undefined?'—':`${number(message.metrics.ttft/1000)} s`},
   {label:'chat.totalTime',value:`${number(message.metrics.elapsed/1000)} s`},
   {label:'chat.streaming',value:message.metrics.ttft===undefined?'—':`${number(Math.max(0,message.metrics.elapsed-message.metrics.ttft)/1000)} s`},
@@ -120,7 +120,7 @@ export function PlaygroundView(): JSX.Element {
   {label:'chat.totalTokens',value:message.metrics.input===undefined || message.metrics.output===undefined?'—':number(message.metrics.input+message.metrics.output)},
   {label:'chat.speed',value:message.metrics.generation && message.metrics.output!==undefined?number(message.metrics.output/message.metrics.generation):'—'},
 ].map(({label,value})=><div key={label}><dt>{t(label)}</dt><dd>{value}</dd></div>)}</dl></InfoPopover>}
-          </article>)}
+          </article>{busy&&index===messages.length-1&&message.role==='assistant'&&!message.content&&<p className="sa-chat-quip" role="status"><em>{t(`quips.${quip}`)}</em></p>}</div>)}
           {mode==='embeddings' && vector && <article className="sa-chat-message"><strong>{t('playground.dimensions')}: {number(vector.length)} — {t('playground.preview')}</strong><pre>{`[${vector.slice(0,12).map(n=>n.toFixed(4)).join(', ')}${vector.length>12?', …':''}]`}</pre></article>}
         </div>
         {error && <p role="alert" className="sa-error">{error}</p>}
