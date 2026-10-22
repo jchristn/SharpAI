@@ -817,7 +817,9 @@
     "listAdd": "Tambah entri boleh sunting; simpan borang untuk mengekalkannya.",
     "listRemove": "Buang entri daripada draf; pelayan berubah hanya selepas simpan.",
     "platformAdmin": "Beri pentadbir seluruh platform, memintas sempadan penyewa dan semakan RBAC.",
-    "tenantAdmin": "Beri pentadbir dalam penyewa pengguna ini, memintas semakan RBAC penyewa."
+    "tenantAdmin": "Beri pentadbir dalam penyewa pengguna ini, memintas semakan RBAC penyewa.",
+    "pagination": "Semak halaman hasil atau ubah baris setiap halaman; penapis dan penyewa dikekalkan.",
+    "embeddingText": "Teks dihantar ke model pembenaman untuk menghasilkan vektor; perbualan dan parameter sembang tidak dihantar."
   },
   "details": {
     "CreatedUtc": "Mula (UTC)",

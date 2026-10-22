@@ -817,7 +817,9 @@
     "listAdd": "Añade una entrada editable a la lista; guarde el formulario para conservarla.",
     "listRemove": "Elimina esta entrada del borrador; el servidor cambia solo al guardar.",
     "platformAdmin": "Concede administración global, omitiendo límites de tenant y RBAC.",
-    "tenantAdmin": "Concede administración dentro del tenant del usuario, omitiendo su RBAC."
+    "tenantAdmin": "Concede administración dentro del tenant del usuario, omitiendo su RBAC.",
+    "pagination": "Recorre los resultados o cambia filas por página; conserva filtros y tenant.",
+    "embeddingText": "Texto enviado al modelo de embeddings para producir un vector; no envía conversación ni parámetros de chat."
   },
   "details": {
     "CreatedUtc": "Inicio (UTC)",

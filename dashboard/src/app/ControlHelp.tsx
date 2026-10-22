@@ -48,7 +48,10 @@ export function ControlHelp():null {
         }
         else if(element.closest('.sa-http-headers'))kind='headers';
         else if(element.closest('.sa-payload-fields'))kind='body';
-        else if(element.matches('a[href]'))kind='navigate';
+        else if(element.closest('.sa-pagination'))kind='pagination';
+        else if(element.closest('.sa-filterbar'))kind='filter';
+        else if(element.closest('[data-help=embeddingText]'))kind='embeddingText';
+        else if(element.matches('a[href],[role=tab]'))kind='navigate';
         else if(element.closest('.sa-settings-fields') && element.tagName==='BUTTON')kind=element.dataset.help==='delete'?'listRemove':element.dataset.help==='create'?'listAdd':'save';
         else if(element.tagName==='LABEL' && element.querySelector('textarea') && window.location.pathname==='/api-explorer')kind='requestBody';
         else if(window.location.pathname==='/api-explorer' && /apiExplorer\.(send|sending)/.test(semantic))kind='save';

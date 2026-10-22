@@ -817,7 +817,9 @@
     "listAdd": "Ajoute une entrée modifiable ; enregistrez le formulaire pour la conserver.",
     "listRemove": "Retire cette entrée du brouillon ; le serveur change seulement après enregistrement.",
     "platformAdmin": "Accorde l’administration globale sans limites de tenant ni contrôles RBAC.",
-    "tenantAdmin": "Accorde l’administration dans le tenant de cet utilisateur sans contrôles RBAC locaux."
+    "tenantAdmin": "Accorde l’administration dans le tenant de cet utilisateur sans contrôles RBAC locaux.",
+    "pagination": "Parcourez les résultats ou changez les lignes par page ; filtres et tenant restent actifs.",
+    "embeddingText": "Texte envoyé au modèle d’embedding pour produire un vecteur ; conversation et paramètres de chat ne sont pas envoyés."
   },
   "details": {
     "CreatedUtc": "Début (UTC)",

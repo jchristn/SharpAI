@@ -817,7 +817,9 @@
     "listAdd": "Fügt einen bearbeitbaren Listeneintrag hinzu; zum Übernehmen das Formular speichern.",
     "listRemove": "Entfernt den Entwurfseintrag; die Serverkonfiguration ändert sich erst beim Speichern.",
     "platformAdmin": "Gewährt plattformweite Administration ohne Mandantenbegrenzung und RBAC-Prüfung.",
-    "tenantAdmin": "Gewährt Administration im Mandanten des Benutzers ohne dessen RBAC-Prüfung."
+    "tenantAdmin": "Gewährt Administration im Mandanten des Benutzers ohne dessen RBAC-Prüfung.",
+    "pagination": "Ergebnisse durchblättern oder Zeilenanzahl ändern; Filter und Mandant bleiben erhalten.",
+    "embeddingText": "Text für das Embedding-Modell zur Vektorberechnung; Gespräch und Chat-Parameter werden nicht gesendet."
   },
   "details": {
     "CreatedUtc": "Start (UTC)",

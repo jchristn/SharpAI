@@ -817,7 +817,9 @@
     "listAdd": "Aggiunge una voce modificabile; salva il modulo per conservarla.",
     "listRemove": "Rimuove la voce dalla bozza; il server cambia solo al salvataggio.",
     "platformAdmin": "Concede amministrazione globale senza limiti tenant né controlli RBAC.",
-    "tenantAdmin": "Concede amministrazione nel tenant dell’utente senza controlli RBAC locali."
+    "tenantAdmin": "Concede amministrazione nel tenant dell’utente senza controlli RBAC locali.",
+    "pagination": "Sfoglia i risultati o cambia le righe per pagina; filtri e tenant restano attivi.",
+    "embeddingText": "Testo inviato al modello embedding per ottenere un vettore; conversazione e parametri chat non vengono inviati."
   },
   "details": {
     "CreatedUtc": "Inizio (UTC)",

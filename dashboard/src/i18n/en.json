@@ -817,7 +817,9 @@
     "listAdd": "Append an editable entry to this settings list. Save the settings form to persist it.",
     "listRemove": "Remove this entry from the settings draft. The server configuration changes only when you save.",
     "platformAdmin": "Grant platform-wide administrator access, bypassing tenant boundaries and RBAC checks.",
-    "tenantAdmin": "Grant administrator access within this user’s tenant, bypassing that tenant’s RBAC checks."
+    "tenantAdmin": "Grant administrator access within this user’s tenant, bypassing that tenant’s RBAC checks.",
+    "pagination": "Move through this result set or change rows per page. The current filters and tenant selection stay in effect.",
+    "embeddingText": "Text sent to the selected embedding model to produce a numeric vector. Conversation turns and chat sampling parameters are not sent."
   },
   "details": {
     "CreatedUtc": "Started (UTC)",
