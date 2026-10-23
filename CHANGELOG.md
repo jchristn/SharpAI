@@ -1,5 +1,14 @@
 # Changelog
 
+### Unreleased standalone serving
+
+- Add `SharpAI.Serve`, a portable NuGet .NET tool exposing `sharpai serve <model.gguf>` with explicit CLI paths, runtime settings, sampling defaults, and API selection.
+- Serve one local model without authentication, a dashboard, registry, configuration file, or database; load before readiness and release on shutdown.
+- Extract shared Ollama/OpenAI inference handlers so standalone and managed hosting retain the same streaming, tool calling, usage, and error behavior.
+- Include install/update/uninstall guidance, a standalone HTTP reference and Postman collection, deterministic tests, real-model tests, package lifecycle checks, and cross-platform CI.
+- Bundle CPU/Metal native support in the portable tool; support an explicit external CUDA library to keep the NuGet package within feed size limits.
+
+
 ### Unreleased REST documentation and contract fixes
 
 - Rewrite the README around local GGUF inference, familiar APIs, and infrastructure control, with authentication and multitenancy guidance.

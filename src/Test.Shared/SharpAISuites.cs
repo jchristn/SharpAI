@@ -22,6 +22,7 @@ namespace Test.Shared
             {
                 return new List<TestSuiteDescriptor>
                 {
+                    ServeSuite.Build(),
                     PromptSuites.ChatFormatSuite(),
                     PromptSuites.ChatPromptBuilderSuite(),
                     PromptSuites.TextGenerationSuite(),

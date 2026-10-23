@@ -391,3 +391,6 @@ auth/
 # Reproducible terminal publish outputs and local evidence
 installers/
 artifacts/tui/
+
+# Standalone serving NuGet artifacts
+artifacts/serve/

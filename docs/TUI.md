@@ -6,6 +6,20 @@ Build and run the HTTP-only client against an existing server:
 dotnet run --project src/SharpAI.Tui -f net8.0 -- --server http://127.0.0.1:8000
 ```
 
+Run from the repository root with the matching .NET SDK installed. For an already built
+self-contained archive, invoke its `sharpai-tui` executable instead; no installed .NET runtime is needed.
+The server must already be running; see [Docker/web setup](../README.md#getting-started-docker-and-web).
+
+| Flag | Meaning |
+| --- | --- |
+| `--server http(s)://host:port` | Server origin; overrides the saved profile for this run |
+| `--locale en` | Startup locale; overrides the saved profile for this run |
+| `--profile-directory path` | Directory containing `tui.json` and the client log directory |
+| `--help`, `--version` | Print usage/version without starting the interactive terminal |
+
+There are no password/token command-line arguments. Supported production locales are en, es, pt, fr,
+it, de, zh, ru, ms, hi, and ja; `qps-ploc` is an expansion-test locale.
+
 The client targets .NET 8 and .NET 10 and pins TUIKit 1.12.0 from NuGet. It has no reference to the
 server, database drivers, or native inference engine. Model weights and database files stay on the
 selected server. An interactive terminal is required; `--help` and `--version` also work when redirected.
@@ -28,6 +42,10 @@ On Unix that file must be owner-only. The client does not create token files or 
 Choose a language before signing in through Commands > Language, or pass `--locale`. Profile, language,
 and theme changes apply after restarting the client. Arabic is omitted because bidi shaping has not
 been established for the required terminal hosts. Shared catalog translations fall back to English.
+
+Navigation follows the web groups Overview, Models, Operations, and System, with section spacing
+after Overview, Playground, and Observability. Access and history tabs appear as individual terminal
+navigation items.
 
 The shell collapses navigation below 100 columns and preserves state when the window is smaller than
 80x24. Identifiers have separate nonwrapping table columns. Use Commands > Choose table columns to
@@ -61,7 +79,9 @@ python3 scripts/check-tui.py
 The harness creates disposable ports, a SQLite server and a Postman simulation, runs both frameworks,
 records terminal cells, checks native Ollama/OpenAI inference and persisted history after restart, runs
 benchmarks, and cleans up services and data. `--pull-url` additionally exercises a real verified remote
-pull. Native inference and synthetic transport evidence are recorded separately.
+pull. Native inference and synthetic transport evidence are recorded separately. The checked files under
+`tui/` are historical run artifacts; [their inventory](tui/README.md) describes their age and scope.
+Current server/collection evidence is in [api/validation.json](api/validation.json).
 
 The parity manifest records every web route, API operation and planned workflow. Catalog/focus coverage
 is not proof of complete workflow parity. `scripts/check-tui.py --release --results <results.json>` fails
@@ -162,3 +182,11 @@ before starting another command while generation is active.
 TUI chat output is rendered by TUIKit `MarkdownView`, including headings, emphasis, links,
 lists, tables, and fenced code. Framed content has at least one blank column on each side;
 scrollbars, navigation drawers, and credential dialogs keep the same horizontal separation.
+
+
+## Related contracts and client coverage
+
+Use the [REST reference](../REST_API.md) for all server operations and
+[Postman resources](../postman/README.md) for the collection and transport simulations. The TUI uses
+`SharpAI.Client`; its transport capabilities do not establish full parity for the public C#, JavaScript,
+or Python SDKs. See [SDK status](SDK_STATUS.md).

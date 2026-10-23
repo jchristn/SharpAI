@@ -10,7 +10,18 @@ Engine phases come from the same request-owned `InferenceStatistics` used in res
 
 Capture retains successfully emitted Ollama chunks and OpenAI SSE data with a bounded per-request buffer. Non-streaming responses use Watson's retained response data. `RequestHistory.MaxRequestBodyBytes` and `MaxResponseBodyBytes` bound retained payloads; zero disables retention. Original byte counts and truncation are displayed. Retention follows `RetentionDays`. Capture redacts passwords, bearer/session tokens, signing keys, API keys and credential secrets in JSON, and sensitive headers, before retaining content. Malformed security/settings bodies are withheld. Model prompts and answers can remain in history, so access to history is privileged and should be granted deliberately.
 
-With authentication enabled, non-platform principals can only enumerate, summarize, read or delete history within their authenticated tenant. Explicit foreign tenant filters and foreign record IDs are rejected. Records with no tenant, including older records and system/admin-key operations, remain platform-administrator-only. Auth-disabled deployments retain their existing open-access behavior.
+Non-platform principals can only enumerate, summarize, read or delete history within their authenticated tenant. Explicit foreign tenant filters and foreign record IDs are rejected. Records with no tenant, including older records and historical system operations, remain platform-administrator-only. The current server requires bearer authentication; legacy auth-disabled settings do not open these endpoints.
+
+## Views and filters
+
+The web Request History workspace has API History, Inference History, and Embeddings History tabs.
+The TUI exposes them as separate navigation items. All three use the same list and summary endpoints:
+`category=generation` selects chat/completions, `category=embeddings` selects embeddings, and omitted
+category selects all captured requests. Legacy `category=inference` includes both generation and
+embeddings. Chart time presets use 1/15/120/1440-minute buckets for hour/day/week/month windows.
+
+Both clients show successful/failed activity and fetch details separately from metadata pages. See
+[REST history contracts](../REST_API.md#management-apis) for the full filters and delete semantics.
 
 ## Validation
 

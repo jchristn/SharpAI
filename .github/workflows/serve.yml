@@ -1,0 +1,60 @@
+name: Standalone Serve
+on:
+  pull_request:
+    paths: ['src/**', 'scripts/*serve*', 'postman/SharpAI.Serve*', 'docs/SERVE.md', '.github/workflows/serve.yml']
+  push:
+    branches: [main]
+    paths: ['src/**', 'scripts/*serve*', 'postman/SharpAI.Serve*', 'docs/SERVE.md', '.github/workflows/serve.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install -g postman-cli@1.75.0
+      - name: Verified real model fixtures
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 'https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f212d81/tinyllamas/stories15M-q4_0.gguf' -o "$RUNNER_TEMP/stories.gguf"
+          python -c 'import hashlib,os,pathlib; assert hashlib.sha256((pathlib.Path(os.environ["RUNNER_TEMP"])/"stories.gguf").read_bytes()).hexdigest()=="66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739"'
+          curl --fail --location --retry 3 'https://huggingface.co/leliuga/all-MiniLM-L6-v2-GGUF/resolve/ddf2e25d5b8530422e7b14aa39f33a657ff9aec0/all-MiniLM-L6-v2.Q8_0.gguf' -o "$RUNNER_TEMP/embeddings.gguf"
+          python -c 'import hashlib,os,pathlib; assert hashlib.sha256((pathlib.Path(os.environ["RUNNER_TEMP"])/"embeddings.gguf").read_bytes()).hexdigest()=="e5ec722e8c82dc4ffaf965175ca472f5da3f97b695590b5b0780bdbfa29bcaf3"'
+      - name: Deterministic contracts
+        shell: bash
+        run: |
+          dotnet run --project src/Test.Serve -f net8.0
+          dotnet run --project src/Test.Serve -f net10.0
+      - name: Native serving and saved Postman contracts
+        shell: bash
+        run: |
+          python scripts/test-serve.py --framework net8.0 --postman --model "$RUNNER_TEMP/stories.gguf" --embedding-model "$RUNNER_TEMP/embeddings.gguf"
+          python scripts/test-serve.py --framework net10.0 --model "$RUNNER_TEMP/stories.gguf" --embedding-model "$RUNNER_TEMP/embeddings.gguf"
+      - name: NuGet tool install, PATH execution, update and remove
+        shell: bash
+        run: python scripts/test-serve-package.py --model "$RUNNER_TEMP/stories.gguf"
+      - name: Pack release artifact
+        if: runner.os == 'Linux'
+        run: dotnet pack src/SharpAI.Serve -c Release -o artifacts/serve
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with:
+          name: sharpai-serve-nuget
+          path: artifacts/serve/*.nupkg

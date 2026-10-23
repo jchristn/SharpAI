@@ -14,6 +14,8 @@ The solution consists of:
 
 - **SharpAI** - Core library (multi-targets .NET 8 and .NET 10) containing the main AI functionality
 - **SharpAI.Server** - Console application that provides an Ollama-compatible REST API server
+- **SharpAI.Serve** - Standalone `sharpai` NuGet tool serving one local GGUF without management or authentication
+- **SharpAI.Http** - Shared inference HTTP handlers used by both server hosts
 - **Test.*** projects - Various test applications demonstrating different components
 
 ### Core Components

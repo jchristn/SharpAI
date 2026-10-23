@@ -121,3 +121,11 @@ uncancelled summary with a non-length finish reason. The TUI simulation records 
 chat requests at `/fixture/chat-requests` and covers summary success, HTTP failure,
 truncation, cancellation, Markdown responses, and literal slash input. The fixture routes
 are test-only and are not server API operations.
+
+## Standalone Serve
+
+[SharpAI.Serve.postman_collection.json](SharpAI.Serve.postman_collection.json) is a separate,
+unauthenticated collection for the reduced single-model host. It is intentionally separate from
+the managed server's authenticated contract. Set `baseUrl` and `model`; select endpoints matching
+`--api` and the model capability. See [SERVE.md](../docs/SERVE.md). The real native harness runs
+applicable saved requests with `python3 scripts/test-serve.py --postman --model <gguf>`.

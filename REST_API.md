@@ -1,3 +1,4 @@
+<!-- Generator fragment: relative links resolve from the root REST_API.md output. -->
 # SharpAI REST API
 
 Complete reference for the SharpAI v4.0.1 server's registered HTTP operations. The server hosts
@@ -10,6 +11,9 @@ examples, and assertions organized into **Ollama APIs**, **OpenAI APIs**, and **
 The checked [OpenAPI snapshot](docs/api/openapi.json) and the authenticated live `/openapi.json`
 provide a tooling-oriented inventory. This guide adds field-level details and implementation limits
 that generic OpenAPI object schemas do not express.
+
+SDK wrapper coverage, test harnesses, and console tools are tracked separately in
+[SDK status](docs/SDK_STATUS.md). A complete server collection does not imply complete SDK parity.
 
 ## Contents
 
@@ -226,6 +230,13 @@ replacement, so preserve the fetched object and change only the intended values.
 
 `GET /favicon.ico` serves the bundled ICO asset from the application output directory, independently
 of the server's working directory, with content type `image/x-icon`.
+
+## Standalone serving scope
+
+`SharpAI.Serve` provides an explicitly unauthenticated single-model subset of the inference APIs.
+Its route inventory, CLI configuration, installation, and compatibility limits are documented in
+[docs/SERVE.md](docs/SERVE.md). The management routes and mandatory authentication in this reference
+apply to the managed server. A separate standalone collection lives under `postman/`.
 
 ## Endpoint index
 

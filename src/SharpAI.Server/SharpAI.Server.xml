@@ -124,22 +124,6 @@
             </summary>
             <param name="ctx">Route context carrying the server and runtime services. Required.</param>
         </member>
-        <member name="T:SharpAI.Server.API.REST.Routes.InferenceErrors">
-            <summary>
-            Shared error handling for inference routes: runs a handler and, on a pre-stream failure, writes the
-            OpenAI/Ollama-shaped error envelope with the correct status and type so client SDKs never throw when
-            parsing an error. Mid-stream failures (after the response has begun) are swallowed. Extracted from the
-            composition root so the Ollama and OpenAI inference registrars share one implementation.
-            </summary>
-        </member>
-        <member name="M:SharpAI.Server.API.REST.Routes.InferenceErrors.RunInference(WatsonWebserver.Core.ApiRequest,System.Func{System.Threading.Tasks.Task{System.Object}})">
-            <summary>
-            Run an inference handler, translating exceptions into the error envelope.
-            </summary>
-            <param name="req">API request.</param>
-            <param name="handler">Handler to run.</param>
-            <returns>The handler's result, or null after an error was written.</returns>
-        </member>
         <member name="T:SharpAI.Server.API.REST.Routes.LibraryRoutes">
             <summary>Scoped reusable system prompts and model configurations. List, read, write and duplicate all enforce ownership on the server.</summary>
         </member>

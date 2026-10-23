@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile><IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../SharpAI/SharpAI.csproj"/><PackageReference Include="Watson" Version="7.3.2"/></ItemGroup>
+</Project>

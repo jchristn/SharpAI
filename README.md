@@ -103,6 +103,10 @@ Explore the component and operational guides:
 
 ## Authentication and Multitenancy
 
+The managed server uses the access controls below. [Standalone serving](docs/SERVE.md) is an
+explicitly unauthenticated, single-model alternative for local inference.
+
+
 SharpAI authenticates both people and applications with bearer tokens. Web and TUI users sign in
 with a tenant, email, and password to receive an expiring, revocable session. Applications use API
 credentials created for a user, with their own permissions, scope, active status, and optional expiry.
@@ -193,6 +197,24 @@ The supplied Compose files persist models in a named Docker volume and configura
 authentication assets, and logs through mounts. See the [deployment guide](DEPLOYMENT_GUIDE.md)
 for persistence, networking, native installation, and GPU setup. For a smaller CPU deployment or
 an NVIDIA deployment, see `docker/compose-cpu.yaml` and `docker/compose-cuda.yaml`.
+
+## Getting Started (Standalone Serving)
+
+Serve a local GGUF directly through familiar inference APIs, with no registry, database,
+authentication, or dashboard:
+
+```sh
+# Once available on your configured NuGet feed:
+dotnet tool install --global SharpAI.Serve
+sharpai serve /models/assistant.gguf --served-model-name assistant --port 8000
+```
+
+With the .NET tool directory on PATH, `sharpai` runs from any working directory. Use
+`dotnet tool update --global SharpAI.Serve` to update and
+`dotnet tool uninstall --global SharpAI.Serve` to remove it. From an unreleased checkout,
+pack/install from a local feed or run the project directly. See the [standalone guide](docs/SERVE.md)
+for prerequisites, all CLI options, native backend support, HTTP examples, source installation,
+and validation. The web dashboard and TUI administration client use the managed server.
 
 ## Getting Started (TUI)
 

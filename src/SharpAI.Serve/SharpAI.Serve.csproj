@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <Nullable>enable</Nullable><ImplicitUsings>disable</ImplicitUsings>
+    <PackAsTool>true</PackAsTool><ToolCommandName>sharpai</ToolCommandName>
+    <PackageId>SharpAI.Serve</PackageId><Version>4.0.1</Version><RollForward>Major</RollForward>
+    <Authors>Joel Christner</Authors><PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>Serve one local GGUF model with Ollama and OpenAI compatible inference APIs. No database, dashboard, or authentication.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile><RepositoryUrl>https://github.com/jchristn/SharpAI</RepositoryUrl>
+    <PackageTags>gguf;inference;llm;ollama;openai;dotnet-tool;sharpai</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../SharpAI.Http/SharpAI.Http.csproj"/>
+    <InternalsVisibleTo Include="Test.Shared"/>
+    <None Include="README.md" Pack="true" PackagePath="/"/>
+  </ItemGroup>
+  <!-- Keep the portable tool below public-feed package limits. CUDA can be supplied explicitly. -->
+  <Target Name="ExcludeBundledCuda" AfterTargets="ComputeFilesToPublish">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="$([System.String]::Copy('%(ResolvedFileToPublish.RelativePath)').Contains('cuda12'))" />
+    </ItemGroup>
+  </Target>
+  <Target Name="RemoveStalePublishedCuda" AfterTargets="Publish">
+    <RemoveDir Directories="$(PublishDir)runtimes/linux-x64/native/cuda12;$(PublishDir)runtimes/win-x64/native/cuda12" />
+  </Target>
+</Project>

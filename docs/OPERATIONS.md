@@ -45,7 +45,7 @@ cancellations, and occupied/configured slots. Existing Prometheus and OTLP subsc
 No prompt, response, session identifier, or request identifier is attached to these metrics.
 Inference spans now carry measured phase times, token counts, timing source and outcome; model loads
 have separate timed spans. Completion/load log records contain matching trace/span IDs and flow through
-the existing filelog-to-Loki pipeline. The provisioned **SharpAI — Engine operations** Grafana dashboard
+the existing filelog-to-Loki pipeline. The provisioned **SharpAI ; Engine operations** Grafana dashboard
 covers every new metric and links logs to Tempo. See [stack verification](../docker/telemetry/README.md).
 
 LlamaSharp 0.30 creates and disposes an inference context for each `StatelessExecutor` call. No bounded
@@ -94,8 +94,8 @@ ineligible for LRU/idle eviction.
 alone does not establish actual GPU offload; the report says so explicitly. Device inventory, observed
 GPU allocations, and exact tensor placement are not supplied by this implementation.
 `GET /api/diagnostics/memory` reports process working set/peak, managed heap, and model estimates;
-per-model observed allocation is explicitly unavailable. Both diagnostics routes require administrator
-access when authentication is enabled. With authentication disabled, the existing open-server policy applies.
+per-model observed allocation is explicitly unavailable. Both diagnostics routes require `Admin Admin` permission. Bearer authentication is mandatory;
+legacy auth-disabled settings do not enable open HTTP access.
 
 ## Benchmark receipts
 
@@ -112,30 +112,48 @@ than inferred from the wrapper version. Failed measured requests remain in recei
 benchmark exit. Percentiles use nearest rank; p95 requires 20 samples, p99 requires 100. Smaller tails
 are null. Model-load failure or cancellation aborts the run before a completed receipt exists.
 
-Prefix reuse, continuous batching, quantization, additional API dialects, vision, and parallel chunked
-downloads remain deferred. A small-model benchmark is not evidence for implementing those features.
+Prefix reuse, continuous batching, in-process quantization/conversion, additional API dialects, vision,
+and parallel chunked downloads remain deferred. Running supported pre-quantized GGUF models is supported. A small-model benchmark is not evidence for implementing those features.
 
-## Tests and measured coverage
+## Current verification paths
 
-The reproducible integration harness requires .NET 8/10, Python 3, curl, Postman CLI 1.70 or newer,
-and a real local GGUF file:
+The current authenticated HTTP/collection harness requires .NET 8/10, Python 3, Postman CLI, network
+access to the pinned Hugging Face embedding fixture, and a real local completion GGUF:
 
 ```sh
 npm install -g postman-cli@1.75.0
-SHARPAI_TEST_MODEL_GGUF=/path/small-model.gguf scripts/test-operations.sh /tmp/sharpai-evidence
+python3 scripts/test-rest-reference.py --model /path/small-model.gguf --output artifacts/rest-reference
+python3 scripts/test-rest-reference.py --framework net10.0 --model /path/small-model.gguf --output artifacts/rest-reference-net10
+python3 scripts/test-administration.py
 python3 -m unittest discover -s scripts -p 'test_coverage_summary.py'
 ```
 
-It creates an isolated server and database, runs the committed Postman Hugging Face simulation over real
-HTTP, tests both frameworks, executes native operational tests separately from model instruction-following
-tests, checks live API contracts, and restarts with authentication enabled to test administrator-only access.
-The simulated upstream models only the tree/resolve/Range paths used here; it is a synthetic local fixture,
-not a published upstream-owned mock. No workspace or cloud publishing is involved.
+Build the server for the default administration harness framework (`net10.0`) first, or supply its
+`--server-dll` argument. The REST harness builds its selected framework and starts a disposable SQLite
+server. It validates a real remote MiniLM pull, native embeddings through both API families, streaming,
+settings round trips, the bundled favicon, HTTP metrics, tenant isolation, and credential owner ceilings.
+[Recorded results](api/validation.json) show 88 saved requests and 186 Postman assertions per framework,
+plus six direct tenant/credential boundary checks. This is server/collection evidence, not SDK parity.
+See [SDK status](SDK_STATUS.md) for actual SDK tests, wrappers, and console-tool gaps.
 
-The coverage gate requires 100% lines and at least 90% branches in the new operations module.
-The `Inference operations` workflow runs this harness with a pinned, hash-verified ~19 MB story model.
-Ordinary test runs explicitly skip simulation, native, or live-server cases when their environment is absent.
-The dedicated harness supplies those environments so those checks actually execute.
+Terminal validation uses its own [authenticated native/transport harness](TUI.md#validation). Synthetic
+upstream recovery tests use the [Postman download simulation](../postman/README.md#local-download-simulation)
+and shared deterministic tests; synthetic transport success alone does not establish native inference.
+
+### Older harness limitations
+
+`scripts/test-operations.sh`, `scripts/test-observability.py`, and `scripts/test-hardware-memory.py`
+still issue protected requests without current bearer setup or assume `Auth.Enabled: false` enables
+anonymous access. They need authentication updates before they can reproduce their original complete
+runs against the current server. The older C#/Python live SDK harnesses have the same gap. Existing
+coverage thresholds and CI configuration do not prove those jobs currently pass.
+
+## Historical measured coverage (2026-10-21)
+
+The results below were recorded for the implementation and authentication behavior at that time.
+They have not been rerun for today's checkout. The older operations harness combined deterministic,
+Postman-simulated, native, SDK, database, and server checks. Its coverage gate targeted 100% lines and
+at least 90% branches in the new operations module; that historical result is not repository-wide coverage.
 
 Local validation on 2026-10-21:
 
@@ -160,11 +178,11 @@ separate instrumented report (29 live HTTP contract cases passed). Branch counts
 bound rather than an assumed union of opaque branch identities. The whole repository is not near 100%.
 CI configuration is committed; a hosted CI run has not been observed here.
 
-## Additional reliability and hardware checks
+## Historical reliability and hardware checks
 
-The operations harness now generates two real GGUF shards from the hash-verified small model, serves
-them through the existing Postman simulation, then downloads/verifies, inspects, loads, generates,
-unloads and deletes them through production code. This exercises native multi-shard loading, including
+The recorded operations harness generated two real GGUF shards from the hash-verified small model, served
+them through the Postman simulation, then downloaded/verified, inspected, loaded, generated with,
+unloaded and deleted them through production code. This exercises native multi-shard loading, including
 rejection of missing shards; it does not establish compatibility with every large-model architecture.
 The fixture splitter preserves tensor bytes and is test tooling, not a runtime conversion dependency.
 
@@ -178,9 +196,12 @@ Native reliability tests repeatedly load/unload engines, occupy every slot, forc
 cancelled waiters, dispose unfinished streams, verify active-model eviction protection, and generate
 after reload. Set `SHARPAI_TEST_SOAK_CYCLES` (default 8) for longer runs and
 `SHARPAI_TEST_RETAINED_MEMORY_LIMIT_MB` (default 64) to tune the post-warmup leak allowance.
-Live Python SDK consumer checks verify Ollama timings, OpenAI usage and typed context-overflow errors.
+Historical live Python SDK consumer checks verified Ollama timings, OpenAI usage and typed context-overflow errors.
 Live HTTP tests disconnect streaming clients across both API dialects and require a subsequent request
 to finish within its timeout.
+
+The following older commands need the authentication repairs described above before use with the
+current server:
 
 ```sh
 python3 scripts/test-hardware-memory.py --model /path/model.gguf --backend metal --output /tmp/sharpai-metal
@@ -207,7 +228,7 @@ been exercised locally; Metal logs confirmed native offload. Hosted CI remains u
 - Runtime diagnostics still lack device inventory/memory and verified tensor placement.
 - Memory diagnostics lack reliable observed per-model allocation attribution.
 - Prefix reuse and continuous batching remain conditional on representative workload measurements.
-- Quantization, Anthropic Messages, vision projectors and parallel downloads remain deferred until demand.
+- In-process quantization/conversion, Anthropic Messages, vision projectors and parallel downloads remain deferred until demand.
 - Broader architectures, larger contexts/models, CUDA, SDK/database coverage and long-duration hardware soak
   runs need additional environments and fixtures; the new harnesses support continued validation.
 
@@ -225,8 +246,8 @@ initializer. Standalone Apple Silicon consumers select Metal automatically; CPU 
 and GPU-layer overrides remain available. .NET 10 retains LLamaSharp's own native loader. Native generation, real shards,
 cancellation, queue/reload behavior and all mmap/mlock combinations are exercised on both frameworks.
 
-The C# SDK now reads OpenAI SSE through RestWrapper's event reader, while retaining Ollama NDJSON
-chunk handling. The operations harness builds the SDK and runs seven live consumer contracts on each
+The C# SDK reads OpenAI SSE through RestWrapper's event reader, while retaining Ollama NDJSON
+chunk handling. The historical operations harness built the SDK and ran seven live consumer contracts on each
 framework against its isolated local server; it does not download additional models. SqlClient's
 transitive PKCS dependency is explicitly pinned to the patched 10.0.13 in both library and SDK.
 

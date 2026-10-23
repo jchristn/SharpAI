@@ -20,6 +20,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\SharpAI\SharpAI.csproj" />
+        <ProjectReference Include="../SharpAI.Http/SharpAI.Http.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

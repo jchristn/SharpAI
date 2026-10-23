@@ -14,12 +14,12 @@ Platform administrators can choose any tenant. Other principals are bound to the
 | `/access/users` | List, create, edit account details/status, reset passwords, inspect effective permissions | `/v1.0/tenants/{tenant}/users` |
 | `/access/credentials` | List, create, reveal/copy/hide bearer tokens, regenerate, edit status/expiration, revoke, inspect permissions | `/v1.0/tenants/{tenant}/credentials` |
 | `/access/roles` | List built-in/custom roles, create/rename/delete custom roles, manage permission mappings | `/v1.0/tenants/{tenant}/roles` |
-| `/access/permissions` | List, create permit/deny rules, delete custom permissions | `/v1.0/tenants/{tenant}/permissions` |
+| `/access/permissions` | List, create/edit permit/deny rules, delete custom permissions | `/v1.0/tenants/{tenant}/permissions` |
 | `/access/assignments` | Grant/revoke user roles and credential scopes at tenant/resource scope | User and credential assignment APIs |
 | `/access/sessions` | List tenant sessions and revoke active sessions | Tenant session APIs |
 | `/access/audit` | Inspect tenant security events | `/v1.0/api/audit?tenantGuid=...` |
 
-Legacy routes such as `/users` remain available. Access tabs preserve the selected tenant.
+Legacy routes such as `/users` redirect into the Access workspace. Access tabs preserve the selected tenant.
 
 All routes use the shared API client, tables, pagination, form dialogs, confirmation dialogs, and localized
 copy. Lists have explicit loading, empty, access-denied, and failure states. Row actions respect protected
@@ -39,7 +39,7 @@ Armada's tenant-isolation and RBAC patterns; the Agents authentication and dashb
 
 ## Operator workflow
 
-1. Open **Administration → Tenants** to create an organization or copy its tenant ID.
+1. Open **Access → Tenants** to create an organization or copy its tenant ID.
 2. Select the organization in **Selected tenant** on an administration page. Selection persists within
    the browser tab and is checked against the caller's accessible tenants after sign-in or refresh.
 3. Open **Users** to add accounts, edit active/admin flags, or reset passwords. A reset revokes all of
@@ -85,3 +85,14 @@ earlier turns, preserves the visible transcript and latest exchange, and changes
 context only after successful completion. Failed, truncated, or cancelled summaries leave
 the original context intact. These composer commands share their catalog with the TUI;
 see [TUI chat commands](TUI.md#chat-commands-and-rendering) for details.
+
+
+## Tenant boundaries and API coverage
+
+The model registry, loaded weights, inference capacity, legacy presets, and server settings are shared
+server resources. Tenants isolate identities, grants, scoped libraries, audit, and tenant-bound history;
+they do not create separate inference processes or hardware quotas. An API credential needs its own
+grants and remains constrained by its owning user's permissions.
+
+See [the REST reference](../REST_API.md) and [consolidated Postman collection](../postman/README.md)
+for all management operations. SDK wrappers cover only part of that contract; see [SDK status](SDK_STATUS.md).

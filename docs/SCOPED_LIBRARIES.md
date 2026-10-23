@@ -16,7 +16,7 @@ There is no separate editable generation-parameters panel in Playground.
 
 | Scope | Who can read | Who can publish, edit or delete |
 | --- | --- | --- |
-| System | All authenticated users, and anonymous callers when authentication is disabled | Platform administrators |
+| System | Authenticated principals with library read rights | Platform administrators |
 | Tenant | Members of that tenant; platform administrators may select a tenant workspace | That tenant's administrators or platform administrators |
 | User | Only that user, including appropriately authorized credentials owned by that user | That user, subject to explicit RBAC denials and credential grants |
 
@@ -30,9 +30,9 @@ Scope and owner are immutable for an existing ID. Use **Duplicate** to publish a
 scope. A duplicate defaults to personal visibility when the caller has a user identity. Administrators
 may choose an authorized shared scope instead. The original stays unchanged.
 
-With authentication disabled, anonymous callers retain the existing open-server platform rights, but
-have no private user library. Supplying credentials to the new library endpoints resolves the actual
-principal, even in open mode. Sign in to create personal items. Invalid supplied credentials are rejected.
+The current server always requires a valid bearer identity for library endpoints. Legacy
+`Auth.Enabled: false` values do not enable anonymous HTTP access. Sign in for a personal library, or
+use a credential owned by that user with appropriate grants. Invalid supplied credentials are rejected.
 
 ## REST contract
 
@@ -72,7 +72,7 @@ A model configuration:
   "Scope": "User",
   "Configuration": {
     "Temperature": 0.6,
-    "MaxTokens": 256,
+    "MaxTokens": 2048,
     "TopP": 0.9,
     "TopK": 40,
     "MinP": 0.05,
@@ -105,13 +105,14 @@ bypassing private-item visibility. Inference history retains its existing captur
 Migration 7 adds `library_items` and a visibility index for SQLite, MySQL, PostgreSQL and SQL Server. It
 seeds one system-wide helpful-assistant prompt and one balanced model configuration. Existing data and
 legacy model presets are retained. Deleting a user removes that user’s private library items; deleting
-a tenant removes its tenant and user items. Shared system items survive creator/account deletion. The old `/api/create` model-preset workflow is independent of these
-new libraries. Existing Ollama and OpenAI inference payloads remain unchanged; Playground expands the
+a tenant removes its tenant and user items. Shared system items survive creator/account deletion. Legacy presets under `/v1.0/models/presets` are independent of these
+libraries; `/api/create` is not a registered server route. Existing Ollama and OpenAI inference payloads remain unchanged; Playground expands the
 selected records into those payloads before submitting a request.
 
 Tests cover scope visibility, cross-account and cross-tenant requests, owner impersonation, elevated
 publication attempts, duplicates, RBAC denials, credential restrictions, pagination, numeric validation,
-restart persistence and signed-in identity with open inference enabled.
+restart persistence and signed-in identity. Older open-mode test scenarios describe library-level
+compatibility behavior; the current server HTTP boundary remains authenticated.
 
 The built-in Balanced configuration reserves 2,048 output tokens. The output budget
 includes hidden thinking tokens as well as visible answer text. Upgrade migration 8 raises

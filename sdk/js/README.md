@@ -364,7 +364,7 @@ import type {
 
 This project is licensed under the MIT License.
 
-## Authentication & admin surface (v5)
+## Authentication & admin surface (v4)
 
 The server requires bearer authentication. Supply a bearer token to the constructor, or
 sign in to obtain a bearer session token (stored on the client automatically):
@@ -379,7 +379,7 @@ const sdk = new SharpAISdk('http://127.0.0.1:8000', { token: 'eyJ...' });       
 await sdk.admin.login('admin@sharpai.local', 'password', 'default');
 ```
 
-All requests then carry the appropriate auth headers automatically. The `admin` group covers the v5
+All requests then carry the appropriate auth headers automatically. The `admin` group covers the v4
 control plane:
 
 - **Settings** — `getSettings`, `updateSettings`
@@ -431,3 +431,12 @@ permissions, request/response fields, and streaming behavior. Import the
 [Postman collection](../../postman/SharpAI.postman_collection.json) for runnable examples across
 Ollama, OpenAI, and management APIs. Settings use a complete GET-edit-PUT replacement; named enum
 values returned by GET can be submitted unchanged. Listener/database changes require a server restart.
+
+## Standalone single-model serving
+
+Run `sharpai serve /models/assistant.gguf --served-model-name assistant` with the
+`SharpAI.Serve` .NET tool, then point the SDK at `http://127.0.0.1:8000` and omit the bearer token.
+Use the exact `assistant` model alias in inference calls. The standalone host supports model
+discovery and Ollama/OpenAI inference for the configured model capability. Login, model pulls,
+imports, deletion, settings, request history, and account administration require the managed server.
+See [standalone installation, options, and examples](../../docs/SERVE.md).
