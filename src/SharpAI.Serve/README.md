@@ -30,3 +30,9 @@ Startup prints the SharpAI ASCII banner. Debug REST logs are enabled by default 
 path, source, bytes, status, duration, and available TTFT/token counts for both response modes.
 Use `--log-level info` to hide request logs, `--quiet` to suppress application console logs,
 and `--log-file <path>` for optional file output. Prompts, responses, and headers are not logged.
+
+For complete compact JSON records, use `--log-format json --log-detail detailed`. Detail levels are
+`off`, `minimal`, `standard` (default), and `detailed`. Detailed records include engine queue/load/prompt/
+generation phases, throughput, timing provenance, cancellation, stream payload counts, runtime configuration,
+and request/trace IDs. Unavailable values are null. Stdout and the optional file contain NDJSON;
+native backend stderr can remain unstructured. See the standalone guide for the field schema.

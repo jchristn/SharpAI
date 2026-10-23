@@ -27,6 +27,8 @@ namespace SharpAI.Serve
         internal string? LogFile { get; private set; }
         internal string LogLevel { get; private set; } = "debug";
         internal string? NativeLibrary { get; private set; }
+        internal string LogFormat { get; private set; } = "text";
+        internal string LogDetail { get; private set; } = "standard";
         internal bool Quiet { get; private set; }
         internal bool Help { get; private set; }
         internal bool Version { get; private set; }
@@ -82,6 +84,8 @@ namespace SharpAI.Serve
                     case "--chat-template": result.ChatTemplatePath = Path.GetFullPath(value); break;
                     case "--native-library": result.NativeLibrary = Path.GetFullPath(value); break;
                     case "--log-file": result.LogFile = Path.GetFullPath(value); break;
+                    case "--log-format": result.LogFormat = Choice(option, value, "text", "json"); break;
+                    case "--log-detail": result.LogDetail = Choice(option, value, "off", "minimal", "standard", "detailed"); break;
                     case "--log-level": result.LogLevel = Choice(option, value, "debug", "info", "warning", "error"); break;
                     default: throw new ArgumentException("Unknown option: " + option);
                 }

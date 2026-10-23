@@ -19,6 +19,7 @@ namespace SharpAI.Serve
         private readonly ServeOptions _Options;
         private readonly SingleModel _Model;
         private readonly LoggingModule _Logging;
+        private readonly ServeRequestLog _RequestLog;
         private readonly Webserver _Server;
         private readonly Serializer _Serializer = new Serializer();
         private readonly CancellationTokenSource _Stopping = new CancellationTokenSource();
@@ -27,13 +28,13 @@ namespace SharpAI.Serve
         internal ServeHost(ServeOptions options, SingleModel model, LoggingModule logging)
         {
             _Options = options; _Model = model; _Logging = logging;
-            ServeRequestLog transport = new ServeRequestLog(logging);
+            ServeRequestLog transport = new ServeRequestLog(logging, options);
+            _RequestLog = transport;
             WebserverSettings settings = new WebserverSettings { Hostname = options.Host, Port = options.Port };
             _Server = new Webserver(settings, NotFoundAsync);
             _Server.Routes.PreRouting = context =>
             {
                 transport.Begin(context);
-                context.Response.Headers.Add(SharpAI.Constants.RequestIdHeader, Guid.NewGuid().ToString());
                 context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
                 return Task.CompletedTask;
             };
@@ -105,6 +106,8 @@ namespace SharpAI.Serve
                         catch (ArgumentException error) { throw new WebserverException(ApiResultEnum.BadRequest, error.Message); }
                         using JsonDocument raw = JsonDocument.Parse(request.Http.Request.DataAsString);
                         string name = raw.RootElement.GetProperty("model").GetString()!;
+                        bool streaming = raw.RootElement.TryGetProperty("stream", out JsonElement stream) && stream.ValueKind is JsonValueKind.True or JsonValueKind.False ? stream.ValueKind == JsonValueKind.True : path is "/api/chat" or "/api/generate";
+                        _RequestLog.Describe(request.Http, name, streaming);
                         ModelFile? metadata = _Model.Find(name);
                         if (metadata == null) throw new WebserverException(ApiResultEnum.NotFound, "Only model '" + _Options.ModelName + "' is served.");
                         bool embedding = path is "/api/embed" or "/v1/embeddings";

@@ -2,6 +2,8 @@
 
 ### Unreleased standalone serving
 
+- Add independent `--log-format text|json` and `--log-detail off|minimal|standard|detailed` controls. Compact JSON covers startup/runtime messages and request records with correlation IDs, measured phase timings, throughput, timing provenance, cancellation, stream counters, and effective runtime settings; document units and unavailable values.
+
 - Emit the ASCII startup banner and timestamped REST processing/completion logs by default, with streaming duration and available TTFT/token usage; honor log-level filtering, quiet console mode, and optional file output.
 
 - Add `SharpAI.Serve`, a portable NuGet .NET tool exposing `sharpai serve <model.gguf>` with explicit CLI paths, runtime settings, sampling defaults, and API selection.

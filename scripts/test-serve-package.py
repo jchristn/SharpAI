@@ -41,6 +41,7 @@ def main():
             subprocess.run(['sharpai', 'serve', '--help'], cwd=elsewhere, env=environment, check=True, stdout=subprocess.DEVNULL)
         executable = tools / ('sharpai.exe' if os.name == 'nt' else 'sharpai')
         subprocess.run(['python' if os.name == 'nt' else 'python3', str(ROOT / 'scripts/test-serve.py'), '--command', str(executable), '--model', str(args.model.resolve())], cwd=elsewhere, env=environment, check=True)
+        subprocess.run(['python' if os.name == 'nt' else 'python3', str(ROOT / 'scripts/test-serve-logging.py'), '--command', str(executable), '--model', str(args.model.resolve())], cwd=elsewhere, env=environment, check=True)
         subprocess.run(['dotnet', 'tool', 'uninstall', 'SharpAI.Serve', '--tool-path', str(tools)], cwd=elsewhere, check=True)
         assert not executable.exists(), 'uninstall left the command shim'
     print('PASS: local-feed install, PATH execution, version update, native inference and uninstall')

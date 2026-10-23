@@ -47,6 +47,11 @@ jobs:
         run: |
           python scripts/test-serve.py --framework net8.0 --postman --model "$RUNNER_TEMP/stories.gguf" --embedding-model "$RUNNER_TEMP/embeddings.gguf"
           python scripts/test-serve.py --framework net10.0 --model "$RUNNER_TEMP/stories.gguf" --embedding-model "$RUNNER_TEMP/embeddings.gguf"
+      - name: Structured logging and detail contracts
+        shell: bash
+        run: |
+          python scripts/test-serve-logging.py --framework net8.0 --model "$RUNNER_TEMP/stories.gguf"
+          python scripts/test-serve-logging.py --framework net10.0 --model "$RUNNER_TEMP/stories.gguf"
       - name: NuGet tool install, PATH execution, update and remove
         shell: bash
         run: python scripts/test-serve-package.py --model "$RUNNER_TEMP/stories.gguf"

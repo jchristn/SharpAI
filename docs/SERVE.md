@@ -97,6 +97,8 @@ TUI/web administration require the managed server and cannot operate against thi
 | `--native-library` | Automatic native resolution | Existing backend library; requires an explicit `--backend` |
 | `--log-file` | None | Optional log file; creates its parent directory |
 | `--log-level` | `debug` | `debug`, `info`, `warning`, or `error` |
+| `--log-format` | `text` | `text` or compact `json`, one complete object per line |
+| `--log-detail` | `standard` | Request detail: `off`, `minimal`, `standard`, `detailed` |
 | `--quiet` | Off | Suppress application console logs; startup errors and native-library output may remain |
 | `-h`, `--help`, `/?`, `usage` | — | Print usage without loading a model |
 | `--version` | — | Print tool assembly version |
@@ -128,19 +130,75 @@ The default level is `debug`, so REST requests emit processing and completion re
 2026-10-22 22:40:01.818745 Debug completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)
 ```
 
-Timestamps are UTC with six fractional digits. Duration covers HTTP request handling through the
-completed response, including streaming. TTFT is the engine's measured first-token duration;
-token counts include reasoning before output filtering. Timings and counts appear when engine
-statistics are available; probes, rejected requests, and embedding calls omit unavailable metrics.
-Request logs include method, path, source address, declared body length, and response status.
-They omit query values, headers, prompts, and generated content. Runtime engine messages also use
-the configured logger. This does not configure a remote UDP syslog destination.
+Choose format, request detail, and severity independently:
 
-`--log-level info` hides debug request logs while retaining the startup banner and informational
-messages. `--quiet` disables application console logs; an explicit `--log-file` still receives
-messages at the selected level. No log file is created unless requested. Native backend output,
-such as Metal capability probing, may still appear outside the application logger. A Metal tensor
-probe can fall back to the embedded library and still reach `Ready` successfully.
+```sh
+sharpai serve /models/assistant.gguf --log-format json --log-detail detailed
+sharpai serve /models/assistant.gguf --log-format text --log-detail minimal
+sharpai serve /models/assistant.gguf --log-format json --log-detail detailed --quiet --log-file /logs/sharpai.jsonl
+```
+
+| Request detail | Events and fields |
+| --- | --- |
+| `off` | No request access events; runtime/startup logging still follows `--log-level` |
+| `minimal` | Completion only: request ID, method, path, source IP, declared request bytes, status, HTTP duration |
+| `standard` | Start and completion, plus requested model/streaming, available token counts, engine TTFT, and cancellation |
+| `detailed` | Standard plus engine phases, rates, timing provenance, stream counters, response length, runtime configuration, and trace identity |
+
+All request events use Debug severity. `--log-level info` hides them while retaining startup and
+informational engine events. Detail controls request events; it does not remove fields from engine
+runtime events. `--quiet` disables application console logs; an explicit `--log-file` still receives
+messages at the selected level. File output appends UTF-8 records. No log file is created unless requested.
+
+Text output uses UTC timestamps with six fractional digits and retains the readable summary above.
+Detailed text adds named `key=value` statistics. JSON output is **NDJSON**: every application log is a
+complete compact object on one physical line, with the banner/newlines escaped inside strings and
+no non-JSON header prefix. Startup and runtime messages use the same envelope. Structured engine
+messages remain structured fields, rather than requiring another JSON parse of the message string.
+CLI help/version are ordinary text; CLI/startup failures in JSON mode are JSON error objects on stderr.
+Native backend diagnostics, such as Metal probing, can still write separate non-JSON stderr output.
+Keep stderr separate from stdout when collecting JSON logs. This does not configure remote UDP syslog.
+
+Example **standard** JSON completion (illustrative values):
+
+```json
+{"schema_version":1,"timestamp":"2026-10-22T22:40:01.818745Z","severity":"Debug","service":"sharpai","version":"4.0.1","event":"request.completed","message":"completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)","request_id":"02104413-75cf-4537-8bed-33d73265c741","method":"POST","path":"/api/chat","source_ip":"127.0.0.1","request_content_length":336,"status":200,"duration_ms":31826.0,"model":"assistant","stream":true,"statistics_available":true,"ttft_ms":6188.0,"prompt_tokens":82,"completion_tokens":261,"total_tokens":343,"cancelled":false}
+```
+
+The `request_id` matches the `X-SharpAI-Request` response header and correlates start/completion
+records under concurrent load. Started records have request metadata; status and inference values
+are added at completion. Paths exclude query values. Request records contain no headers, prompts,
+or generated content. Embeddings and rejected/probe requests have null unavailable inference fields;
+they do not report fabricated token rates. An attached accumulator can contain zeros after an early
+failure. `engine_timing_available` indicates whether engine total time was measured.
+
+The detailed completion fields are:
+
+| Fields | Units and interpretation |
+| --- | --- |
+| `duration_ms` | Monotonic HTTP wall time from pre-routing through response completion, including streaming |
+| `ttft_ms` | Engine time to first generated token, including reasoning before filtering; not client-visible/network TTFT |
+| `prompt_tokens`, `completion_tokens`, `total_tokens` | Measured engine token counts before output filtering; completion includes reasoning |
+| `engine_total_ms` | Aggregate engine call duration; excludes additional HTTP/serialization time |
+| `queue_ms`, `load_ms` | Engine admission wait and request-time model load; preloaded weights normally have zero request load time |
+| `prompt_eval_ms`, `generation_ms` | Prompt processing and generation phases; zero can mean unavailable/not executed in the engine accumulator |
+| `prompt_tokens_per_second` | `prompt_tokens * 1000 / prompt_eval_ms`; null without a positive measured denominator |
+| `generation_tokens_per_second` | `completion_tokens * 1000 / generation_ms`; phase throughput, not end-to-end HTTP throughput |
+| `statistics_available`, `engine_timing_available` | Whether an accumulator is attached and whether engine total timing is present |
+| `timing_source` | `native` or `backend_step_wall_clock`; null before measured engine timing; wall-clock fallback phases are approximate |
+| `cancelled` | Engine cancellation flag, or null when no engine accumulator exists |
+| `outcome` | `ok`, `client_error`, `server_error`, or `cancelled`, from HTTP status and the engine cancellation flag |
+| `request_content_length` | Declared HTTP body bytes; not a measurement of a chunked request body |
+| `response_content_length` | Response content length for nonstreaming responses; null after streamed writes |
+| `stream_chunks` | Successfully completed transport writes, including terminal/empty writes |
+| `stream_payload_bytes` | NDJSON bytes for Ollama; UTF-8 SSE `data` bytes for OpenAI, including `[DONE]` but excluding SSE framing and HTTP chunk headers |
+| `first_stream_write_ms` | HTTP elapsed time after the first nonempty stream write completes; not a client receipt timestamp |
+| `stream_duration_ms` | Elapsed time between first and last nonempty stream writes; null without streamed data |
+| `model`, `stream` | Requested model alias and streaming selection, including protocol defaults; null when no inference request was parsed |
+| `backend`, `context_size`, `parallel` | Selected native backend, effective context tokens, and configured concurrent generation slots |
+| `trace_id`, `span_id` | Engine activity identity when tracing is active; null when no listener supplies it |
+
+A Metal tensor probe can fall back to the embedded library and still reach `Ready` successfully.
 
 ## HTTP contract
 
@@ -190,6 +248,7 @@ dotnet run --project src/Test.Serve -f net8.0
 dotnet run --project src/Test.Serve -f net10.0
 python3 scripts/test-serve.py --model /models/test.gguf --embedding-model /models/embeddings.gguf
 python3 scripts/test-serve.py --framework net10.0 --model /models/test.gguf
+python3 scripts/test-serve-logging.py --model /models/test.gguf
 python3 scripts/test-serve-package.py --model /models/test.gguf
 ```
 

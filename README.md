@@ -210,7 +210,9 @@ sharpai serve /models/assistant.gguf --served-model-name assistant --port 8000
 ```
 
 Startup displays the SharpAI banner; timestamped REST logs include status, duration, and available
-TTFT/token counts. Use `--log-level info` for less output or `--quiet` to suppress application console logs.
+TTFT/token counts. Use `--log-format json --log-detail detailed` for compact structured records
+with phase timings, throughput, stream counters, and request IDs. `--log-detail minimal` emits
+completion summaries; `--log-level info` hides request logs, and `--quiet` suppresses application console logs.
 
 With the .NET tool directory on PATH, `sharpai` runs from any working directory. Use
 `dotnet tool update --global SharpAI.Serve` to update and

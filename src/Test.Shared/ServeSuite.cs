@@ -32,11 +32,14 @@ namespace Test.Shared
                     TestAssert.Equal("127.0.0.1", options.Host); TestAssert.Equal(8123, options.Port);
                     TestAssert.Equal("assistant", options.ModelName); TestAssert.Equal("-1", options.GpuLayers);
                     TestAssert.Equal(-12, options.Seed!.Value); TestAssert.Equal(4, options.Parallel);
+                    TestAssert.Equal("text", options.LogFormat); TestAssert.Equal("standard", options.LogDetail);
+                    ServeOptions detailed = ServeOptions.Parse(new[] { "serve", path, "--log-format=json", "--log-detail", "detailed" });
+                    TestAssert.Equal("json", detailed.LogFormat); TestAssert.Equal("detailed", detailed.LogDetail);
                     TestAssert.Equal(2048, options.MaxTokens); TestAssert.True(options.LogFile == null, "no default log files");
                 })),
                 new TestCaseDescriptor("Serve", "Invalid", "Invalid arguments fail before native initialization", token => WithModel(path =>
                 {
-                    foreach (string[] extra in new[] { new[] { "--port", "0" }, new[] { "--port", "65536" }, new[] { "--max-tokens", "0" }, new[] { "--temperature", "NaN" }, new[] { "--parallel", "0" }, new[] { "--backend", "other" }, new[] { "--port", "8001", "--port", "8002" }, new[] { "--served-model-name", "bad\tname" }, new[] { "--unknown", "x" }, new[] { "extra.gguf" } })
+                    foreach (string[] extra in new[] { new[] { "--port", "0" }, new[] { "--port", "65536" }, new[] { "--max-tokens", "0" }, new[] { "--temperature", "NaN" }, new[] { "--parallel", "0" }, new[] { "--backend", "other" }, new[] { "--log-format", "pretty" }, new[] { "--log-detail", "everything" }, new[] { "--port", "8001", "--port", "8002" }, new[] { "--served-model-name", "bad\tname" }, new[] { "--unknown", "x" }, new[] { "extra.gguf" } })
                     {
                         string[] arguments = new string[extra.Length + 2]; arguments[0] = "serve"; arguments[1] = path; Array.Copy(extra, 0, arguments, 2, extra.Length);
                         bool rejected = false; try { ServeOptions.Parse(arguments); } catch (ArgumentException) { rejected = true; }

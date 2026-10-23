@@ -36,6 +36,8 @@ FILES AND LOGGING
                                CUDA requires external matching native binaries
   --log-file <path>             Optional log file; no file logging by default
   --log-level <level>           debug, info, warning, error. Default: debug
+  --log-format <text|json>      Text or compact JSON per line. Default: text
+  --log-detail <depth>          off, minimal, standard, detailed. Default: standard
   --quiet                       Suppress application console logs
   -h, --help, /?, usage         Show help
 
