@@ -1,0 +1,4092 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "SharpAI Server API",
+    "version": "4.0.1",
+    "description": "Local AI inference server with Ollama- and OpenAI-compatible REST endpoints. Provides model management, embeddings, completions, and chat completions against locally hosted GGUF models via LlamaSharp. The OpenAPI document at /openapi.json and the Swagger UI at /swagger require bearer authentication.",
+    "contact": {
+      "name": "SharpAI",
+      "url": "https://github.com/jchristn/sharpai"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "paths": {
+    "/openapi.json": {
+      "get": {
+        "summary": "GET /openapi.json",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/swagger": {
+      "get": {
+        "summary": "GET /swagger",
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "summary": "Read HTTP server metrics",
+        "description": "Authenticated Prometheus exposition for Watson HTTP server instruments.",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Prometheus metrics",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Server homepage",
+        "description": "Returns the default HTML homepage indicating the node is operational.",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Operational HTML page",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "head": {
+        "summary": "Server liveness check",
+        "description": "HEAD probe that returns 200 OK when the server is reachable.",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Lightweight liveness check for container and process monitoring.",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "summary": "Health HEAD probe",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Readiness check",
+        "description": "Readiness check that verifies startup initialization and writable runtime directories.",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Ready status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Not ready status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/favicon.ico": {
+      "head": {
+        "summary": "Favicon HEAD probe",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "Serve favicon",
+        "description": "Returns the bundled SharpAI ICO favicon, independently of the working directory.",
+        "tags": [
+          "General"
+        ],
+        "responses": {
+          "200": {
+            "description": "ICO favicon",
+            "content": {
+              "image/x-icon": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/diagnostics/runtime": {
+      "get": {
+        "summary": "Runtime capabilities and configuration",
+        "tags": [
+          "Diagnostics"
+        ],
+        "responses": {
+          "200": {
+            "description": "Runtime diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/diagnostics/memory": {
+      "get": {
+        "summary": "Process memory and model estimates",
+        "tags": [
+          "Diagnostics"
+        ],
+        "responses": {
+          "200": {
+            "description": "Memory diagnostics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/inspect": {
+      "post": {
+        "summary": "Inspect a registered model by name without loading weights",
+        "tags": [
+          "Models"
+        ],
+        "requestBody": {
+          "description": "Model name",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Model preflight",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing model name",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Model not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/models/{id}/inspect": {
+      "get": {
+        "summary": "Inspect GGUF metadata and memory without loading weights",
+        "tags": [
+          "Models"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Model preflight",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid identifier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Model not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "summary": "Get current server settings",
+        "description": "Returns the current in-memory server settings loaded from sharpai.json.",
+        "tags": [
+          "Settings"
+        ],
+        "responses": {
+          "200": {
+            "description": "Current settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "Update server settings",
+        "description": "Replaces the in-memory server settings and rewrites sharpai.json on disk. CreatedUtc and SoftwareVersion are preserved from the current settings. Some settings (REST hostname, port, SSL, Database) require a server restart to take effect.",
+        "tags": [
+          "Settings"
+        ],
+        "requestBody": {
+          "description": "Updated settings",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/api/request-history": {
+      "get": {
+        "summary": "List captured requests",
+        "description": "Paginated list of captured requests (bodies omitted). Filters: method, statusCode, pathContains, category (generation, embeddings, or legacy combined inference), fromUtc, toUtc, tenantId, userId, pageNumber, pageSize.",
+        "tags": [
+          "Request History"
+        ],
+        "responses": {
+          "200": {
+            "description": "Request history page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Bulk delete captured requests",
+        "description": "Deletes all captured requests matching the supplied filter. Returns the number of rows deleted.",
+        "tags": [
+          "Request History"
+        ],
+        "responses": {
+          "200": {
+            "description": "Bulk delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/api/request-history/summary": {
+      "get": {
+        "summary": "Summarize captured requests",
+        "description": "Time-bucketed counts and average durations for chart rendering. Emits a bucket for every interval including empty ones. Query: fromUtc, toUtc, bucketMinutes, plus the list filters.",
+        "tags": [
+          "Request History"
+        ],
+        "responses": {
+          "200": {
+            "description": "Request history summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/api/request-history/{id}": {
+      "get": {
+        "summary": "Read a captured request",
+        "description": "Returns a single captured request including headers and bodies.",
+        "tags": [
+          "Request History"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request history entry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a captured request",
+        "description": "Deletes a single captured request by identifier.",
+        "tags": [
+          "Request History"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/library-context": {
+      "get": {
+        "summary": "Read library scope and publication rights",
+        "tags": [
+          "Library"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read library scope and publication rights",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/system-prompts": {
+      "get": {
+        "summary": "List visible system-prompts",
+        "description": "System defaults, selected tenant defaults and only the caller's private items. Query: tenantId (platform admins only for other tenants), name, pageNumber, pageSize. Ownership filtering precedes pagination.",
+        "tags": [
+          "SystemPrompt"
+        ],
+        "responses": {
+          "200": {
+            "description": "List visible system-prompts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a SystemPrompt",
+        "tags": [
+          "SystemPrompt"
+        ],
+        "requestBody": {
+          "description": "Name, Description, Scope, TenantId and Content or Configuration. IDs, timestamps and personal ownership are assigned by the server.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Create a SystemPrompt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/system-prompts/{id}": {
+      "get": {
+        "summary": "Read a visible SystemPrompt",
+        "tags": [
+          "SystemPrompt"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read a visible SystemPrompt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "Update a SystemPrompt",
+        "tags": [
+          "SystemPrompt"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Name, Description, Scope, TenantId and Content or Configuration. IDs, timestamps and personal ownership are assigned by the server.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update a SystemPrompt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a SystemPrompt",
+        "tags": [
+          "SystemPrompt"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a SystemPrompt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/system-prompts/{id}/duplicate": {
+      "post": {
+        "summary": "Duplicate a visible SystemPrompt",
+        "description": "Copies payload without changing the source. Scope defaults to User. Only platform administrators may publish System items, tenant administrators may publish Tenant items in their own tenant. User ownership is derived from the authenticated principal.",
+        "tags": [
+          "SystemPrompt"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Name, Description, Scope, TenantId and Content or Configuration. IDs, timestamps and personal ownership are assigned by the server.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate a visible SystemPrompt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/model-configurations": {
+      "get": {
+        "summary": "List visible model-configurations",
+        "description": "System defaults, selected tenant defaults and only the caller's private items. Query: tenantId (platform admins only for other tenants), name, pageNumber, pageSize. Ownership filtering precedes pagination.",
+        "tags": [
+          "ModelConfiguration"
+        ],
+        "responses": {
+          "200": {
+            "description": "List visible model-configurations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a ModelConfiguration",
+        "tags": [
+          "ModelConfiguration"
+        ],
+        "requestBody": {
+          "description": "Name, Description, Scope, TenantId and Content or Configuration. IDs, timestamps and personal ownership are assigned by the server.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Create a ModelConfiguration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/model-configurations/{id}": {
+      "get": {
+        "summary": "Read a visible ModelConfiguration",
+        "tags": [
+          "ModelConfiguration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Read a visible ModelConfiguration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "Update a ModelConfiguration",
+        "tags": [
+          "ModelConfiguration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Name, Description, Scope, TenantId and Content or Configuration. IDs, timestamps and personal ownership are assigned by the server.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Update a ModelConfiguration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a ModelConfiguration",
+        "tags": [
+          "ModelConfiguration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a ModelConfiguration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/model-configurations/{id}/duplicate": {
+      "post": {
+        "summary": "Duplicate a visible ModelConfiguration",
+        "description": "Copies payload without changing the source. Scope defaults to User. Only platform administrators may publish System items, tenant administrators may publish Tenant items in their own tenant. User ownership is derived from the authenticated principal.",
+        "tags": [
+          "ModelConfiguration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Name, Description, Scope, TenantId and Content or Configuration. IDs, timestamps and personal ownership are assigned by the server.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Duplicate a visible ModelConfiguration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Insufficient scope or explicit permission denial",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/embed": {
+      "post": {
+        "summary": "Generate embeddings",
+        "description": "Generates vector embeddings for a single input or array of inputs.",
+        "tags": [
+          "Ollama - Inference"
+        ],
+        "requestBody": {
+          "description": "Embeddings request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Embeddings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/generate": {
+      "post": {
+        "summary": "Generate text completion",
+        "description": "Generates a text completion for the given prompt. Supports streaming via chunked transfer.",
+        "tags": [
+          "Ollama - Inference"
+        ],
+        "requestBody": {
+          "description": "Completion request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Server busy or at capacity \u2014 retry later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/chat": {
+      "post": {
+        "summary": "Generate chat completion",
+        "description": "Generates a chat completion from a sequence of messages. Supports streaming via chunked transfer.",
+        "tags": [
+          "Ollama - Inference"
+        ],
+        "requestBody": {
+          "description": "Chat completion request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Server busy or at capacity \u2014 retry later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/models": {
+      "get": {
+        "summary": "List models (OpenAI-compatible)",
+        "description": "OpenAI-compatible model list; returns locally available models. Optional include_context=true adds trained_context_length and effective_context_length without loading weights.",
+        "tags": [
+          "OpenAI - Models"
+        ],
+        "responses": {
+          "200": {
+            "description": "Model list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/embeddings": {
+      "post": {
+        "summary": "Generate embeddings (OpenAI-compatible)",
+        "description": "OpenAI-compatible embeddings endpoint.",
+        "tags": [
+          "OpenAI - Inference"
+        ],
+        "requestBody": {
+          "description": "Embeddings request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Embeddings response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/completions": {
+      "post": {
+        "summary": "Generate text completion (OpenAI-compatible)",
+        "description": "OpenAI-compatible text completion endpoint. Supports streaming via server-sent events.",
+        "tags": [
+          "OpenAI - Inference"
+        ],
+        "requestBody": {
+          "description": "Completion request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Server busy or at capacity \u2014 retry later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1/chat/completions": {
+      "post": {
+        "summary": "Generate chat completion (OpenAI-compatible)",
+        "description": "OpenAI-compatible chat completion endpoint. Supports streaming via server-sent events.",
+        "tags": [
+          "OpenAI - Inference"
+        ],
+        "requestBody": {
+          "description": "Chat completion request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat completion response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Server busy or at capacity \u2014 retry later",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/token": {
+      "post": {
+        "summary": "Log in and create a session token",
+        "description": "Validates an email/password login and, on success, returns an opaque bearer token that references a revocable server-side session. Supply credentials in the x-email, x-password, and optional x-tenant-guid headers (the 'default' tenant is used when omitted). This endpoint is anonymous so it is reachable without a prior credential.",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      },
+      "get": {
+        "summary": "Read the current session",
+        "description": "Returns details of the session referenced by the supplied bearer token (Authorization: Bearer).",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Revoke the current session",
+        "description": "Revokes (logs out) the session referenced by the supplied bearer token. The token is immediately invalid.",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Revocation result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/api/audit": {
+      "get": {
+        "summary": "List security audit events",
+        "description": "Paginated list of security audit events (authentication failures and privileged operations). Requires administrator or tenant-administrator privileges. Global administrators may scope with the tenantGuid query parameter; tenant administrators are constrained to their tenant.",
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit event page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/users/{userGuid}/permissions": {
+      "get": {
+        "summary": "Inspect a user's effective permissions",
+        "description": "Returns the computed effective permission set for a user within a tenant, as (resourceType, operation, effect, scope, resourceGuid) grants. Requires Admin on the Admin resource, or the principal reading their own permissions.",
+        "tags": [
+          "Authentication"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/permissions": {
+      "get": {
+        "summary": "Inspect a credential's effective permissions",
+        "description": "Returns the computed effective permission set for a credential within a tenant. Requires Admin on the Admin resource, or the credential's owner reading its own permissions.",
+        "tags": [
+          "Authentication"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effective permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/auth/context": {
+      "get": {
+        "summary": "Read dashboard authorization context",
+        "tags": [
+          "Administration"
+        ],
+        "responses": {
+          "200": {
+            "description": "Read dashboard authorization context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}": {
+      "put": {
+        "summary": "Update a tenant",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update a tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "Read a tenant",
+        "description": "Returns a single tenant. Callers are constrained to their own tenant unless they are platform administrators.",
+        "tags": [
+          "Management - Tenants"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a tenant",
+        "description": "Deletes a tenant. Protected tenants cannot be deleted. Requires platform-administrator (Admin) privileges.",
+        "tags": [
+          "Management - Tenants"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/users/{userGuid}": {
+      "put": {
+        "summary": "Update a user",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update a user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "Read a user",
+        "description": "Returns a single user (password hash redacted).",
+        "tags": [
+          "Management - Users"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a user",
+        "description": "Deletes a user and cascades to their credentials and role assignments. Protected users cannot be deleted.",
+        "tags": [
+          "Management - Users"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/users/{userGuid}/password": {
+      "put": {
+        "summary": "Reset a user's password and revoke sessions",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reset a user's password and revoke sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}": {
+      "put": {
+        "summary": "Update credential metadata, expiration, or active status",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update credential metadata, expiration, or active status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "Read a credential",
+        "description": "Returns a single credential (secret hash redacted).",
+        "tags": [
+          "Management - Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credential",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a credential",
+        "description": "Deletes a credential.",
+        "tags": [
+          "Management - Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}": {
+      "put": {
+        "summary": "Update a custom role",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update a custom role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a custom role",
+        "description": "Deletes a tenant-scoped custom role. Built-in and protected roles cannot be deleted.",
+        "tags": [
+          "Management - Roles"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions": {
+      "get": {
+        "summary": "List a role's mapped permissions",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List a role's mapped permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/roles/{roleGuid}/permissions/{permissionGuid}": {
+      "delete": {
+        "summary": "Remove a custom role's permission mapping",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "permissionGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Remove a custom role's permission mapping",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Map a permission to a role",
+        "description": "Associates a permission with a custom role. Built-in roles are immutable.",
+        "tags": [
+          "Management - Roles"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "roleGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "permissionGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Mapping",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/permissions/{permissionGuid}": {
+      "put": {
+        "summary": "Update a custom permission",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "permissionGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update a custom permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a custom permission",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "permissionGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a custom permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments": {
+      "get": {
+        "summary": "List a credential's scope assignments",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List a credential's scope assignments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Grant a role-scoped credential assignment",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Grant a role-scoped credential assignment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/assignments/{assignmentGuid}": {
+      "delete": {
+        "summary": "Revoke a credential scope assignment",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoke a credential scope assignment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/sessions": {
+      "get": {
+        "summary": "List tenant sessions without token material",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List tenant sessions without token material",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/sessions/{sessionGuid}": {
+      "delete": {
+        "summary": "Revoke a tenant session",
+        "tags": [
+          "Administration"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoke a tenant session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants": {
+      "get": {
+        "summary": "List tenants",
+        "description": "Paginated list of tenants. Requires platform-administrator (Admin) privileges.",
+        "tags": [
+          "Management - Tenants"
+        ],
+        "responses": {
+          "200": {
+            "description": "Tenant page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a tenant",
+        "description": "Creates a tenant. Requires platform-administrator (Admin) privileges.",
+        "tags": [
+          "Management - Tenants"
+        ],
+        "requestBody": {
+          "description": "Tenant",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/users": {
+      "get": {
+        "summary": "List users",
+        "description": "Paginated, tenant-scoped list of users. Password hashes are redacted.",
+        "tags": [
+          "Management - Users"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a user",
+        "description": "Creates a tenant user. The plaintext password is hashed server-side and never returned.",
+        "tags": [
+          "Management - Users"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Create user request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials": {
+      "get": {
+        "summary": "List credentials",
+        "description": "Paginated, tenant-scoped list of credentials. Secret hashes are redacted.",
+        "tags": [
+          "Management - Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Credential page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a credential",
+        "description": "Creates a revocable bearer credential and returns token ONCE. Send Authorization: Bearer token. Its digest is stored in the database; an encrypted copy supports authorized reveal.",
+        "tags": [
+          "Management - Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Create credential request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created credential (with one-time secret)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token": {
+      "get": {
+        "summary": "Reveal a credential bearer token",
+        "description": "Requires Credential Admin permission within the target tenant. Returns the encrypted-at-rest token after decryption, with Cache-Control: no-store. Ordinary credential reads and lists never return tokens. Reveal is audited and the response token is redacted from request history. Legacy hash-only credentials return 409 and must be regenerated.",
+        "tags": [
+          "Management - Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Token not retained",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/credentials/{credentialGuid}/token/rotate": {
+      "post": {
+        "summary": "Regenerate a credential bearer token",
+        "description": "Requires Credential Admin permission. Immediately invalidates the previous token, preserves the credential's scopes, active flag and expiry, and retains the replacement encrypted at rest. Reveal later through GET .../token. Update integrations using the old token. Protected credentials return 403.",
+        "tags": [
+          "Management - Credentials"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "credentialGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replacement bearer token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Access denied"
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/roles": {
+      "get": {
+        "summary": "List roles",
+        "description": "Paginated list of the tenant's custom roles plus the globally-visible built-in roles.",
+        "tags": [
+          "Management - Roles"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Role page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a custom role",
+        "description": "Creates a tenant-scoped custom role. Built-in roles are immutable; clone by creating a custom role and mapping permissions.",
+        "tags": [
+          "Management - Roles"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Role",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/permissions": {
+      "get": {
+        "summary": "List permissions",
+        "description": "Paginated list of the tenant's permissions plus globally-visible built-in permissions.",
+        "tags": [
+          "Management - Permissions"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Permission page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a permission",
+        "description": "Creates a tenant-scoped permission (Permit or Deny) over resource types and operations.",
+        "tags": [
+          "Management - Permissions"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Permission",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created permission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/users/{userGuid}/assignments": {
+      "get": {
+        "summary": "List a user's role assignments",
+        "description": "Paginated list of a user's role assignments within the tenant.",
+        "tags": [
+          "Management - Assignments"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Assignment page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/assignments": {
+      "post": {
+        "summary": "Assign a role to a user",
+        "description": "Grants a role to a user at tenant or resource scope. The role may be referenced by GUID or name.",
+        "tags": [
+          "Management - Assignments"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Create assignment request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created assignment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "403": {
+            "description": "Access denied"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/tenants/{tenantGuid}/assignments/{assignmentGuid}": {
+      "delete": {
+        "summary": "Revoke a role assignment",
+        "description": "Removes a role assignment from a user.",
+        "tags": [
+          "Management - Assignments"
+        ],
+        "parameters": [
+          {
+            "name": "tenantGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentGuid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/pull": {
+      "post": {
+        "summary": "Pull a model",
+        "description": "Downloads a verified GGUF model from a Hugging Face organization/name, HTTPS repository URL, tree revision URL, or resolve/blob GGUF URL. Resolves revisions to immutable commits and honors exact file selection. Streams NDJSON progress with downloaded bytes and percent; success is explicit. Failures after headers are error records. Never automatically retry a pull.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "requestBody": {
+          "description": "Pull model request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Progress stream",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/import": {
+      "post": {
+        "summary": "Import a local GGUF model",
+        "description": "Registers a GGUF model that already exists on the server's local filesystem \u2014 no download and no HuggingFace token. Supply the local file 'path' and an optional 'name' (defaults to the file name). The file is copied into the models directory and its capabilities are detected from GGUF metadata. Returns the registered model details.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "requestBody": {
+          "description": "Import model request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imported model details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Conflict \u2014 model name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/models/presets": {
+      "get": {
+        "summary": "List model presets",
+        "description": "Paginated list of Modelfile-equivalent presets (system prompt, sampling defaults, stop, template override).",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "responses": {
+          "200": {
+            "description": "Preset page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "Create a model preset",
+        "description": "Creates a Modelfile-equivalent preset. A request that names the preset as its model runs the base model with these defaults applied unless overridden.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "requestBody": {
+          "description": "Preset",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created preset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Resource not found"
+          },
+          "409": {
+            "description": "Conflict \u2014 preset name already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/v1.0/models/presets/{name}": {
+      "get": {
+        "summary": "Read a model preset",
+        "description": "Returns a single preset by name.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preset",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "Delete a model preset",
+        "description": "Deletes a preset by name.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/delete": {
+      "delete": {
+        "summary": "Delete a model",
+        "description": "Deletes a locally stored model by name.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "requestBody": {
+          "description": "Delete model request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deletion result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/unload": {
+      "post": {
+        "summary": "Unload a model from memory",
+        "description": "Unloads a model from memory, freeing GPU/CPU resources. If no model name is provided, all loaded models are unloaded. This is useful when switching between models on memory-constrained systems.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "requestBody": {
+          "description": "Unload model request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Unload result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/tags": {
+      "get": {
+        "summary": "List local models",
+        "description": "Returns the list of locally available models.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/ps": {
+      "get": {
+        "summary": "List running (loaded) models",
+        "description": "Returns the list of models that are currently loaded in memory, matching the Ollama '/api/ps' (ollama ps) endpoint. The size_vram field reports the full model size when the CUDA or Metal backend is active and 0 when the CPU backend is active. When keep-alive eviction is enabled (SHARPAI_KEEP_ALIVE_SECONDS), expires_at reports the eviction time; otherwise it is null.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "responses": {
+          "200": {
+            "description": "Running models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/version": {
+      "get": {
+        "summary": "Server version",
+        "description": "Returns the SharpAI server version, matching Ollama's /api/version.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "responses": {
+          "200": {
+            "description": "Version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/show": {
+      "post": {
+        "summary": "Show model information",
+        "description": "Returns metadata and capabilities for a local model, matching Ollama's /api/show.",
+        "tags": [
+          "Ollama - Models"
+        ],
+        "requestBody": {
+          "description": "Show request",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Model info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "General",
+      "description": "General server endpoints"
+    },
+    {
+      "name": "Settings",
+      "description": "Server configuration management"
+    },
+    {
+      "name": "Request History",
+      "description": "Captured request/response history"
+    },
+    {
+      "name": "Ollama - Models",
+      "description": "Ollama-compatible model management"
+    },
+    {
+      "name": "Ollama - Inference",
+      "description": "Ollama-compatible inference endpoints"
+    },
+    {
+      "name": "OpenAI - Inference",
+      "description": "OpenAI-compatible inference endpoints"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "API credential or interactive session token. Legacy key headers are not accepted.",
+        "scheme": "bearer",
+        "bearerFormat": "opaque"
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "The connected SharpAI server"
+    }
+  ]
+}

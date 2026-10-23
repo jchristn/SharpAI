@@ -12,10 +12,24 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/server-contract.yml'
+      - 'REST_API.md'
+      - 'postman/SharpAI.postman_collection.json'
+      - 'docs/api/**'
+      - 'postman/regression-scenarios.json'
+      - 'scripts/generate-rest-reference.py'
+      - 'scripts/test-rest-reference.py'
+      - 'dashboard/src/api/operations.json'
   pull_request:
     paths:
       - 'src/**'
       - '.github/workflows/server-contract.yml'
+      - 'REST_API.md'
+      - 'postman/SharpAI.postman_collection.json'
+      - 'docs/api/**'
+      - 'postman/regression-scenarios.json'
+      - 'scripts/generate-rest-reference.py'
+      - 'scripts/test-rest-reference.py'
+      - 'dashboard/src/api/operations.json'
   workflow_dispatch:
 
 jobs:
@@ -24,6 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check REST reference and Postman coverage
+        run: python3 scripts/generate-rest-reference.py --check
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -137,3 +154,37 @@ jobs:
             server-auth-contract-results.json
             server-telemetry-contract-results.json
           if-no-files-found: ignore
+
+  rest-reference:
+    name: Complete REST collection (${{ matrix.framework }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [net8.0, net10.0]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm install -g postman-cli@1.75.0
+      - name: Download verified completion fixture
+        run: |
+          curl --fail --location 'https://huggingface.co/ggml-org/models-moved/resolve/499bc8821c6b12b4e53c5bffcb21ec206f212d81/tinyllamas/stories15M-q4_0.gguf' -o "$RUNNER_TEMP/stories15M-q4_0.gguf"
+          python -c 'import hashlib,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"stories15M-q4_0.gguf"; assert hashlib.sha256(p.read_bytes()).hexdigest()=="66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739"'
+      - name: Validate contracts, remote pull, native embeddings and HTTP metrics
+        run: python scripts/test-rest-reference.py --framework ${{ matrix.framework }} --model "$RUNNER_TEMP/stories15M-q4_0.gguf" --output artifacts/rest-reference
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rest-reference-${{ matrix.framework }}
+          path: artifacts/rest-reference

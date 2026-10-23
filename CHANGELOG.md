@@ -1,5 +1,13 @@
 # Changelog
 
+### Unreleased REST documentation and contract fixes
+
+- Rewrite the README around local GGUF inference, familiar APIs, and infrastructure control, with authentication and multitenancy guidance.
+- Add an exhaustive REST reference and generated Postman collection for all 97 registered operations; consolidate the collection, mocks, and simulations under `postman/`.
+- Accept unchanged GET settings responses in PUT by using the configuration serializer, including named access-control modes; reject malformed inputs with 400.
+- Serve the bundled ICO favicon as binary content from the application directory, independent of the working directory.
+- Validate real remote model pulls, Ollama/OpenAI embeddings and streaming, HTTP metrics, tenant boundaries, credential owner ceilings, and settings round trips on .NET 8 and .NET 10.
+
 ### Unreleased dashboard fixes
 
 - Keep required sign-in visible until authentication succeeds; remove its close and Cancel controls and ignore Escape/backdrop dismissal.

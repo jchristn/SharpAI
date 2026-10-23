@@ -1,0 +1,291 @@
+[
+  {
+    "name": "Authentication boundary",
+    "description": "Read-only mandatory bearer checks. Set bearerToken in a private environment; telemetry must be enabled for the metrics check.",
+    "item": [
+      {
+        "name": "Reject anonymous model access",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/api/tags",
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Anonymous API calls are challenged', () => pm.response.to.have.status(401));",
+                "pm.test('Challenge advertises bearer authentication', () => pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer'));"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Reject invalid bearer token",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/api/tags",
+          "auth": {
+            "type": "bearer",
+            "bearer": [
+              {
+                "key": "token",
+                "value": "invalid-contract-fixture",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Invalid bearer token is rejected', () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "List models with bearer credential",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/api/tags"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Bearer credential authorizes model reads', () => pm.response.to.have.status(200));",
+                "pm.test('Model inventory is structured JSON', () => pm.expect(pm.response.json().models).to.be.an('array')); "
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Reject anonymous metrics access",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/metrics",
+          "auth": {
+            "type": "noauth"
+          }
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Metrics cannot bypass the bearer boundary', () => pm.response.to.have.status(401));"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Read metrics with bearer credential",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/metrics"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Bearer credential authorizes metric scraping', () => pm.response.to.have.status(200));",
+                "pm.test('HTTP instruments are exposed', () => pm.expect(pm.response.text()).to.include('# TYPE')); "
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Credential token management",
+    "auth": {
+      "type": "bearer",
+      "bearer": [
+        {
+          "key": "token",
+          "value": "{{adminBearerToken}}",
+          "type": "string"
+        }
+      ]
+    },
+    "description": "Requires Credential Admin permission in tenantGuid. Keep adminBearerToken in a private environment. Regeneration immediately invalidates the old token; execute only when intended. Legacy hash-only reveal returns 409; inactive/expired credentials remain inactive/expired after regeneration.",
+    "item": [
+      {
+        "name": "Reveal credential bearer token",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/tenants/{{tenantGuid}}/credentials/{{credentialGuid}}/token",
+          "description": "200: {token,tokenType}; 401: missing/invalid bearer; 403: insufficient permission/tenant scope; 404: credential not in tenant; 409: legacy token not retained. Response is no-store; token is redacted from request history."
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Reveal succeeds', () => pm.response.to.have.status(200));",
+                "pm.test('Secret responses must not be cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+                "pm.test('Response contains a bearer token', () => { pm.expect(pm.response.json().tokenType).to.eql('Bearer'); pm.expect(pm.response.json().token).to.match(/^sharpai_[a-f0-9]{64}$/); });"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Regenerate credential bearer token (invalidates old token)",
+        "request": {
+          "method": "POST",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/tenants/{{tenantGuid}}/credentials/{{credentialGuid}}/token/rotate",
+          "description": "No body. Immediately invalidates the previous token; preserves credential ID, scopes, active flag and expiry. 200 replacement; 401 unauthenticated; 403 insufficient permission, wrong tenant or protected credential; 404 not found."
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test('Regeneration succeeds', () => pm.response.to.have.status(200));",
+                "pm.test('Secret responses must not be cached', () => pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'));",
+                "if (pm.response.code === 200) pm.environment.set('revealedBearerToken', pm.response.json().token);"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "Terminal dashboard contracts",
+    "description": "Read-only terminal-client contract checks. Supply a session bearer token with history/library access. No secrets are persisted by scripts.",
+    "item": [
+      {
+        "name": "Authentication capabilities",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/auth/context"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+                "pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Library context",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/library-context"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+                "pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "System prompts",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/system-prompts?pageSize=1"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+                "pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+                "pm.test(\"Paged response includes counts\", () => { const page = pm.response.json(); pm.expect(page.Objects).to.be.an(\"array\"); pm.expect(page.TotalRecords).to.be.a(\"number\"); });"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "Model configurations",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/model-configurations?pageSize=1"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+                "pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+                "pm.test(\"Paged response includes counts\", () => { const page = pm.response.json(); pm.expect(page.Objects).to.be.an(\"array\"); pm.expect(page.TotalRecords).to.be.a(\"number\"); });"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "History metadata",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": "{{protocol}}://{{hostname}}:{{port}}/v1.0/api/request-history?pageSize=1"
+        },
+        "event": [
+          {
+            "listen": "test",
+            "script": {
+              "type": "text/javascript",
+              "exec": [
+                "pm.test(\"Authorized read succeeds\", () => pm.response.to.have.status(200));",
+                "pm.test(\"Response is JSON\", () => pm.expect(pm.response.json()).to.be.an(\"object\"));",
+                "pm.test(\"Paged response includes counts\", () => { const page = pm.response.json(); pm.expect(page.Objects).to.be.an(\"array\"); pm.expect(page.TotalRecords).to.be.a(\"number\"); });"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

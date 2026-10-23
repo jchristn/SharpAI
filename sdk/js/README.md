@@ -423,3 +423,11 @@ clients. Sending these strings through an SDK sends ordinary prompt text. To rep
 compaction in an integration, use the existing nonstreaming chat API with a summary
 instruction, verify completion and finish reason, then replace earlier context only after
 success. See [the shared command behavior](../../docs/TUI.md#chat-commands-and-rendering).
+
+## REST contract reference
+
+See the [complete REST API reference](../../REST_API.md) for authentication, tenant boundaries,
+permissions, request/response fields, and streaming behavior. Import the
+[Postman collection](../../postman/SharpAI.postman_collection.json) for runnable examples across
+Ollama, OpenAI, and management APIs. Settings use a complete GET-edit-PUT replacement; named enum
+values returned by GET can be submitted unchanged. Listener/database changes require a server restart.

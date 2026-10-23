@@ -106,10 +106,11 @@ namespace SharpAI.Server.API.REST.Routes
             ctx.Server.Get("/favicon.ico", async (req) =>
             {
                 req.Http.Response.ContentType = Constants.FaviconContentType;
-                return File.ReadAllBytes(Constants.FaviconFilename);
+                await req.Http.Response.Send(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, Constants.FaviconFilename))).ConfigureAwait(false);
+                return null;
             }, api => RouteHelpers.Describe(api, "General", "Serve favicon")
-                .WithDescription("Returns the SharpAI favicon image.")
-                .WithResponse(200, OpenApiResponseMetadata.Binary("PNG favicon", "image/png")));
+                .WithDescription("Returns the bundled SharpAI ICO favicon, independently of the working directory.")
+                .WithResponse(200, OpenApiResponseMetadata.Binary("ICO favicon", "image/x-icon")));
         }
 
         #endregion

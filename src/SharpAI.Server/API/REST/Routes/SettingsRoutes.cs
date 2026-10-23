@@ -95,10 +95,22 @@ namespace SharpAI.Server.API.REST.Routes
                 .WithDescription("Returns the current in-memory server settings loaded from sharpai.json.")
                 .WithResponse(200, OpenApiResponseMetadata.Json("Current settings", OpenApiSchemaMetadata.Create("object"))));
 
-            ctx.Server.Put<Settings>("/api/settings", async (req) =>
+            ctx.Server.Put("/api/settings", async (req) =>
             {
                 ctx.Auth.Authorize(req, ResourceTypes.Admin, OperationTypeEnum.Admin, null);
-                Settings updated = req.GetData<Settings>();
+                Settings updated;
+                try
+                {
+                    updated = ctx.Serializer.DeserializeJson<Settings>(req.Http.Request.DataAsString);
+                }
+                catch (System.Text.Json.JsonException exception)
+                {
+                    throw new WebserverException(ApiResultEnum.BadRequest, exception.Message);
+                }
+                catch (ArgumentException exception)
+                {
+                    throw new WebserverException(ApiResultEnum.BadRequest, exception.Message);
+                }
                 if (updated == null) throw new WebserverException(ApiResultEnum.BadRequest, "Request body is required.");
 
                 Settings current = ctx.Settings();

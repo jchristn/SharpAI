@@ -112,12 +112,12 @@
         /// <summary>
         /// Favicon filename.
         /// </summary>
-        public static string FaviconFilename = "assets/favicon.png";
+        public static string FaviconFilename = "assets/favicon.ico";
 
         /// <summary>
         /// Favicon content type.
         /// </summary>
-        public static string FaviconContentType = "image/png";
+        public static string FaviconContentType = "image/x-icon";
 
         /// <summary>
         /// HuggingFace API key.

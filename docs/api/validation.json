@@ -1,0 +1,54 @@
+{
+  "description": "Local native HTTP/Postman evidence; every run uses disposable state and a real pinned remote embedding model.",
+  "runs": [
+    {
+      "postmanAssertions": 186,
+      "os": "Darwin",
+      "architecture": "arm64",
+      "documentedOperations": 97,
+      "selectedSavedRequests": 88,
+      "target": "disposable native SQLite server",
+      "model": "real local GGUF",
+      "framework": "net8.0",
+      "postmanExitCode": 0,
+      "tenantAndCredentialBoundaryChecks": 6,
+      "cleanup": true,
+      "embeddingSource": "https://huggingface.co/leliuga/all-MiniLM-L6-v2-GGUF/resolve/ddf2e25d5b8530422e7b14aa39f33a657ff9aec0/all-MiniLM-L6-v2.Q8_0.gguf",
+      "remotePull": true,
+      "httpMetricsEnabled": true,
+      "settingsRoundTrip": true,
+      "faviconBundledAsset": true,
+      "limitations": []
+    },
+    {
+      "postmanAssertions": 186,
+      "os": "Darwin",
+      "architecture": "arm64",
+      "documentedOperations": 97,
+      "selectedSavedRequests": 88,
+      "target": "disposable native SQLite server",
+      "model": "real local GGUF",
+      "framework": "net10.0",
+      "postmanExitCode": 0,
+      "tenantAndCredentialBoundaryChecks": 6,
+      "cleanup": true,
+      "embeddingSource": "https://huggingface.co/leliuga/all-MiniLM-L6-v2-GGUF/resolve/ddf2e25d5b8530422e7b14aa39f33a657ff9aec0/all-MiniLM-L6-v2.Q8_0.gguf",
+      "remotePull": true,
+      "httpMetricsEnabled": true,
+      "settingsRoundTrip": true,
+      "faviconBundledAsset": true,
+      "limitations": []
+    }
+  ],
+  "sourceSha256": {
+    "src/SharpAI.Server/API/REST/Routes/SettingsRoutes.cs": "b43c28d4ed94e9c7eff035da69ba1ad3f0f20a30ec654826edb6744773896b69",
+    "src/SharpAI.Server/API/REST/Routes/GeneralRoutes.cs": "f00fb75884bdfe084a64b210fdf4c269cf91c97420df5f6f811b883ae971c133",
+    "src/SharpAI/Constants.cs": "35679194afa1efe29af70e72283118eec05f578307c725e3c7a3a83761d820aa",
+    "scripts/test-rest-reference.py": "b7239fdca1b399407559528e7620c77f7102a09542a5498afa530b8ca96386f5"
+  },
+  "sdkUnitTests": {
+    "javascript": 9,
+    "python": 7
+  },
+  "ci": "server-contract.yml runs the native REST collection on both frameworks on Linux; those remote jobs run after push."
+}
