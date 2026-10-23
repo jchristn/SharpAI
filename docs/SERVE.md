@@ -126,8 +126,8 @@ SyslogLogging. Console logging is enabled by default, including when stdout is r
 The default level is `debug`, so REST requests emit processing and completion records:
 
 ```text
-2026-10-22 22:39:31.928144 Debug processing POST /api/chat from 127.0.0.1 (336 bytes)
-2026-10-22 22:40:01.818745 Debug completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)
+2026-10-22 22:39:31.928144 Debug [REST] processing POST /api/chat from 127.0.0.1 (336 bytes)
+2026-10-22 22:40:01.818745 Debug [REST] completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)
 ```
 
 Choose format, request detail, and severity independently:
@@ -150,6 +150,19 @@ informational engine events. Detail controls request events; it does not remove 
 runtime events. `--quiet` disables application console logs; an explicit `--log-file` still receives
 messages at the selected level. File output appends UTF-8 records. No log file is created unless requested.
 
+Every application text record follows `timestamp Severity [Subsystem] message`, including startup,
+engine events, REST access records, and startup errors. The formatter preserves existing subsystem
+names, labels structured engine events `[LlamaSharpEngine]`, request events `[REST]`, and startup
+records `[Serve]`. Messages use lowercase actions (`loading`, `ready:`, `model loaded`, `inference
+completed`); proper names and acronyms retain their spelling. Each event occupies one physical line,
+with embedded line breaks escaped. A terminal may visually wrap long lines.
+
+```text
+2026-10-23 06:08:08.897878 Info [LlamaSharpEngine] model loaded model=qwen3 load_duration_ns=776820000 slots=1 backend=metal
+2026-10-23 06:08:08.921857 Info [Serve] ready: Qwen3-8B-Q4_K_M on 127.0.0.1:8001 (both, context 40960).
+```
+
+JSON records carry the same label in the `subsystem` field and the normalized body in `message`.
 Text output uses UTC timestamps with six fractional digits and retains the readable summary above.
 Detailed text adds named `key=value` statistics. Shared engine/native-bootstrap JSON envelopes are
 rendered as readable message text and named fields in text mode, for both console and file output.
@@ -164,7 +177,7 @@ Keep stderr separate from stdout when collecting JSON logs. This does not config
 Example **standard** JSON completion (illustrative values):
 
 ```json
-{"schema_version":1,"timestamp":"2026-10-22T22:40:01.818745Z","severity":"Debug","service":"sharpai","version":"4.0.1","event":"request.completed","message":"completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)","request_id":"02104413-75cf-4537-8bed-33d73265c741","method":"POST","path":"/api/chat","source_ip":"127.0.0.1","request_content_length":336,"status":200,"duration_ms":31826.0,"model":"assistant","stream":true,"statistics_available":true,"ttft_ms":6188.0,"prompt_tokens":82,"completion_tokens":261,"total_tokens":343,"cancelled":false}
+{"schema_version":1,"timestamp":"2026-10-22T22:40:01.818745Z","severity":"Debug","service":"sharpai","version":"4.0.1","subsystem":"REST","event":"request.completed","message":"completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)","request_id":"02104413-75cf-4537-8bed-33d73265c741","method":"POST","path":"/api/chat","source_ip":"127.0.0.1","request_content_length":336,"status":200,"duration_ms":31826.0,"model":"assistant","stream":true,"statistics_available":true,"ttft_ms":6188.0,"prompt_tokens":82,"completion_tokens":261,"total_tokens":343,"cancelled":false}
 ```
 
 The `request_id` matches the `X-SharpAI-Request` response header and correlates start/completion

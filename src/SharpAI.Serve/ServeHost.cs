@@ -80,7 +80,7 @@ namespace SharpAI.Serve
         internal async Task RunAsync(CancellationToken cancellationToken)
         {
             _Server.Start(); _Started = true;
-            _Logging.Log(Severity.Info, "Ready: " + _Options.ModelName + " on " + _Options.Host + ":" + _Options.Port.ToString(CultureInfo.InvariantCulture) + " (" + _Options.Api + ", context " + _Model.ContextSize.ToString(CultureInfo.InvariantCulture) + ").");
+            _Logging.Log(Severity.Info, "ready: " + _Options.ModelName + " on " + _Options.Host + ":" + _Options.Port.ToString(CultureInfo.InvariantCulture) + " (" + _Options.Api + ", context " + _Model.ContextSize.ToString(CultureInfo.InvariantCulture) + ").");
             try { await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
             finally

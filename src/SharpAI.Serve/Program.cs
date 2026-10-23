@@ -22,7 +22,7 @@ namespace SharpAI.Serve
         }
         private static void WriteError(bool json, string message, int exitCode)
         {
-            Console.Error.WriteLine(json ? JsonSerializer.Serialize(new { schema_version = 1, timestamp = DateTime.UtcNow, severity = "Error", service = "sharpai", version = ServeVersion.Current, @event = "startup.failed", message, exit_code = exitCode }) : "sharpai: " + message);
+            Console.Error.WriteLine(json ? JsonSerializer.Serialize(new { schema_version = 1, timestamp = DateTime.UtcNow, severity = "Error", service = "sharpai", version = ServeVersion.Current, subsystem = "Serve", @event = "startup.failed", message = "startup failed: " + message, exit_code = exitCode }) : ServeLogStyle.Header(DateTime.UtcNow, "Error", "Serve") + "startup failed: " + ServeLogStyle.SingleLine(message));
         }
         private static async Task<int> Main(string[] args)
         {
@@ -56,7 +56,7 @@ namespace SharpAI.Serve
                 logging.Settings = settings;
                 using ServeLogOutput output = new ServeLogOutput(logging, options);
                 ServeBanner.Write(logging);
-                logging.Log(Severity.Info, "Loading " + options.ModelName + "...");
+                logging.Log(Severity.Info, "loading " + options.ModelName + "...");
                 ServeEnvironment.Apply(options);
                 if (options.NativeLibrary != null) NativeLibraryLoader.Configure(options.NativeLibrary, options.Backend);
                 NativeBackendInitializer.Initialize(new NativeBackendOptions { ForceBackend = options.Backend, EnableNativeLogging = false }, logging);

@@ -227,6 +227,7 @@ dotnet run --project src/SharpAI.Serve -f net8.0 -- serve /models/assistant.gguf
 Use `-f net10.0` with the .NET 10 SDK. For a NuGet tool installation from this checkout,
 see the [local-feed instructions](docs/SERVE.md#install-update-and-remove).
 
+Application text logs consistently use `timestamp Severity [Subsystem] message`.
 Startup displays the SharpAI banner; timestamped REST logs include status, duration, and available
 TTFT/token counts. Use `--log-format json --log-detail detailed` for compact structured records
 with phase timings, throughput, stream counters, and request IDs. `--log-detail minimal` emits

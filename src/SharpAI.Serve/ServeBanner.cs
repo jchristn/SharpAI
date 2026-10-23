@@ -14,7 +14,7 @@ namespace SharpAI.Serve
         internal static void Write(LoggingModule logging)
         {
             foreach (string line in Text.Split('\n')) logging.Log(Severity.Info, line.TrimEnd('\r'));
-            logging.Log(Severity.Info, "SharpAI.Serve " + ServeVersion.Current);
+            logging.Log(Severity.Info, "version SharpAI.Serve " + ServeVersion.Current);
         }
     }
 }

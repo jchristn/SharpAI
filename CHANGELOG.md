@@ -2,6 +2,8 @@
 
 ### Unreleased standalone serving
 
+- Standardize all application text records as timestamp, severity, subsystem, and message; label engine/startup/request events consistently, normalize action wording, and apply the same convention to startup errors and JSON subsystem metadata.
+
 - Honor text logging for shared engine/native bootstrap messages as well as request/startup messages; render internal JSON envelopes as readable text with named statistics. Keep compact JSON exclusive to the selected JSON format.
 
 - Add independent `--log-format text|json` and `--log-detail off|minimal|standard|detailed` controls. Compact JSON covers startup/runtime messages and request records with correlation IDs, measured phase timings, throughput, timing provenance, cancellation, stream counters, and effective runtime settings; document units and unavailable values.

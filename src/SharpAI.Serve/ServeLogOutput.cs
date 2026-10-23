@@ -40,6 +40,7 @@ namespace SharpAI.Serve
                 }
             }
             catch (JsonException) { }
+            ServeLogStyle.Normalize(entry, record);
             string line = _Options.LogFormat == "json" ? JsonSerializer.Serialize(record) : Text(entry, record);
             lock (_Lock)
             {
@@ -50,10 +51,10 @@ namespace SharpAI.Serve
         private static string Text(LogEntry entry, Dictionary<string, object?> record)
         {
             string message = Convert.ToString(record["message"], CultureInfo.InvariantCulture) ?? String.Empty;
-            StringBuilder text = new StringBuilder(entry.Timestamp.ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss.ffffff", CultureInfo.InvariantCulture) + " " + entry.Severity + " " + message.Replace("\r", "\\r").Replace("\n", "\\n"));
+            StringBuilder text = new StringBuilder(ServeLogStyle.Header(entry.Timestamp, entry.Severity.ToString(), (string)record["subsystem"]!) + ServeLogStyle.SingleLine(message));
             foreach (KeyValuePair<string, object?> field in record)
             {
-                if (field.Key is "schema_version" or "timestamp" or "severity" or "service" or "version" or "event" or "message" or "v" or "evt" or "ts" or "svc" or "inst" or "msg" or "corr" or "event_name") continue;
+                if (field.Key is "schema_version" or "timestamp" or "severity" or "service" or "version" or "event" or "message" or "v" or "evt" or "ts" or "svc" or "inst" or "msg" or "corr" or "event_name" or "subsystem") continue;
                 if (field.Value is JsonElement value) Append(text, field.Key, value);
             }
             return text.ToString();
@@ -76,10 +77,11 @@ namespace SharpAI.Serve
         {
             if (options.LogFormat == "json")
             {
+                fields["subsystem"] = "REST";
                 fields["event"] = eventName; fields["message"] = message;
                 logging.Log(Severity.Debug, JsonSerializer.Serialize(fields));
             }
-            else logging.Log(Severity.Debug, message);
+            else logging.Log(Severity.Debug, "[REST] " + message);
         }
         public void Dispose()
         {

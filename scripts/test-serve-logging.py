@@ -4,6 +4,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import socket
@@ -100,10 +101,14 @@ def main():
                         check('queue_ms=' in transcript and 'generation_tokens_per_second=' in transcript, 'detailed text metrics')
                     check('{"' not in transcript, 'text console and file output contain no JSON envelopes')
                     check('[NativeBackendInitializer]' in transcript, 'shared library message is readable text')
-                    check('engine.inference.completed' in transcript and 'prompt_tokens=' in transcript, 'engine statistics survive text rendering')
+                    check(all(re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} (Debug|Info|Warn|Error) \[[A-Za-z]+\] ', line) for line in transcript.splitlines()), 'every text record has timestamp severity and subsystem')
+                    check('[Serve] ready:' in transcript and '[Serve] loading ' in transcript and '[Serve] version SharpAI.Serve ' in transcript, 'startup labels and lowercase actions')
+                    check('[REST] processing POST' in transcript and '[REST] completed POST' in transcript, 'request subsystem labels')
+                    check('] [LlamaSharpEngine]' not in transcript and '] [NativeBackendInitializer]' not in transcript, 'no duplicate subsystem labels')
+                    check('[LlamaSharpEngine] inference completed' in transcript and 'prompt_tokens=' in transcript, 'engine statistics survive text rendering')
                     continue
                 records = [json.loads(line) for line in transcript.splitlines()]
-                check(all(isinstance(record, dict) and record['schema_version'] == 1 and record['severity'] for record in records), 'every stdout/file line is a full compact log object')
+                check(all(isinstance(record, dict) and record['schema_version'] == 1 and record['severity'] and record['subsystem'] for record in records), 'every stdout/file line is a full compact log object')
                 completed = [record for record in records if record['event'] == 'request.completed']
                 started = [record for record in records if record['event'] == 'request.started']
                 if scenario['detail'] == 'off' or scenario['level'] == 'info':
@@ -150,6 +155,8 @@ def main():
         result = subprocess.run(command + ['serve', missing, '--log-format=json'], capture_output=True, text=True, timeout=30)
         check(result.returncode == 2 and json.loads(result.stderr)['event'] == 'startup.failed', 'argument errors follow JSON format')
         check(result.stdout == '', 'argument errors stay on stderr')
+        text_error = subprocess.run(command + ['serve', missing], capture_output=True, text=True, timeout=30)
+        check(re.match(r'^\d{4}-\d{2}-\d{2} .* Error \[Serve\] startup failed: ', text_error.stderr), 'argument errors use the same text style')
     print('PASS: ' + str(assertions) + ' log schema, privacy, detail and format checks (' + args.framework + ')')
 
 

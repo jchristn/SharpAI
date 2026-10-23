@@ -173,11 +173,11 @@ def main():
                         transcript = (directory / 'application.log').read_text()
                         (directory / 'application.log').unlink()
                     if fixture['api'] == 'ollama':
-                        check(re.search(r'Debug (processing|completed) (GET|POST|HEAD) ', transcript) is None, 'info level filters debug access events')
+                        check(re.search(r'Debug \[REST\] (processing|completed) (GET|POST|HEAD) ', transcript) is None, 'info level filters debug access events')
                         check('SharpAI.Serve ' in transcript, 'info retains startup logging')
                     else:
                         check('/___/_//_/' in transcript, 'ASCII startup banner')
-                        check(re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} Debug processing POST ', transcript), 'timestamped processing event')
+                        check(re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} Debug \[REST\] processing POST ', transcript), 'timestamped processing event')
                         check(re.search(r'completed POST .*: 200 \(\d+ms', transcript), 'completion status and wall duration')
                         check(re.search(r'completed POST .*: 404 \(\d+ms', transcript), 'failed requests have completion records')
                         if not fixture['embedding']:
