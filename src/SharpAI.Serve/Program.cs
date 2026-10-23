@@ -41,12 +41,12 @@ namespace SharpAI.Serve
                 using LoggingModule logging = new LoggingModule();
                 LoggingSettings settings = new LoggingSettings();
                 settings.DetectConsole = false;
-                settings.EnableConsole = !options.Quiet && options.LogFormat == "text";
+                settings.EnableConsole = false;
                 settings.EnableColors = false;
                 settings.UseUtcTime = true;
                 settings.HeaderFormat = "{ts} {sev}";
                 settings.TimestampFormat = "yyyy-MM-dd HH:mm:ss.ffffff";
-                settings.FileLogging = options.LogFile == null || options.LogFormat == "json" ? FileLoggingMode.Disabled : FileLoggingMode.SingleLogFile;
+                settings.FileLogging = FileLoggingMode.Disabled;
                 settings.MinimumSeverity = options.LogLevel switch { "debug" => Severity.Debug, "warning" => Severity.Warn, "error" => Severity.Error, _ => Severity.Info };
                 if (options.LogFile != null)
                 {

@@ -35,7 +35,7 @@ def main():
         assertions += 1
 
     scenarios = [dict(format='json', detail=depth, quiet=False, level='debug') for depth in ['off', 'minimal', 'standard', 'detailed']]
-    scenarios.extend([dict(format='text', detail='detailed', quiet=False, level='debug'), dict(format='json', detail='detailed', quiet=True, level='debug'), dict(format='json', detail='detailed', quiet=False, level='info')])
+    scenarios.extend([dict(format='text', detail='detailed', quiet=False, level='debug'), dict(format='text', detail='standard', quiet=True, level='debug'), dict(format='json', detail='detailed', quiet=True, level='debug'), dict(format='json', detail='detailed', quiet=False, level='info')])
     for scenario in scenarios:
         with tempfile.TemporaryDirectory(prefix='sharpai-log-') as temporary:
             directory = Path(temporary)
@@ -46,7 +46,7 @@ def main():
             with (directory / 'stdout').open('w+') as output, (directory / 'stderr').open('w+') as errors:
                 options = ['--log-format', scenario['format'], '--log-detail', scenario['detail'], '--log-level', scenario['level']]
                 if scenario['quiet']:
-                    options += ['--quiet', '--log-file', str(directory / 'app.jsonl')]
+                    options += ['--quiet', '--log-file', str(directory / 'app.log')]
                 process = subprocess.Popen(command + ['serve', str(args.model.resolve()), '--served-model-name', 'fixture', '--backend', 'cpu', '--context-size', '512', '--max-tokens', '8', '--threads', '2', '--parallel', '2', '--port', str(port)] + options, cwd=directory, stdout=output, stderr=errors, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == 'nt' else 0)
                 def request(path, body=None, status=200):
                     http = urllib.request.Request(base + path, data=None if body is None else json.dumps(body).encode(), headers={'Content-Type': 'application/json', 'Authorization': 'Bearer NEVER_LOG_TOKEN'})
@@ -92,11 +92,15 @@ def main():
                 transcript = output.read()
                 if scenario['quiet']:
                     check(transcript == '', 'quiet stdout is empty')
-                    transcript = (directory / 'app.jsonl').read_text()
+                    transcript = (directory / 'app.log').read_text()
                 for secret in ['NEVER_LOG_QUERY', 'NEVER_LOG_TOKEN', 'NEVER_LOG_PROMPT']:
                     check(secret not in transcript, 'private data is excluded')
                 if scenario['format'] == 'text':
-                    check('queue_ms=' in transcript and 'generation_tokens_per_second=' in transcript, 'detailed text metrics')
+                    if scenario['detail'] == 'detailed':
+                        check('queue_ms=' in transcript and 'generation_tokens_per_second=' in transcript, 'detailed text metrics')
+                    check('{"' not in transcript, 'text console and file output contain no JSON envelopes')
+                    check('[NativeBackendInitializer]' in transcript, 'shared library message is readable text')
+                    check('engine.inference.completed' in transcript and 'prompt_tokens=' in transcript, 'engine statistics survive text rendering')
                     continue
                 records = [json.loads(line) for line in transcript.splitlines()]
                 check(all(isinstance(record, dict) and record['schema_version'] == 1 and record['severity'] for record in records), 'every stdout/file line is a full compact log object')

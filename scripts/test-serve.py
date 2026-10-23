@@ -173,7 +173,7 @@ def main():
                         transcript = (directory / 'application.log').read_text()
                         (directory / 'application.log').unlink()
                     if fixture['api'] == 'ollama':
-                        check('processing ' not in transcript and 'completed ' not in transcript, 'info level filters debug access events')
+                        check(re.search(r'Debug (processing|completed) (GET|POST|HEAD) ', transcript) is None, 'info level filters debug access events')
                         check('SharpAI.Serve ' in transcript, 'info retains startup logging')
                     else:
                         check('/___/_//_/' in transcript, 'ASCII startup banner')

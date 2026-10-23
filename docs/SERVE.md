@@ -151,7 +151,9 @@ runtime events. `--quiet` disables application console logs; an explicit `--log-
 messages at the selected level. File output appends UTF-8 records. No log file is created unless requested.
 
 Text output uses UTC timestamps with six fractional digits and retains the readable summary above.
-Detailed text adds named `key=value` statistics. JSON output is **NDJSON**: every application log is a
+Detailed text adds named `key=value` statistics. Shared engine/native-bootstrap JSON envelopes are
+rendered as readable message text and named fields in text mode, for both console and file output.
+JSON output is **NDJSON**: every application log is a
 complete compact object on one physical line, with the banner/newlines escaped inside strings and
 no non-JSON header prefix. Startup and runtime messages use the same envelope. Structured engine
 messages remain structured fields, rather than requiring another JSON parse of the message string.
