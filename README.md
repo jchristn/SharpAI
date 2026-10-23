@@ -16,8 +16,9 @@ Deploy on a workstation, a private server, or infrastructure you manage. Choose 
 control access, and see how requests perform. Inference runs on your hardware without requiring
 a hosted AI service or paying a provider for each token.
 
-[Docker and web quick start](#getting-started-docker-and-web) ·
-[TUI quick start](#getting-started-tui) ·
+[Docker and web quick start](#docker-and-web-quick-start) ·
+[TUI quick start](#tui-quick-start) ·
+[Model server quick start](#model-server-quick-start) ·
 [REST API reference](REST_API.md) ·
 [Deployment guide](DEPLOYMENT_GUIDE.md) ·
 [Changelog](CHANGELOG.md)
@@ -135,7 +136,7 @@ See the [REST authentication contract](REST_API.md#authentication-and-multitenan
 [Postman collection](postman/SharpAI.postman_collection.json) for login, credential creation, role assignments,
 revocation, token reveal/rotation, and tenant-scoped requests.
 
-## Getting Started (Docker and Web)
+## Docker and web quick start
 
 Install Git and Docker with Docker Compose, then clone the repository:
 
@@ -198,16 +199,33 @@ authentication assets, and logs through mounts. See the [deployment guide](DEPLO
 for persistence, networking, native installation, and GPU setup. For a smaller CPU deployment or
 an NVIDIA deployment, see `docker/compose-cpu.yaml` and `docker/compose-cuda.yaml`.
 
-## Getting Started (Standalone Serving)
+## Model server quick start
 
-Serve a local GGUF directly through familiar inference APIs, with no registry, database,
-authentication, or dashboard:
+`SharpAI.Serve` is the single-model server project. It runs on macOS, Windows, and Linux and serves
+an existing GGUF through both Ollama-compatible and OpenAI-compatible APIs on the same port.
+It requires no registry, database, authentication, or dashboard.
+
+Install the .NET 8 or .NET 10 SDK, then install the tool and start a model:
 
 ```sh
 # Once available on your configured NuGet feed:
 dotnet tool install --global SharpAI.Serve
 sharpai serve /models/assistant.gguf --served-model-name assistant --port 8000
 ```
+
+Keep `$HOME/.dotnet/tools` (macOS/Linux) or `%USERPROFILE%\.dotnet\tools` (Windows) on PATH.
+The command runs from any directory; replace the model path with your own GGUF file.
+It binds to `127.0.0.1` by default and accepts requests without a bearer token. The model loads
+before the listener starts. Use `sharpai /?` for options and Ctrl+C to stop.
+
+To run directly from an unreleased checkout, use this command from the repository root:
+
+```sh
+dotnet run --project src/SharpAI.Serve -f net8.0 -- serve /models/assistant.gguf --served-model-name assistant --port 8000
+```
+
+Use `-f net10.0` with the .NET 10 SDK. For a NuGet tool installation from this checkout,
+see the [local-feed instructions](docs/SERVE.md#install-update-and-remove).
 
 Startup displays the SharpAI banner; timestamped REST logs include status, duration, and available
 TTFT/token counts. Use `--log-format json --log-detail detailed` for compact structured records
@@ -221,7 +239,7 @@ pack/install from a local feed or run the project directly. See the [standalone 
 for prerequisites, all CLI options, native backend support, HTTP examples, source installation,
 and validation. The web dashboard and TUI administration client use the managed server.
 
-## Getting Started (TUI)
+## TUI quick start
 
 Use the terminal dashboard on macOS, Windows, or Linux to connect to the same server.
 An interactive terminal and a running SharpAI server are required. Models remain on the server.

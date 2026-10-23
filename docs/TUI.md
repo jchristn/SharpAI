@@ -8,7 +8,7 @@ dotnet run --project src/SharpAI.Tui -f net8.0 -- --server http://127.0.0.1:8000
 
 Run from the repository root with the matching .NET SDK installed. For an already built
 self-contained archive, invoke its `sharpai-tui` executable instead; no installed .NET runtime is needed.
-The server must already be running; see [Docker/web setup](../README.md#getting-started-docker-and-web).
+The server must already be running; see [Docker/web setup](../README.md#docker-and-web-quick-start).
 
 | Flag | Meaning |
 | --- | --- |
