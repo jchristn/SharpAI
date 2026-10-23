@@ -18,6 +18,7 @@ namespace SharpAI.Serve
     {
         private readonly ServeOptions _Options;
         private readonly SingleModel _Model;
+        private readonly LoggingModule _Logging;
         private readonly Webserver _Server;
         private readonly Serializer _Serializer = new Serializer();
         private readonly CancellationTokenSource _Stopping = new CancellationTokenSource();
@@ -25,15 +26,18 @@ namespace SharpAI.Serve
         private bool _Started;
         internal ServeHost(ServeOptions options, SingleModel model, LoggingModule logging)
         {
-            _Options = options; _Model = model;
+            _Options = options; _Model = model; _Logging = logging;
+            ServeRequestLog transport = new ServeRequestLog(logging);
             WebserverSettings settings = new WebserverSettings { Hostname = options.Host, Port = options.Port };
             _Server = new Webserver(settings, NotFoundAsync);
             _Server.Routes.PreRouting = context =>
             {
+                transport.Begin(context);
                 context.Response.Headers.Add(SharpAI.Constants.RequestIdHeader, Guid.NewGuid().ToString());
                 context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
                 return Task.CompletedTask;
             };
+            _Server.Routes.PostRouting = context => { transport.Complete(context); return Task.CompletedTask; };
             _Server.Routes.Preflight = async context =>
             {
                 context.Response.StatusCode = 200;
@@ -44,7 +48,6 @@ namespace SharpAI.Serve
             _Server.Get("/health", request => Task.FromResult<object>(new { status = "healthy", version = ServeVersion.Current }));
             _Server.Head("/health", request => Task.FromResult<object?>(null));
             _Server.Get("/ready", request => Task.FromResult<object>(new { status = "ready", model = options.ModelName, context_size = model.ContextSize }));
-            InferenceTransport transport = new InferenceTransport();
             if (options.Api != "openai")
             {
                 OllamaInferenceHandler ollama = new OllamaInferenceHandler(model, transport, logging, _Serializer);
@@ -76,7 +79,7 @@ namespace SharpAI.Serve
         internal async Task RunAsync(CancellationToken cancellationToken)
         {
             _Server.Start(); _Started = true;
-            if (!_Options.Quiet) Console.WriteLine("Ready: " + _Options.ModelName + " on " + _Options.Host + ":" + _Options.Port.ToString(CultureInfo.InvariantCulture) + " (" + _Options.Api + ", context " + _Model.ContextSize.ToString(CultureInfo.InvariantCulture) + ").");
+            _Logging.Log(Severity.Info, "Ready: " + _Options.ModelName + " on " + _Options.Host + ":" + _Options.Port.ToString(CultureInfo.InvariantCulture) + " (" + _Options.Api + ", context " + _Model.ContextSize.ToString(CultureInfo.InvariantCulture) + ").");
             try { await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false); }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
             finally

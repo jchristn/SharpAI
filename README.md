@@ -209,6 +209,9 @@ dotnet tool install --global SharpAI.Serve
 sharpai serve /models/assistant.gguf --served-model-name assistant --port 8000
 ```
 
+Startup displays the SharpAI banner; timestamped REST logs include status, duration, and available
+TTFT/token counts. Use `--log-level info` for less output or `--quiet` to suppress application console logs.
+
 With the .NET tool directory on PATH, `sharpai` runs from any working directory. Use
 `dotnet tool update --global SharpAI.Serve` to update and
 `dotnet tool uninstall --global SharpAI.Serve` to remove it. From an unreleased checkout,

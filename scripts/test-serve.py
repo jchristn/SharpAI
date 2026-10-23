@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import socket
 import signal
@@ -63,7 +64,8 @@ def main():
             base = 'http://127.0.0.1:' + str(port)
             logfile = directory / 'process.log'
             with logfile.open('w+') as output:
-                process = subprocess.Popen(command + ['serve', str(fixture['path']), '--served-model-name', 'fixture', '--backend', 'cpu', '--port', str(port), '--context-size', '512', '--max-tokens', '16', '--threads', '2', '--api', fixture['api']], cwd=directory, stdout=output, stderr=output, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0)
+                logging_args = ['--quiet', '--log-file', str(directory / 'application.log')] if fixture['embedding'] else ['--log-level', 'info'] if fixture['api'] == 'ollama' else []
+                process = subprocess.Popen(command + ['serve', str(fixture['path']), '--served-model-name', 'fixture', '--backend', 'cpu', '--port', str(port), '--context-size', '512', '--max-tokens', '16', '--threads', '2', '--api', fixture['api']] + logging_args, cwd=directory, stdout=output, stderr=output, creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0)
                 def request(path, body=None, expected=200, raw=False):
                     payload = None if body is None else json.dumps(body).encode()
                     http = urllib.request.Request(base + path, data=payload, headers={'Content-Type': 'application/json'})
@@ -88,7 +90,7 @@ def main():
                         except OSError:
                             time.sleep(.25)
                     check(ready, 'ready after model load')
-                    request('/health')
+                    request('/health?privateQuery=DO_NOT_LOG_THIS')
                     # A second process must fail instead of advertising false readiness on an occupied port.
                     if fixture['api'] == 'both':
                         occupied = subprocess.run(command + ['serve', str(fixture['path']), '--backend', 'cpu', '--port', str(port), '--context-size', '512', '--threads', '2'], cwd=directory, capture_output=True, text=True, timeout=30)
@@ -132,6 +134,7 @@ def main():
                             check(0 < data['usage']['completion_tokens'] <= 4, 'request budget override')
                             data = request('/v1/chat/completions', {'model': 'fixture', 'messages': [{'role': 'user', 'content': 'Hello'}]})
                             check(0 < data['usage']['completion_tokens'] <= 16, 'CLI output budget')
+                            chat_usage = data['usage']
                             stream = request('/v1/chat/completions', {'model': 'fixture', 'messages': [{'role': 'user', 'content': 'Hello'}], 'stream': True, 'stream_options': {'include_usage': True}}, raw=True)
                             check('data: [DONE]' in stream, 'SSE terminal sentinel')
                             check('completion_tokens' in stream and 'finish_reason' in stream, 'SSE usage and final chunk')
@@ -162,8 +165,27 @@ def main():
                         raise AssertionError('server did not shut down gracefully')
                     check(process.returncode == 0, 'graceful shutdown: ' + str(process.returncode))
                     output.seek(0)
+                    transcript = output.read()
                     if process.returncode:
-                        print(output.read())
+                        print(transcript)
+                    if fixture['embedding']:
+                        check('processing ' not in transcript and 'SharpAI.Serve ' not in transcript, 'quiet suppresses application console logging')
+                        transcript = (directory / 'application.log').read_text()
+                        (directory / 'application.log').unlink()
+                    if fixture['api'] == 'ollama':
+                        check('processing ' not in transcript and 'completed ' not in transcript, 'info level filters debug access events')
+                        check('SharpAI.Serve ' in transcript, 'info retains startup logging')
+                    else:
+                        check('/___/_//_/' in transcript, 'ASCII startup banner')
+                        check(re.search(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} Debug processing POST ', transcript), 'timestamped processing event')
+                        check(re.search(r'completed POST .*: 200 \(\d+ms', transcript), 'completion status and wall duration')
+                        check(re.search(r'completed POST .*: 404 \(\d+ms', transcript), 'failed requests have completion records')
+                        if not fixture['embedding']:
+                            check(re.search(r'TTFT \d+ms, [1-9]\d* input tok, [1-9]\d* output tok', transcript), 'real inference statistics in completion logs')
+                            check(str(chat_usage['prompt_tokens']) + ' input tok, ' + str(chat_usage['completion_tokens']) + ' output tok' in transcript, 'logged usage agrees with HTTP usage')
+                            check(len(re.findall(r'completed POST /v1/chat/completions .*: 200 .*TTFT', transcript)) >= 2, 'streaming and nonstreaming chat completion logs')
+                            check(re.search(r'completed POST /api/chat .*: 200 .*TTFT', transcript), 'Ollama streaming completion log')
+                    check('DO_NOT_LOG_THIS' not in transcript, 'query values excluded from logs')
             logfile.unlink()
         check(list(directory.iterdir()) == [], 'no settings, registry, model copies or log files created')
     print('PASS: ' + str(assertions) + ' standalone live assertions (' + args.framework + ')')

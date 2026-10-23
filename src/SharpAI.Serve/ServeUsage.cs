@@ -35,8 +35,8 @@ FILES AND LOGGING
   --native-library <path>       Backend library override; requires --backend
                                CUDA requires external matching native binaries
   --log-file <path>             Optional log file; no file logging by default
-  --log-level <level>           debug, info, warning, error. Default: info
-  --quiet                       Suppress informational console output
+  --log-level <level>           debug, info, warning, error. Default: debug
+  --quiet                       Suppress application console logs
   -h, --help, /?, usage         Show help
 
 BEHAVIOR

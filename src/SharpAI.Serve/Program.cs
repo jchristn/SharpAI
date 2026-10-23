@@ -25,18 +25,26 @@ namespace SharpAI.Serve
             try
             {
                 using LoggingModule logging = new LoggingModule();
-                logging.Settings.EnableConsole = false;
-                logging.Settings.FileLogging = options.LogFile == null ? FileLoggingMode.Disabled : FileLoggingMode.SingleLogFile;
-                logging.Settings.MinimumSeverity = options.LogLevel switch { "debug" => Severity.Debug, "warning" => Severity.Warn, "error" => Severity.Error, _ => Severity.Info };
+                LoggingSettings settings = new LoggingSettings();
+                settings.DetectConsole = false;
+                settings.EnableConsole = !options.Quiet;
+                settings.EnableColors = false;
+                settings.UseUtcTime = true;
+                settings.HeaderFormat = "{ts} {sev}";
+                settings.TimestampFormat = "yyyy-MM-dd HH:mm:ss.ffffff";
+                settings.FileLogging = options.LogFile == null ? FileLoggingMode.Disabled : FileLoggingMode.SingleLogFile;
+                settings.MinimumSeverity = options.LogLevel switch { "debug" => Severity.Debug, "warning" => Severity.Warn, "error" => Severity.Error, _ => Severity.Info };
                 if (options.LogFile != null)
                 {
                     Directory.CreateDirectory(Path.GetDirectoryName(options.LogFile)!);
-                    logging.Settings.LogFilename = options.LogFile;
+                    settings.LogFilename = options.LogFile;
                 }
+                logging.Settings = settings;
+                ServeBanner.Write(logging);
+                logging.Log(Severity.Info, "Loading " + options.ModelName + "...");
                 ServeEnvironment.Apply(options);
                 if (options.NativeLibrary != null) NativeLibraryLoader.Configure(options.NativeLibrary, options.Backend);
                 NativeBackendInitializer.Initialize(new NativeBackendOptions { ForceBackend = options.Backend, EnableNativeLogging = false }, logging);
-                if (!options.Quiet) Console.WriteLine("Loading " + options.ModelName + "...");
                 using SingleModel model = new SingleModel(options, logging);
                 await model.InitializeAsync(shutdown.Token).ConfigureAwait(false);
                 using ServeHost host = new ServeHost(options, model, logging);

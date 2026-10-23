@@ -2,6 +2,8 @@
 
 ### Unreleased standalone serving
 
+- Emit the ASCII startup banner and timestamped REST processing/completion logs by default, with streaming duration and available TTFT/token usage; honor log-level filtering, quiet console mode, and optional file output.
+
 - Add `SharpAI.Serve`, a portable NuGet .NET tool exposing `sharpai serve <model.gguf>` with explicit CLI paths, runtime settings, sampling defaults, and API selection.
 - Serve one local model without authentication, a dashboard, registry, configuration file, or database; load before readiness and release on shutdown.
 - Extract shared Ollama/OpenAI inference handlers so standalone and managed hosting retain the same streaming, tool calling, usage, and error behavior.

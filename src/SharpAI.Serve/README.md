@@ -25,3 +25,8 @@ working directory, so the installed command can run anywhere.
 
 CPU and macOS Metal native libraries are bundled. CUDA requires an explicit matching external
 native library through `--backend cuda --native-library <path>`. See the guide for prerequisites.
+
+Startup prints the SharpAI ASCII banner. Debug REST logs are enabled by default and report method,
+path, source, bytes, status, duration, and available TTFT/token counts for both response modes.
+Use `--log-level info` to hide request logs, `--quiet` to suppress application console logs,
+and `--log-file <path>` for optional file output. Prompts, responses, and headers are not logged.

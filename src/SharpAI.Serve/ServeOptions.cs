@@ -25,7 +25,7 @@ namespace SharpAI.Serve
         internal int? Seed { get; private set; }
         internal string? ChatTemplatePath { get; private set; }
         internal string? LogFile { get; private set; }
-        internal string LogLevel { get; private set; } = "info";
+        internal string LogLevel { get; private set; } = "debug";
         internal string? NativeLibrary { get; private set; }
         internal bool Quiet { get; private set; }
         internal bool Help { get; private set; }

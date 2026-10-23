@@ -96,8 +96,8 @@ TUI/web administration require the managed server and cannot operate against thi
 | `--chat-template` | Embedded template/family fallback | Existing nonempty template file, at most 1 MiB; validated before listening |
 | `--native-library` | Automatic native resolution | Existing backend library; requires an explicit `--backend` |
 | `--log-file` | None | Optional log file; creates its parent directory |
-| `--log-level` | `info` | `debug`, `info`, `warning`, or `error` |
-| `--quiet` | Off | Suppress loading/ready messages; errors and native-library output may remain |
+| `--log-level` | `debug` | `debug`, `info`, `warning`, or `error` |
+| `--quiet` | Off | Suppress application console logs; startup errors and native-library output may remain |
 | `-h`, `--help`, `/?`, `usage` | — | Print usage without loading a model |
 | `--version` | — | Print tool assembly version |
 
@@ -116,6 +116,31 @@ Keep companion native libraries beside it and satisfy the platform's CUDA runtim
 Explicit unavailable backends fail startup. Auto selection can fall back to CPU. Native support
 also depends on OS, architecture, drivers, and model format; CI exercises CPU on macOS, Windows,
 and Linux. GPU execution requires appropriate hardware.
+
+## Startup and request logging
+
+Startup emits the SharpAI ASCII banner, tool version, loading message, and ready endpoint through
+SyslogLogging. Console logging is enabled by default, including when stdout is redirected.
+The default level is `debug`, so REST requests emit processing and completion records:
+
+```text
+2026-10-22 22:39:31.928144 Debug processing POST /api/chat from 127.0.0.1 (336 bytes)
+2026-10-22 22:40:01.818745 Debug completed POST /api/chat from 127.0.0.1: 200 (31826ms, TTFT 6188ms, 82 input tok, 261 output tok)
+```
+
+Timestamps are UTC with six fractional digits. Duration covers HTTP request handling through the
+completed response, including streaming. TTFT is the engine's measured first-token duration;
+token counts include reasoning before output filtering. Timings and counts appear when engine
+statistics are available; probes, rejected requests, and embedding calls omit unavailable metrics.
+Request logs include method, path, source address, declared body length, and response status.
+They omit query values, headers, prompts, and generated content. Runtime engine messages also use
+the configured logger. This does not configure a remote UDP syslog destination.
+
+`--log-level info` hides debug request logs while retaining the startup banner and informational
+messages. `--quiet` disables application console logs; an explicit `--log-file` still receives
+messages at the selected level. No log file is created unless requested. Native backend output,
+such as Metal capability probing, may still appear outside the application logger. A Metal tensor
+probe can fall back to the embedded library and still reach `Ready` successfully.
 
 ## HTTP contract
 
