@@ -1,3 +1,5 @@
+#nullable enable
+
 namespace SharpAI.Operations
 {
     using System;
@@ -28,7 +30,7 @@ namespace SharpAI.Operations
             string? revision = null; string? filePath = null;
             if (name.Contains("://", StringComparison.Ordinal))
             {
-                if (!Uri.TryCreate(name, UriKind.Absolute, out Uri url) || url.Scheme != "https" || !url.IsDefaultPort
+                if (!Uri.TryCreate(name, UriKind.Absolute, out Uri? url) || url.Scheme != "https" || !url.IsDefaultPort
                     || !new[] { "huggingface.co", "www.huggingface.co", "hf.co" }.Contains(url.Host, StringComparer.OrdinalIgnoreCase)
                     || !string.IsNullOrEmpty(url.UserInfo) || !string.IsNullOrEmpty(url.Query) || !string.IsNullOrEmpty(url.Fragment)
                     || name.Contains('\\') || Regex.IsMatch(name, @"/(?:\.|%2e){1,2}(?:/|$)", RegexOptions.IgnoreCase))
