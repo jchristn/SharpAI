@@ -38,10 +38,10 @@ namespace Test.Shared.Tui
             using TestProfileStore profileStore = new TestProfileStore(); using SharpAITuiApp app = new SharpAITuiApp(client, backend, new ConnectionProfile { Server = Environment.GetEnvironmentVariable("SHARPAI_TUI_LIVE_URL")! }, profileStore.Store);
             app.Host.Start(); await app.ConnectAsync().ConfigureAwait(false); await app.DrainAsync(ct).ConfigureAwait(false);
             app.Navigate("/playground"); await app.DrainAsync(ct).ConfigureAwait(false); Record(app, "chat-01-open");
-            Click(app, backend, "Model ", 0); await app.DrainAsync(ct).ConfigureAwait(false); backend.FeedKey("Enter"); app.Host.PumpInputOnce(); await app.DrainAsync(ct).ConfigureAwait(false);
+            TestAssert.Contains(Frame(app), "Model: tui-stories");
             Record(app, "chat-02-model"); Click(app, backend, "Composer", 1); backend.FeedInput("Once upon a time"); app.Host.PumpInputOnce(); backend.FeedKey("Enter"); app.Host.PumpInputOnce();
             await app.DrainAsync(ct).ConfigureAwait(false); Record(app, "chat-03-complete");
-            TestAssert.Contains(Frame(app), "Complete"); TestAssert.Contains(Frame(app), "Assistant");
+            TestAssert.Contains(Frame(app), "Token limit reached"); TestAssert.Contains(Frame(app), "Assistant");
         }
         private static async Task PromptAsync(CancellationToken ct)
         {

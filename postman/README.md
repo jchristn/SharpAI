@@ -39,3 +39,13 @@ through it, alongside a separate native server. Fixtures under `/fixture` are sy
 not server endpoints or inference compatibility evidence. The root collection includes a read-only
 Terminal dashboard contracts folder and a verified pull assertion using `modelSource`. No workspace
 push or public deployment is required for local verification.
+
+### Playground command regression fixtures
+
+TUI and web composer commands are client actions defined in
+`dashboard/src/api/chatCommands.json`; they are not new server endpoints. `/compact`
+uses the existing nonstreaming `/api/chat` contract and only commits a completed, nonempty,
+uncancelled summary with a non-length finish reason. The TUI simulation records fixture
+chat requests at `/fixture/chat-requests` and covers summary success, HTTP failure,
+truncation, cancellation, Markdown responses, and literal slash input. The fixture routes
+are test-only and are not server API operations.

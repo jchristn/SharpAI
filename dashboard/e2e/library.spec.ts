@@ -162,3 +162,95 @@ test('waiting quips sit beneath the response and turn telemetry forms aligned ro
 
 // Every protected workflow starts with a validated sign-in.
 test.beforeEach(async ({page}) => authenticatedPage(page));
+
+for (const streaming of [true,false]) for (const finish of ['stop','length']) {
+ test(`chat ${streaming?'streaming':'nonstreaming'} retains final-frame text and reports ${finish}`,async({page})=>{
+  const {configurations}=await install(page);configurations[0].Configuration!.StreamResponse=streaming;
+  const content=Array.from({length:48},(_,index)=>`Sentence ${index+1} is present.\n\n`).join('');
+  const ending='Final sentence is complete. 你好 🌍';
+  await page.route('**/api/chat',route=>route.fulfill({contentType:'application/x-ndjson',body:streaming?JSON.stringify({message:{role:'assistant',content},done:false})+'\n'+JSON.stringify({message:{role:'assistant',content:ending},done:true,done_reason:finish}):JSON.stringify({message:{role:'assistant',content:content+ending},done:true,done_reason:finish})}));
+  await page.goto('/playground');await page.getByLabel('Prompt',{exact:true}).fill('Tell a story');await page.getByRole('button',{name:'Send',exact:true}).click();
+  const response=page.locator('.sa-chat-message--assistant .sa-chat-content');
+  await expect(response).toContainText(ending);await expect(response).toContainText('Sentence 1 is present.');await expect(response).toContainText('Sentence 48 is present.');
+  await expect(page.getByLabel('Prompt',{exact:true})).toBeEnabled();
+  if(finish==='length')await expect(page.getByText('Token limit reached.',{exact:false})).toBeVisible();
+  const tail=response.locator('p').last();await expect(tail).toBeInViewport();
+ });
+}
+
+for (const mode of ['inference','fallback','unknown','empty']) {
+ test(`playground automatically selects the first ${mode} model`,async({page})=>{
+  await install(page);
+  const models=mode==='empty'?[]:mode==='unknown'?[{name:'first-unknown'},{name:'second-unknown'}]:[
+   {name:'first-embedding',capabilities:{embeddings:true,completions:false}},
+   {name:'first-inference',capabilities:{completions:mode==='inference'}},
+   {name:'second-inference',capabilities:{completions:mode==='inference'}},
+  ];
+  await page.route('**/api/tags',route=>route.fulfill({json:{models}}));
+  await page.goto('/playground');
+  await expect(page.getByRole('combobox',{name:'Model',exact:true})).toHaveValue(mode==='inference'?'first-inference':mode==='fallback'?'first-embedding':mode==='unknown'?'first-unknown':'');
+  if(mode==='inference'){
+   await page.getByRole('combobox',{name:'Model',exact:true}).selectOption('second-inference');
+   await page.getByLabel('Prompt',{exact:true}).fill('Hello');
+   await expect(page.getByRole('combobox',{name:'Model',exact:true})).toHaveValue('second-inference');
+  }
+ });
+}
+
+async function chatCommand(page:Page,text:string):Promise<void>{await page.getByLabel('Prompt',{exact:true}).fill(text);await page.getByLabel('Prompt',{exact:true}).press('Enter');}
+
+test('slash help, unknown commands, model selection, status and clear stay local',async({page})=>{
+ await install(page);let requests=0;
+ await page.route('**/api/tags',route=>route.fulfill({json:{models:[{name:'first-model'},{name:'second-model'}]}}));
+ await page.route('**/api/chat',route=>{requests++;return route.fulfill({json:{message:{content:'Unexpected'},done:true}});});
+ await page.goto('/playground');await expect(page.getByRole('combobox',{name:'Model',exact:true})).toHaveValue('first-model');
+ await chatCommand(page,'/?');await expect(page.locator('.sa-chat-command-notice')).toContainText('/compact');
+ await chatCommand(page,'/not-a-command');await expect(page.locator('.sa-chat-command-notice')).toContainText('Unknown command');
+ await chatCommand(page,'/model second-model');await expect(page.getByRole('combobox',{name:'Model',exact:true})).toHaveValue('second-model');
+ await chatCommand(page,'/status');await expect(page.locator('.sa-chat-command-notice')).toContainText('second-model');
+ await chatCommand(page,'/clear');await expect(page.locator('.sa-chat-command-notice')).toContainText('Conversation cleared');expect(requests).toBe(0);
+});
+
+test('compact summarizes older turns, preserves visible chat and recent context, and clear resets both',async({page})=>{
+ await install(page);const requests:Record<string,unknown>[]=[];
+ await page.route('**/api/chat',route=>{
+  const body=route.request().postDataJSON();requests.push(body);
+  const compact=body.messages[0]?.content.startsWith('Summarize the quoted conversation');
+  return route.fulfill({json:{message:{role:'assistant',content:compact?'Earlier summary: the user prefers violet.':'Original answer.'},done:true,done_reason:'stop'}});
+ });
+ await page.goto('/playground');await expect(page.getByRole('combobox',{name:'Model',exact:true})).toHaveValue('test-model');
+ await chatCommand(page,'remember violet');await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(1);await expect(page.getByLabel('Prompt',{exact:true})).toBeEnabled();
+ await chatCommand(page,'add detail');await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(2);await expect(page.getByLabel('Prompt',{exact:true})).toBeEnabled();
+ await chatCommand(page,'/compact');await expect(page.locator('.sa-chat-command-notice')).toContainText('Context compacted');
+ await expect(page.locator('.sa-chat-message--user')).toHaveCount(2);await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(2);
+ const compact=requests[2] as {model:string;stream:boolean;format?:string;messages:{role:string;content:string}[]};expect(compact.model).toBe('test-model');expect(compact.stream).toBe(false);expect(compact.format).toBeUndefined();
+ expect(JSON.parse(compact.messages[1].content).earlierMessages).toEqual([{role:'user',content:'remember violet'},{role:'assistant',content:'Original answer.'}]);
+ await chatCommand(page,'next');await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(3);
+ const next=requests[3].messages as {role:string;content:string}[];
+ expect(next.some(message=>message.content.startsWith('Summary of earlier conversation'))).toBe(true);expect(next.some(message=>message.content==='remember violet')).toBe(false);expect(next.some(message=>message.content==='add detail')).toBe(true);
+ await chatCommand(page,'/compact');await expect(page.locator('.sa-chat-command-notice')).toContainText('Context compacted');
+ const repeated=requests[4].messages as {role:string;content:string}[];expect(JSON.parse(repeated[1].content).previousSummary).toContain('prefers violet');
+ await chatCommand(page,'/new');await chatCommand(page,'//literal');await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(1);
+ const fresh=requests[5].messages as {role:string;content:string}[];expect(fresh.some(message=>message.content.startsWith('Summary of earlier conversation'))).toBe(false);expect(fresh.at(-1)?.content).toBe('/literal');expect(fresh.length).toBe(2);
+});
+
+for(const failure of ['http','length','cancel'])test(`compact ${failure} preserves original context`,async({page})=>{
+ await install(page);const requests:Record<string,unknown>[]=[];
+ await page.route('**/api/chat',async route=>{
+  const body=route.request().postDataJSON();requests.push(body);
+  if(body.messages[0]?.content.startsWith('Summarize the quoted conversation')){
+   if(failure==='http')return route.fulfill({status:503,json:{error:'Summary unavailable'}});
+   if(failure==='cancel')await new Promise(resolve=>setTimeout(resolve,1000));
+   return route.fulfill({json:{message:{content:'Partial summary'},done:true,done_reason:failure==='length'?'length':'stop'}}).catch(()=>{});
+  }
+  return route.fulfill({json:{message:{content:'Original answer.'},done:true,done_reason:'stop'}});
+ });
+ await page.goto('/playground');await expect(page.getByRole('combobox',{name:'Model',exact:true})).toHaveValue('test-model');
+ await chatCommand(page,'keep original context');await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(1);
+ await chatCommand(page,'/compact');
+ if(failure==='cancel'){await expect(page.locator('.sa-chat-command-notice')).toContainText('Summarizing conversation');await chatCommand(page,'/stop');}
+ await expect(page.locator('.sa-chat-command-notice')).toContainText('original context is unchanged');
+ await chatCommand(page,'continue');await expect(page.locator('.sa-chat-message--assistant')).toHaveCount(2);
+ const next=requests.at(-1)?.messages as {role:string;content:string}[];
+ expect(next.some(message=>message.content==='keep original context')).toBe(true);expect(next.some(message=>message.content.startsWith('Summary of earlier conversation'))).toBe(false);
+});

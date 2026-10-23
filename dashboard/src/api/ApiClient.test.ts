@@ -19,6 +19,29 @@ describe('ApiClient', () => {
     globalThis.fetch = originalFetch;
   });
 
+  it('retains final-frame content at EOF across every UTF-8 byte boundary', async () => {
+    const bytes = new TextEncoder().encode(JSON.stringify({message:{content:'First '},done:false})+'\n'+JSON.stringify({message:{content:'final sentence. 你好 🌍'},done:true,done_reason:'stop'}));
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(new ReadableStream<Uint8Array>({
+      start(controller) { for (const byte of bytes) controller.enqueue(Uint8Array.of(byte)); controller.close(); },
+    }), {headers:{'content-type':'application/x-ndjson'}}));
+    const events: unknown[] = [];
+    await new ApiClient('http://localhost:8000').chatStream({}, event=>events.push(event));
+    expect(events).toEqual([{message:{content:'First '},done:false},{message:{content:'final sentence. 你好 🌍'},done:true,done_reason:'stop'}]);
+  });
+
+  it.skipIf(!process.env.SHARPAI_TUI_TEST_URL)('reads the final content through the Postman HTTP simulation', async () => {
+    const client = new ApiClient(process.env.SHARPAI_TUI_TEST_URL!);
+    let answer = '';
+    let completed = false;
+    await client.chatStream({model:'fixture-model',messages:[{role:'user',content:'Tell a story'}]}, event=>{
+      const frame = event as {message?:{content?:string};done?:boolean};
+      answer += frame.message?.content ?? '';
+      completed = frame.done === true;
+    });
+    expect(completed).toBe(true);
+    expect(answer).toBe(Array.from({length:48},(_,index)=>`Sentence ${index+1} is present.\n\n`).join('')+'Final sentence is complete. 你好 🌍');
+  });
+
   it('strips a trailing slash and builds query strings', async () => {
     const fetchMock = mockFetch(200, { TotalRecords: 0, Objects: [] });
     const client = new ApiClient('http://127.0.0.1:8000/');

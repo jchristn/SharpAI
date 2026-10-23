@@ -630,7 +630,8 @@
     "incomplete": "The response stream ended before completion. You can start a new conversation and retry.",
     "warning": "AI can make mistakes. Please check answers.",
     "telemetry": "Response telemetry",
-    "streamToggle": "Stream response"
+    "streamToggle": "Stream response",
+    "tokenLimit": "Token limit reached. Increase MaxTokens in the model configuration for a longer response."
   },
   "sampling": {
     "temperature": "Temperature",
@@ -1004,5 +1005,25 @@
     "apiHelp": "Review all captured HTTP requests, including model operations.",
     "inferenceHelp": "Review chat and text completion requests without embedding calls.",
     "embeddingsHelp": "Review embedding requests from the Ollama and OpenAI APIs."
+  },
+  "chatCommands": {
+    "help": "Show chat commands",
+    "clear": "Clear the conversation and model context",
+    "compact": "Summarize earlier turns with the selected model",
+    "model": "List models or select a model by name",
+    "status": "Show the model and context status",
+    "stop": "Stop generation or compaction",
+    "busy": "Use /stop before running another command.",
+    "unknown": "Unknown command or arguments. Use /? for help.",
+    "literal": "Use // to send a literal leading slash.",
+    "cleared": "Conversation cleared.",
+    "idle": "No generation is active.",
+    "context": "Context messages",
+    "summary": "summary",
+    "noConversation": "There are no earlier turns to summarize.",
+    "compacting": "Summarizing conversation…",
+    "compacted": "Context compacted. The visible conversation is preserved.",
+    "modelUnknown": "Model not found. Use /model to list models.",
+    "summaryFailed": "Compaction did not complete. The original context is unchanged."
   }
 }

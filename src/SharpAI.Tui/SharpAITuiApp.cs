@@ -65,14 +65,24 @@ namespace SharpAI.Tui
             _Localizer = new Localizer(profile.Locale); _Client.Locale = profile.Locale == "qps-ploc" ? "en" : profile.Locale;
             _Operations = (JsonArray)ReadResource("operations.json");
             _Host = new TuiApplication(backend) { ApplyThemeToWidgets = true, IdleFps = 2, TargetFps = 30, CtrlCPolicy = CtrlCPolicy.InterruptFocusedPane, RoutePasteToFocus = true, HighlightFocusedRegion = true };
-            Theme selectedTheme = profile.Theme == "light" ? Theme.Light : profile.Theme == "contrast" ? Theme.HighContrast : Theme.Dark;
-            _Host.Theme = profile.Ascii ? new Theme(selectedTheme.Name, selectedTheme.Text, selectedTheme.Accent, selectedTheme.Border, selectedTheme.Muted, useAsciiBorders: true) : selectedTheme;
-            _Navigation = new ListView<string>(RouteTitle); _Navigation.SetItems(_Routes);
-            _Navigation.ItemActivated += index => Navigate(_Routes[index]);
+            _Host.Theme = TuiTheme.Create(profile.Theme, profile.Ascii);
+            List<string> navigationItems = new List<string>();
+            foreach (string route in _Routes)
+            {
+                navigationItems.Add(route);
+                if (route is "/" or "/playground" or "/observability") navigationItems.Add(string.Empty);
+            }
+            _Navigation = new ListView<string>(route => route.Length == 0 ? string.Empty : RouteTitle(route)); _Navigation.SetItems(navigationItems);
+            _Navigation.SelectionChanged += (sender, change) =>
+            {
+                int previous = change.OldValue; int selected = change.NewValue;
+                if (selected >= 0 && navigationItems[selected].Length == 0) _Navigation.Select(selected + (selected > previous ? 1 : -1));
+            };
+            _Navigation.ItemActivated += index => { if (navigationItems[index].Length > 0) Navigate(navigationItems[index]); };
             _Shell = new AdaptiveShell(_Navigation);
             _Host.Layout = Layout.Create().DockTop("header", 1).DockBottom("hints", 1).Fill("body").Build();
             _Host.BindPane("header", _Header); _Host.Bind("body", _Shell);
-            StatusBar hints = new StatusBar(); _Host.Bind("hints", hints);
+            StatusBar hints = new StatusBar { KeyStyle = _Host.Theme.Accent.WithAttribute(CellAttributes.Bold, true), LabelStyle = _Host.Theme.Muted, RightTextStyle = _Host.Theme.Muted }; _Host.Bind("hints", hints);
             AddCommand("help", "Help", () => Track(ContextHelpAsync()), "F1");
             AddCommand("chat.model", "Select a model", () => Pick("/api/tags", "Model", row => { ResetGenerationScope(); _SelectedModel = JsonData.Text(row, "name", "model"); Playground(); }), isEnabled: () => _Current == "/playground");
             AddCommand("chat.prompt", "System prompt", () => Pick(Scoped("/v1.0/system-prompts"), "System prompt", row => { _SelectedPrompt = row.DeepClone(); Playground(); }), isEnabled: () => _Current == "/playground");
@@ -300,7 +310,7 @@ namespace SharpAI.Tui
                 catch (Exception error) when (IsExpected(error)) { _Host.Post(() => { if (revision == _Revision) { _Busy = false; _Telemetry?.Failure(error); _Host.Notify(ErrorText(error), NotificationSeverity.Error); Status("Operation failed. Inspect history before retrying a mutation."); } }); }
             }, token));
         }
-        private static bool IsExpected(Exception error) { return error is HttpRequestException or ApiException or IOException or JsonException or ArgumentException or InvalidOperationException or OperationCanceledException; }
+        private static bool IsExpected(Exception error) { return error is HttpRequestException or ApiException or IOException or InvalidDataException or JsonException or ArgumentException or InvalidOperationException or OperationCanceledException; }
         private static string ErrorText(Exception error) { return SafeText.Clean(error is ApiException api ? api.Message + "\n" + api.Body : error.Message); }
         private void Apply(long revision, Action action) { _Host.Post(() => { if (!_Disposed && revision == _Revision) action(); }); }
         private static JsonNode ReadResource(string name)
@@ -317,7 +327,7 @@ namespace SharpAI.Tui
                 "/settings" => "Edit typed settings and scroll through all sections. Ctrl+S saves; Escape cancels. Empty numeric values send null. Failed saves retain the draft. Some settings require a server restart.",
                 "/api-explorer" => "Select an operation, replace path placeholders, and edit request JSON. Execute asks for confirmation before mutations. Streaming records appear incrementally. Cancel stops reading but may not undo a server mutation.",
                 "/system-prompts" or "/model-configurations" => "Create or edit reusable items. User items are private. System and Tenant publication requires administrator rights. Duplicate creates an independent copy; changing visibility requires duplication.",
-                _ when _Current.StartsWith("/request-history", StringComparison.Ordinal) => "Filter requests on the server, select a time preset, and activate an activity interval to drill down. Enter opens separately fetched details. All list timestamps use UTC. Unavailable measurements differ from zero.",
+                _ when _Current.StartsWith("/request-history", StringComparison.Ordinal) => "Filter requests on the server and select a time preset. The stacked chart shows successful and failed requests with UTC time/count axes. Focus it and use Left/Right to inspect a bar, then Enter or click to filter the table. Adjacent intervals merge on small terminals; Activity chart opens a larger view. Enter opens separately fetched details. All list timestamps use UTC. Unavailable measurements differ from zero.",
                 _ when _Current.StartsWith("/access/", StringComparison.Ordinal) => "Select a tenant explicitly using Commands. Inspect records before changing them. Protected records cannot be changed. Server permissions remain authoritative; password resets and revoked sessions take effect on the next request.",
                 _ => "F2 opens navigation, Ctrl+P opens all commands, Tab and Shift+Tab move focus, Enter activates, and Ctrl+Q quits. F5 refreshes. Credentials remain in memory unless you select an existing protected token file in the connection profile."
             };

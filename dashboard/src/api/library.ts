@@ -23,7 +23,7 @@ export const generationFields:GenerationField[]=[
   {field:'FrequencyPenalty',key:'frequency_penalty',min:-2,max:2,step:0.1},
   {field:'Seed',key:'seed',min:0,max:2147483647,step:1},
 ];
-export function defaultGeneration():GenerationConfiguration {return {Temperature:0.6,MaxTokens:128,Stop:[],StreamResponse:true,JsonOutput:false,DisplayThinking:false};}
+export function defaultGeneration():GenerationConfiguration {return {Temperature:0.6,MaxTokens:2048,Stop:[],StreamResponse:true,JsonOutput:false,DisplayThinking:false};}
 export function engineGeneration():GenerationConfiguration {return {Stop:[],StreamResponse:true,JsonOutput:false,DisplayThinking:false};}
 export function generationRequest(configuration:GenerationConfiguration):{options:Record<string,unknown>;format?:string;stream:boolean} {
  const options:Record<string,unknown>={display_thinking:configuration.DisplayThinking};

@@ -35,7 +35,7 @@ namespace SharpAI.Tui
             if (section is not ("audit" or "sessions") && CanAccess(section, true)) actions.Add(ButtonFor("Create", () => AccessEdit(section, basePath, null)));
             actions.Add(ButtonFor("Inspect / actions", () => { if (table.SelectedRow != null) AccessRecord(section, basePath, table.SelectedRow); }));
             if (section == "assignments") actions.Add(ButtonFor("Credential scopes", () => Pick(TenantPath + "/credentials", "Select credential", row => AssignmentList(JsonData.Id(row)))));
-            Show(new FramedStack().Add(tabs, StackSize.Fixed(3)).Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3)), "Access");
+            Show(new PaddedStack().Add(tabs, StackSize.Fixed(3)).Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3)), "Access");
         }
         private static string[] AccessColumns(string section)
         {
@@ -103,7 +103,7 @@ namespace SharpAI.Tui
         private void AccessRecord(string section, string basePath, JsonNode row)
         {
             string id = JsonData.Id(row); string prefix = basePath.Split('?')[0] + "/" + ServerClient.Segment(id);
-            DefinitionList details = new DefinitionList(); JsonNode safe = JsonData.Redact(row); _CopyText = safe.ToJsonString();
+            DefinitionList details = Definitions(); JsonNode safe = JsonData.Redact(row); _CopyText = safe.ToJsonString();
             if (safe is JsonObject obj) foreach (KeyValuePair<string, JsonNode?> item in obj) details.Set(item.Key, SafeText.Clean(item.Value?.ToString()));
             ButtonRow actions = new ButtonRow(); actions.Add(ButtonFor("Back", () => Access(section)));
             bool mutable = CanAccess(section, true) && !JsonData.Flag(row, "IsBuiltIn") && !JsonData.Flag(row, "IsProtected");
@@ -121,7 +121,7 @@ namespace SharpAI.Tui
                 actions.Add(ButtonFor("Credential scopes", () => AssignmentList(id)));
                 if (mutable) { actions.Add(ButtonFor("Reveal token", () => ConfirmReadSecret(prefix + "/token"))); actions.Add(ButtonFor("Rotate token", () => ConfirmMutation("POST", prefix + "/token/rotate", null, () => ReadDetails(prefix + "/token", "New credential token")))); }
             }
-            Show(new FramedStack().Add(new ScrollView(details, 100, Math.Max(30, ((JsonObject)safe).Count * 4)), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(7)), "Access record " + id);
+            Show(new PaddedStack().Add(new PaddedScrollView(details, 100, Math.Max(30, ((JsonObject)safe).Count * 4)), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(7)), "Access record " + id);
         }
         private void ReadDetails(string path, string title)
         {
@@ -165,7 +165,7 @@ namespace SharpAI.Tui
                 actions.Add(ButtonFor("Add mapping", () => Pick(TenantPath + "/permissions", "Select permission", row => ConfirmMutation("POST", rolePath + "/permissions/" + ServerClient.Segment(JsonData.Id(row)), null, () => RoleMappings(rolePath, mutable)))));
                 actions.Add(ButtonFor("Remove mapping", () => { if (table.SelectedRow != null) ConfirmMutation("DELETE", rolePath + "/permissions/" + ServerClient.Segment(JsonData.Id(table.SelectedRow)), null, () => RoleMappings(rolePath, mutable)); }));
             }
-            Show(new FramedStack().Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3)), "Role mappings");
+            Show(new PaddedStack().Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3)), "Role mappings");
         }
         private void AssignmentList(string credential)
         {
@@ -177,7 +177,7 @@ namespace SharpAI.Tui
                 actions.Add(ButtonFor("Create scope", () => Pick(TenantPath + "/roles", "Select role", row => AccessSaveForm("assignments", path, "POST", new JsonObject { ["RoleGuid"] = JsonData.Id(row), ["ResourceScope"] = "Tenant", ["ResourceGuid"] = "", ["InheritsToChildren"] = true }))));
                 actions.Add(ButtonFor("Remove scope", () => { if (table.SelectedRow != null) ConfirmMutation("DELETE", path + "/" + ServerClient.Segment(JsonData.Id(table.SelectedRow)), null, () => AssignmentList(credential)); }));
             }
-            Show(new FramedStack().Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3)), "Credential scopes");
+            Show(new PaddedStack().Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3)), "Credential scopes");
         }
     }
 }

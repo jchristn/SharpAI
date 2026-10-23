@@ -4,6 +4,7 @@ namespace SharpAI.Tui
     using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using SharpAI.Tui.Services;
+    using SharpAI.Tui.Widgets;
     using SharpAI.Client;
     using TUIKit.Layout;
     using TUIKit.Widgets;
@@ -23,7 +24,7 @@ namespace SharpAI.Tui
             actions.Add(ButtonFor("Pull", () => Edit(new JsonObject { ["Model"] = "" }, "Pull model", draft => Pull(draft["Model"]!.ToString()))));
             actions.Add(ButtonFor("Delete selected local model", () => MutateModel(registered.SelectedRow, "/api/delete")));
             actions.Add(ButtonFor("Unload selected resident model", () => MutateModel(resident.SelectedRow, "/api/unload")));
-            Show(new FramedStack().Add(ViewTable(registered), StackSize.Weighted(1), "Registered").Add(ViewTable(resident), StackSize.Weighted(1), "Resident").Add(actions, StackSize.Fixed(4)), "Models");
+            Show(new PaddedStack().Add(ViewTable(registered), StackSize.Weighted(1), "Registered").Add(ViewTable(resident), StackSize.Weighted(1), "Resident").Add(actions, StackSize.Fixed(4)), "Models");
         }
         private void MutateModel(JsonNode? row, string path)
         {
@@ -41,9 +42,9 @@ namespace SharpAI.Tui
             _Form = null;
             if (string.IsNullOrWhiteSpace(model)) { _Host.Notify(_Localizer.Phrase("Enter a repository name or full HTTP(S) model URL.")); return; }
             if (model.Contains("://", StringComparison.Ordinal) && (!Uri.TryCreate(model, UriKind.Absolute, out Uri? uri) || uri.Scheme is not ("http" or "https"))) { _Host.Notify(_Localizer.Phrase("Invalid model URL.")); return; }
-            ProgressBar progress = new ProgressBar(); DefinitionList state = new DefinitionList();
+            ThemedProgressBar progress = new ThemedProgressBar(_Localizer.Culture, _Profile.Ascii); DefinitionList state = Definitions();
             ButtonRow actions = new ButtonRow(); actions.Add(ButtonFor("Cancel", CancelActive));
-            Show(new FramedStack().Add(state, StackSize.Weighted(1)).Add(progress, StackSize.Fixed(3)).Add(actions, StackSize.Fixed(3)), "Pull " + model);
+            Show(new PaddedStack().Add(state, StackSize.Weighted(1)).Add(progress, StackSize.Fixed(3)).Add(actions, StackSize.Fixed(3)), "Pull " + model);
             long revision = _Revision; _Busy = true;
             Work(async ct =>
             {

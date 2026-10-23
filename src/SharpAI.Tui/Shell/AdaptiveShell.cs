@@ -1,6 +1,8 @@
 namespace SharpAI.Tui.Shell
 {
+    using SharpAI.Tui.Widgets;
     using System.Collections.Generic;
+    using SharpAI.Tui.Services;
     using TUIKit;
     using TUIKit.Input;
     using TUIKit.Layout;
@@ -10,10 +12,10 @@ namespace SharpAI.Tui.Shell
     internal sealed class AdaptiveShell : IWidget, IFocusContainer, IFocusAware, IFocusPathNode, IMouseAware, IThemeable
     {
         private readonly IWidget _Navigation;
-        private readonly FramedStack _Content = new FramedStack();
-        private FramedStack _Root = new FramedStack(SplitOrientation.Horizontal);
+        private readonly PaddedStack _Content = new PaddedStack();
+        private PaddedStack _Root = new PaddedStack(SplitOrientation.Horizontal);
         private bool _Wide;
-        private Theme _Theme = Theme.Dark;
+        private Theme _Theme = TuiTheme.Create();
         internal AdaptiveShell(IWidget navigation) { _Navigation = navigation; SetWidth(120); }
         internal void SetContent(IWidget widget, string title)
         {
@@ -28,9 +30,9 @@ namespace SharpAI.Tui.Shell
             if (_Root.Count > 0 && wide == _Wide) return;
             bool contentFocused = _Root.FocusedWidget == _Content;
             _Wide = wide;
-            _Root = new FramedStack(SplitOrientation.Horizontal);
-            if (wide) _Root.Add(_Navigation, StackSize.Fixed(18), "SharpAI");
-            _Root.Add(_Content, StackSize.Weighted(1)); _Root.ApplyTheme(_Theme);
+            _Root = new PaddedStack(SplitOrientation.Horizontal);
+            if (wide) _Root.Add(_Navigation, StackSize.Fixed(20), "SharpAI");
+            _Root.Add(_Content, StackSize.Weighted(1)); _Root.ApplyTheme(_Theme); ApplyNavigationTheme();
             if (contentFocused || !wide) _Root.Focus(_Content);
         }
         public IFocusable? FocusedLeaf { get { return _Root.FocusedLeaf; } }
@@ -40,12 +42,16 @@ namespace SharpAI.Tui.Shell
         public void OnFocusChanged(bool focused) { _Root.OnFocusChanged(focused); }
         public bool HandleKey(KeyEvent key) { return _Root.HandleKey(key); }
         public bool HandleMouse(MouseEvent mouse) { return _Root.HandleMouse(mouse); }
-        public void ApplyTheme(Theme theme) { _Theme = theme; _Root.ApplyTheme(theme); }
+        public void ApplyTheme(Theme theme) { _Theme = theme; _Root.ApplyTheme(theme); ApplyNavigationTheme(); }
+        private void ApplyNavigationTheme()
+        {
+            if (_Navigation is ListView<string> navigation) navigation.NormalStyle = _Theme.GetStyle(Theme.SidebarRole);
+        }
         public Size Measure(Size available) { SetWidth(available.Width); return _Root.Measure(available); }
         public void Render(ISurface surface)
         {
             SetWidth(surface.Size.Width);
-            if (surface.Size.Width < 80 || surface.Size.Height < 20) { surface.DrawText(0, 0, "Resize to at least 80x24. State is preserved.", CellStyle.Default); return; }
+            if (surface.Size.Width < 80 || surface.Size.Height < 20) { surface.DrawText(0, 0, "Resize to at least 80x24. State is preserved.", _Theme.Text); return; }
             _Root.Render(surface);
         }
     }

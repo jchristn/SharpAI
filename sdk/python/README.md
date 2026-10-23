@@ -95,3 +95,9 @@ or resolve/blob GGUF URL. Pass the complete URL unchanged to preserve the reques
 file selection. The server verifies the complete model before its final NDJSON `status=success` record.
 HTTP 200 alone does not confirm a successful pull. Never automatically retry an ambiguous download.
 See [the shared source contract](../../docs/MODEL_PULL_SOURCES.md).
+
+Playground commands such as `/?`, `/clear`, and `/compact` are handled by the TUI and web
+clients. Sending these strings through an SDK sends ordinary prompt text. To reproduce
+compaction in an integration, use the existing nonstreaming chat API with a summary
+instruction, verify completion and finish reason, then replace earlier context only after
+success. See [the shared command behavior](../../docs/TUI.md#chat-commands-and-rendering).

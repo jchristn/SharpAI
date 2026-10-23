@@ -1,6 +1,10 @@
 import {describe,it,expect} from 'vitest';
 import {clampGeneration,clampGenerationValue,defaultGeneration,engineGeneration,generationFields,generationRequest} from './library';
 describe('saved generation configurations',()=>{
+ it('reserves a usable starter output budget while honoring explicit small limits',()=>{
+  expect(defaultGeneration().MaxTokens).toBe(2048);
+  expect(generationRequest({...defaultGeneration(),MaxTokens:8}).options.num_predict).toBe(8);
+ });
  it('maps every sampling field and preserves explicit zero and false values',()=>{
   const result=generationRequest({...defaultGeneration(),Temperature:0,MaxTokens:256,TopP:0,TopK:0,MinP:0,RepeatPenalty:0,RepeatLastN:0,PresencePenalty:-1,FrequencyPenalty:1,Seed:0,Stop:['END',' '],StreamResponse:false,JsonOutput:true,DisplayThinking:true});
   expect(result).toEqual({stream:false,format:'json',options:{temperature:0,num_predict:256,top_p:0,top_k:0,min_p:0,repeat_penalty:0,repeat_last_n:0,presence_penalty:-1,frequency_penalty:1,seed:0,stop:['END',' '],display_thinking:true}});

@@ -1,13 +1,16 @@
 namespace SharpAI.Tui.Widgets
 {
     using System;
+    using SharpAI.Tui.Services;
     using TUIKit;
+    using TUIKit.Theming;
     using TUIKit.Input;
     using TUIKit.Modals;
     using TUIKit.Widgets;
 
-    internal sealed class SecretModal : Modal
+    internal sealed class SecretModal : Modal, IThemeable
     {
+        private Theme _Theme = TuiTheme.Create();
         private readonly Form _Form = new Form();
         private readonly TextField _Field;
         private Rect _Content;
@@ -19,6 +22,8 @@ namespace SharpAI.Tui.Widgets
             _Form.Add("", new Button("Dismiss", () => RequestClose(null)));
             _Form.FocusEdge(true);
         }
+        /// <inheritdoc/>
+        public void ApplyTheme(Theme theme) { _Theme = theme; _Form.ApplyTheme(theme); }
         internal bool HasValue { get { return _Field.Value.Length > 0; } }
         internal void Clear() { _Field.Value = string.Empty; _Field.IsRevealed = false; }
         /// <inheritdoc/>
@@ -37,8 +42,8 @@ namespace SharpAI.Tui.Widgets
         {
             int width = Math.Min(90, surface.Size.Width - 4); int height = Math.Min(14, surface.Size.Height - 4);
             int x = (surface.Size.Width - width) / 2; int y = (surface.Size.Height - height) / 2;
-            Rect box = new Rect(x, y, width, height); surface.Fill(box, Cell.Blank(CellStyle.Default)); surface.DrawBox(box, CellStyle.Default, "Credential token");
-            _Content = new Rect(x + 1, y + 1, width - 2, height - 2);
+            Rect box = new Rect(x, y, width, height); surface.Fill(new Rect(x - 1, y, width + 2, height), Cell.Blank(_Theme.Text)); surface.Fill(box, Cell.Blank(_Theme.Text)); surface.DrawBox(box, IsTopmost ? _Theme.Resolve(Theme.FocusBorderRole, _Theme.Accent) : _Theme.Border, "Credential token");
+            _Content = new Rect(x + 2, y + 1, width - 4, height - 2);
             if (surface is BufferSurface buffer) _Form.Render(buffer.CreateView(_Content));
         }
     }

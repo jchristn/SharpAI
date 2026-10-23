@@ -15,6 +15,7 @@
     <PackageReference Include="Radiant" Version="0.1.3" />
     <PackageReference Include="TUIKit" Version="1.12.0" />
     <ProjectReference Include="../../sdk/csharp/src/SharpAI.Client/SharpAI.Client.csproj" />
+    <EmbeddedResource Include="../../dashboard/src/api/chatCommands.json" LogicalName="SharpAI.Tui.chatCommands.json" />
     <EmbeddedResource Include="../../dashboard/src/api/operations.json" LogicalName="SharpAI.Tui.operations.json" />
     <EmbeddedResource Include="../../dashboard/src/i18n/*.json" LogicalName="SharpAI.Tui.Localization.%(Filename).json" />
     <EmbeddedResource Include="Localization/operator.json" LogicalName="SharpAI.Tui.Localization.operator.json" />

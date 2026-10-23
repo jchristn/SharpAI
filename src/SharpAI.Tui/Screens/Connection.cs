@@ -47,7 +47,7 @@ namespace SharpAI.Tui
         private void ClearIdentity()
         {
             CloseModals(); DisposeLoaders(); _ScreenTimer?.Dispose(); _ScreenTimer = null; _Route.Cancel(); _Revision++; _Context = null; _Profile.Tenant = null; _Form = null; _Busy = false;
-            _Turns.Clear(); _Messages.Clear(); _ComposerDraft = string.Empty; _LastTurnRecord = null; _Transcript = string.Empty; _PlaygroundInitialized = false; _HistoryFilters.Clear(); _CopyText = null; _SelectedPrompt = null; _SelectedConfiguration = null;
+            _Turns.Clear(); _Messages.Clear(); _ContextSummary = string.Empty; _ComposerDraft = string.Empty; _LastTurnRecord = null; _Transcript = string.Empty; _PlaygroundInitialized = false; _HistoryFilters.Clear(); _CopyText = null; _SelectedPrompt = null; _SelectedConfiguration = null;
             ShowText("Session", "Revalidating identity and permissions.");
         }
         private void CloseModals()
@@ -64,7 +64,7 @@ namespace SharpAI.Tui
             if (!JsonData.Flag(_Context, "isAdmin")) { _Host.Notify(_Localizer.Phrase("Tenant selection requires a platform administrator.")); return; }
             Pick("/v1.0/tenants", "Select tenant", tenant =>
             {
-                _Profile.Tenant = JsonData.Id(tenant); _Store.Save(_Profile); _Turns.Clear(); _Messages.Clear(); _ComposerDraft = string.Empty; _LastTurnRecord = null; _Transcript = string.Empty; _PlaygroundInitialized = false; _HistoryFilters.Clear(); _CopyText = null; _SelectedPrompt = null; _SelectedConfiguration = null; OpenRoute(_Current); Status("Tenant selected");
+                _Profile.Tenant = JsonData.Id(tenant); _Store.Save(_Profile); _Turns.Clear(); _Messages.Clear(); _ContextSummary = string.Empty; _ComposerDraft = string.Empty; _LastTurnRecord = null; _Transcript = string.Empty; _PlaygroundInitialized = false; _HistoryFilters.Clear(); _CopyText = null; _SelectedPrompt = null; _SelectedConfiguration = null; OpenRoute(_Current); Status("Tenant selected");
             });
             await Task.CompletedTask.ConfigureAwait(false);
         }

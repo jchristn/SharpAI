@@ -90,6 +90,16 @@ def main():
             request = urllib.request.Request(base + '/v1.0/token', method='POST', headers={'x-email': 'admin@sharpai.local', 'x-password': 'password'})
             with urllib.request.urlopen(request) as response:
                 token = json.load(response)['token']
+            # Validate the production starter before choosing an explicit small-fixture budget.
+            headers = {'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}
+            starter_url = base + '/v1.0/model-configurations/system-starter-configuration'
+            with urllib.request.urlopen(urllib.request.Request(starter_url, headers=headers)) as response:
+                starter = json.load(response)
+            assert starter['Configuration']['MaxTokens'] == 2048, 'Upgraded starter budget'
+            starter['Configuration']['MaxTokens'] = 128
+            body = {'Name': starter['Name'], 'Scope': starter['Scope'], 'Configuration': starter['Configuration']}
+            with urllib.request.urlopen(urllib.request.Request(starter_url, data=json.dumps(body).encode(), headers=headers, method='PUT')) as response:
+                assert response.status == 200
             token_file = runtime / 'session'
             token_file.write_text(token)
             if os.name != 'nt':

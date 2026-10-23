@@ -630,7 +630,8 @@
     "incomplete": "Der Antwortstrom wurde vorzeitig beendet. Starte eine neue Unterhaltung und versuche es erneut.",
     "warning": "KI kann Fehler machen. Bitte prüfen Sie die Antworten.",
     "telemetry": "Antworttelemetrie",
-    "streamToggle": "Antwort streamen"
+    "streamToggle": "Antwort streamen",
+    "tokenLimit": "Tokenlimit erreicht. Erhöhen Sie MaxTokens in der Modellkonfiguration für eine längere Antwort."
   },
   "sampling": {
     "temperature": "Temperatur",
@@ -1004,5 +1005,25 @@
     "apiHelp": "Alle erfassten HTTP-Anfragen einschließlich Modelloperationen anzeigen.",
     "inferenceHelp": "Chat- und Textvervollständigungsanfragen ohne Embedding-Aufrufe anzeigen.",
     "embeddingsHelp": "Embedding-Anfragen der Ollama- und OpenAI-APIs anzeigen."
+  },
+  "chatCommands": {
+    "help": "Chatbefehle anzeigen",
+    "clear": "Gespräch und Kontext löschen",
+    "compact": "Frühere Beiträge mit dem gewählten Modell zusammenfassen",
+    "model": "Modelle auflisten oder nach Namen auswählen",
+    "status": "Modell und Kontextstatus anzeigen",
+    "stop": "Generierung oder Zusammenfassung stoppen",
+    "busy": "Vor einem weiteren Befehl /stop verwenden.",
+    "unknown": "Unbekannter Befehl oder Parameter. Hilfe mit /?.",
+    "literal": "Mit // einen wörtlichen Schrägstrich am Anfang senden.",
+    "cleared": "Gespräch gelöscht.",
+    "idle": "Keine Generierung aktiv.",
+    "context": "Kontextnachrichten",
+    "summary": "Zusammenfassung",
+    "noConversation": "Keine früheren Beiträge zum Zusammenfassen.",
+    "compacting": "Gespräch wird zusammengefasst…",
+    "compacted": "Kontext gekürzt. Das sichtbare Gespräch bleibt erhalten.",
+    "modelUnknown": "Modell nicht gefunden. Modelle mit /model auflisten.",
+    "summaryFailed": "Zusammenfassung nicht abgeschlossen. Der ursprüngliche Kontext bleibt erhalten."
   }
 }

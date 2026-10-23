@@ -569,3 +569,9 @@ See [the shared source contract](../../docs/MODEL_PULL_SOURCES.md).
 provides typed library/history/pull models, bounded inspection, cancellation, NDJSON/SSE decoding, and
 structured HTTP errors. It has no inference or database dependency. `SharpAISdk.CreateServerClient()`
 creates an independently owned session using the existing SDK authentication snapshot.
+
+Playground commands such as `/?`, `/clear`, and `/compact` are handled by the TUI and web
+clients. Sending these strings through an SDK sends ordinary prompt text. To reproduce
+compaction in an integration, use the existing nonstreaming chat API with a summary
+instruction, verify completion and finish reason, then replace earlier context only after
+success. See [the shared command behavior](../../docs/TUI.md#chat-commands-and-rendering).

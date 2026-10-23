@@ -4,8 +4,8 @@
 
 # SharpAI
 
-The C# terminal dashboard is available from source as `sharpai-tui`. See the [terminal guide](docs/TUI.md)
-for connection, saved libraries, keyboard controls, validation and packaging.
+The C# terminal dashboard is available from source as `sharpai-tui`. Start with the [TUI quick start](#tui-quick-start) below, or see the [terminal guide](docs/TUI.md)
+for saved libraries, keyboard controls, validation and packaging.
 
 **Transform your .NET applications into AI powerhouses - embed models directly or deploy as an Ollama-compatible and OpenAI-compatible API server. No cloud dependencies, no limits, just local embeddings and inference.**
 
@@ -589,6 +589,53 @@ Console.WriteLine(NativeBackendInfo.SelectedBackend);
 
 Embedded applications can call `NativeBackendInitializer.Initialize` with `NativeBackendOptions` before the first native operation to supply custom backend paths. `NativeLibraryLoader.Configure(path, "metal")` also supports an explicit library and backend identity. Configuration is process-wide; later automatic initialization preserves the initial selection. See the [Requirements](#-requirements) section for hardware requirements.
 
+## TUI quick start
+
+The terminal dashboard runs on macOS, Windows and Linux, on x64 or ARM64. It connects to
+SharpAI.Server over HTTP; models and inference run on the server. Start a server using the
+[Docker quick start](#quick-start-v401), or connect to an existing deployment.
+
+From the repository root, with the .NET 8 SDK installed, run this command in an interactive terminal
+(the same command works in PowerShell):
+
+```sh
+dotnet run --project src/SharpAI.Tui -f net8.0 -- --server http://127.0.0.1:8000
+```
+
+Replace the URL for a remote server. .NET 10 is also supported: use `-f net10.0` with its SDK.
+Use a terminal at least 80 columns by 24 rows; navigation collapses into a drawer below 100 columns.
+
+1. Press **Ctrl+P**, then choose **Sign in**. On a fresh installation, use tenant `default`,
+   email `admin@sharpai.local` and password `password`; existing installations keep their configured accounts.
+   **Use bearer token** is also available for API credentials, subject to their permissions.
+2. Press **F2** to navigate. Open **Models** to pull a model if the server has none, then open
+   **Playground**. The first inference-capable model is selected automatically when available.
+3. Type a message and press **Enter** to send it; **Ctrl+J** inserts a newline. Type `/?` for chat commands,
+   including `/clear`, `/compact` (summarize context with the selected model), `/model` and `/stop`.
+
+Press **F1** for help, **F5** to refresh, and **Ctrl+Q** to quit. Preferences are saved in
+`~/.sharpai/tui.json`; interactively entered passwords and bearer tokens stay in memory.
+
+To build a self-contained archive that runs without an installed .NET runtime:
+
+```sh
+# macOS Apple Silicon; use osx-x64 for Intel
+./build-tui.sh --rid osx-arm64
+# Linux; use linux-arm64 for ARM64
+./build-tui.sh --rid linux-x64
+```
+
+On Windows:
+
+```powershell
+.\build-tui.bat --rid win-x64
+```
+
+Use `win-arm64` for Windows ARM64. Extract the generated archive under `installers/`, then run
+`sharpai-tui --server http://127.0.0.1:8000` (`.\sharpai-tui.exe` in PowerShell, or
+`./sharpai-tui` on macOS/Linux). See the [terminal guide](docs/TUI.md) for packaging details,
+token-file profiles, themes, localization and troubleshooting controls.
+
 ## 🐳 Running in Docker
 
 SharpAI.Server is available as a Docker image, providing an easy way to deploy the Ollama-compatible API server without local installation.
@@ -836,7 +883,7 @@ This project is licensed under the MIT License.
 
 ## Operator interface plans and diagnostics
 
-See [the TUI implementation plan](TUI_PLAN.md) for the proposed C#/TUIKit client and complete dashboard parity checklist. The TUI is planned, not yet shipped. Current dashboard diagnostics are documented in [request and inference history](docs/HISTORY_TELEMETRY.md), [JSON logging](docs/LOGGING.md), and [Access administration](docs/DASHBOARD_ADMINISTRATION.md).
+The C#/TUIKit terminal dashboard is available from source; see the [TUI quick start](#tui-quick-start) and [terminal guide](docs/TUI.md). The [TUI implementation plan](TUI_PLAN.md) tracks dashboard parity and remaining release gates. Dashboard diagnostics are documented in [request and inference history](docs/HISTORY_TELEMETRY.md), [JSON logging](docs/LOGGING.md), and [Access administration](docs/DASHBOARD_ADMINISTRATION.md).
 
 ### Scoped prompt and model-configuration libraries
 

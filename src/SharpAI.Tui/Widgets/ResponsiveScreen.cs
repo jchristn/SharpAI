@@ -9,14 +9,15 @@ namespace SharpAI.Tui.Widgets
 
     internal sealed class ResponsiveScreen : IWidget, IFocusContainer, IFocusAware, IFocusPathNode, IMouseAware, IThemeable
     {
-        private readonly FramedStack _Wide;
-        private readonly FramedStack _Narrow;
-        private FramedStack _Current;
+        private readonly PaddedStack _Wide;
+        private readonly PaddedStack _Narrow;
+        private readonly PaddedStack? _Compact;
+        private PaddedStack _Current;
         private bool _Focused;
-        internal ResponsiveScreen(FramedStack wide, FramedStack narrow) { _Wide = wide; _Narrow = narrow; _Current = wide; }
+        internal ResponsiveScreen(PaddedStack wide, PaddedStack narrow, PaddedStack? compact = null) { _Wide = wide; _Narrow = narrow; _Compact = compact; _Current = wide; }
         private void Choose(Size size)
         {
-            FramedStack next = size.Width < 90 || size.Height < 30 ? _Narrow : _Wide;
+            PaddedStack next = size.Height < 30 ? _Compact ?? _Narrow : size.Width < 90 ? _Narrow : _Wide;
             if (ReferenceEquals(next, _Current)) return;
             IFocusable? previous = _Current.FocusedLeaf;
             _Current.OnFocusChanged(false); _Current = next;
@@ -42,6 +43,6 @@ namespace SharpAI.Tui.Widgets
         /// <inheritdoc/>
         public void Render(ISurface surface) { Choose(surface.Size); _Current.Render(surface); }
         /// <inheritdoc/>
-        public void ApplyTheme(Theme theme) { _Wide.ApplyTheme(theme); _Narrow.ApplyTheme(theme); }
+        public void ApplyTheme(Theme theme) { _Wide.ApplyTheme(theme); _Narrow.ApplyTheme(theme); _Compact?.ApplyTheme(theme); }
     }
 }

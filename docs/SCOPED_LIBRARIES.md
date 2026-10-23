@@ -112,3 +112,11 @@ selected records into those payloads before submitting a request.
 Tests cover scope visibility, cross-account and cross-tenant requests, owner impersonation, elevated
 publication attempts, duplicates, RBAC denials, credential restrictions, pagination, numeric validation,
 restart persistence and signed-in identity with open inference enabled.
+
+The built-in Balanced configuration reserves 2,048 output tokens. The output budget
+includes hidden thinking tokens as well as visible answer text. Upgrade migration 8 raises
+the original, untouched 128-token starter to 2,048; edited starters and custom configurations
+keep their explicit values. A server restart applies the migration. Clients using no saved
+configuration retain the API's existing default behavior.
+
+Docker Compose defaults to a 4,096-token context so the 2,048-token output budget leaves room for the prompt and conversation. Explicit context-size overrides remain supported.

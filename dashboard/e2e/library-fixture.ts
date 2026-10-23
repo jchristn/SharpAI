@@ -2,7 +2,7 @@ import type {Route} from '@playwright/test';
 export function libraryFixture(){
  const base={Description:'A reusable starting point.',Scope:'System',TenantId:null,UserId:null,CreatedUtc:'2026-10-22T00:00:00Z',UpdatedUtc:'2026-10-22T00:00:00Z',CanEdit:true,CanDelete:true};
  const prompts=[{...base,Id:'system-starter-prompt',Kind:'SystemPrompt',Name:'Helpful assistant',Content:'You are a helpful assistant.',Configuration:null}];
- const configurations=[{...base,Id:'system-starter-configuration',Kind:'ModelConfiguration',Name:'Balanced',Content:null,Configuration:{Temperature:.6,MaxTokens:128,Stop:[],StreamResponse:true,JsonOutput:false,DisplayThinking:false}}];
+ const configurations=[{...base,Id:'system-starter-configuration',Kind:'ModelConfiguration',Name:'Balanced',Content:null,Configuration:{Temperature:.6,MaxTokens:2048,Stop:[],StreamResponse:true,JsonOutput:false,DisplayThinking:false}}];
  return async(route:Route):Promise<boolean>=>{
   const request=route.request();const path=new URL(request.url()).pathname;
   if(path==='/v1.0/library-context'){await route.fulfill({json:{IsAdmin:true,IsTenantAdmin:false,TenantId:'default',UserTenantId:'default',UserId:'user-a'}});return true;}

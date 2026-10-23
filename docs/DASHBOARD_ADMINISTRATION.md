@@ -71,3 +71,17 @@ tablet and mobile sizes, accessibility, tenant switches and stale responses, typ
 lifetime, readonly controls, role permission mappings, and exact credential resource scopes.
 
 See [reveal and regeneration contracts](../DEPLOYMENT_GUIDE.md#reveal-and-regenerate-api-bearer-tokens) for permissions, error codes, legacy credential recovery and encrypted token backups.
+
+Playground retains content carried in the final chat frame, including responses without a
+trailing newline. It follows the latest response as Markdown layout changes. A token-limit
+notice means generation reached its output budget; increase `MaxTokens` in the selected
+model configuration for a longer answer. This notice preserves the generated text and
+conversation context.
+
+Playground supports `/?` (`/help`, `/commands`, `/`), `/clear` (`/new`, `/reset`),
+`/compact`, `/model [name]` (`/models`), `/status`, and `/stop` (`/cancel`). Use `//`
+for literal text beginning with a slash. `/compact` uses the selected model to summarize
+earlier turns, preserves the visible transcript and latest exchange, and changes model
+context only after successful completion. Failed, truncated, or cancelled summaries leave
+the original context intact. These composer commands share their catalog with the TUI;
+see [TUI chat commands](TUI.md#chat-commands-and-rendering) for details.

@@ -373,3 +373,6 @@ input:not([type='checkbox']),select,textarea {min-height:30px;padding:5px 8px;bo
 .sa-btn svg.sa-utility-icon { width:16px; height:16px; color:#59616b; }
 :root[data-theme='dark'] .sa-btn svg.sa-utility-icon { color:#a3adba; }
 :root .sa-copy-button--copied svg.sa-utility-icon, :root[data-theme='dark'] .sa-copy-button--copied svg.sa-utility-icon { color:var(--sa-success); }
+
+.sa-chat-command-notice {color:var(--sa-text-muted);padding:8px 0;}
+.sa-chat-command-notice pre {white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;margin:0;}

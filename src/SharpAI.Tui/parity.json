@@ -986,7 +986,7 @@
     {
       "id": "workflow.4",
       "surface": "Playground chat",
-      "requirements": "Actual model picker; conversation, Markdown and code; system prompt; temperature, maximum output tokens, top-p, top-k, min-p, repeat penalty/window, presence/frequency penalties, seed; per-line stop strings; JSON output; thinking visibility; streaming toggle; one-line initial composer; cancel; new conversation; copy text/code; warning and rotating wait messages",
+      "requirements": "Actual model picker; conversation, Markdown and code; system prompt; temperature, maximum output tokens, top-p, top-k, min-p, repeat penalty/window, presence/frequency penalties, seed; per-line stop strings; JSON output; thinking visibility; streaming toggle; one-line initial composer; cancel; new conversation; copy text/code; warning and rotating wait messages; shared slash commands, atomic model-based context compaction, padded TUIKit Markdown rendering",
       "contract": "`/api/tags`, `/api/chat` streaming and non-streaming",
       "evidence": "Multi-turn request payloads, whitespace preservation, split UTF-8 frames, errors after headers, cancellation, manual transcript scroll, all parameter bounds",
       "status": "implemented",
@@ -995,7 +995,15 @@
         "route./playground"
       ],
       "testIds": [
-        "Tui.Routes"
+        "Tui.Routes",
+        "Tui.Streams",
+        "Tui.ChatFinalContent",
+        "TuiOperator.Chat",
+        "TuiChatCommands.Parser",
+        "TuiChatCommands.Commands",
+        "TuiChatCommands.Failures",
+        "TuiChatCommands.Markdown",
+        "TuiTheme.Surfaces"
       ]
     },
     {
@@ -1040,7 +1048,10 @@
         "route./request-history"
       ],
       "testIds": [
-        "Tui.Routes"
+        "Tui.Routes",
+        "TuiHistoryCharts.api",
+        "TuiHistoryCharts.Rendering",
+        "TuiHistoryCharts.States"
       ]
     },
     {
@@ -1070,7 +1081,9 @@
         "route./request-history/inference"
       ],
       "testIds": [
-        "Tui.Routes"
+        "Tui.Routes",
+        "TuiHistoryCharts.inference",
+        "TuiHistoryCharts.embeddings"
       ]
     },
     {
@@ -1214,7 +1227,7 @@
       "surface": "Access: audit",
       "requirements": "Paged security events with event/principal/path/outcome/time and detail inspection",
       "contract": "`/v1.0/api/audit`",
-      "evidence": "Scope/permission changes never reveal another tenant\u2019s events",
+      "evidence": "Scope/permission changes never reveal another tenant’s events",
       "status": "implemented",
       "terminalRoute": "/access/audit",
       "commandIds": [

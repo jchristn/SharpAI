@@ -16,7 +16,7 @@ namespace Test.Tui
                 System.IO.File.WriteAllText(args[4], trace); return 0;
             }
             string? results = args.Length == 2 && args[0] == "--results" ? args[1] : null;
-            return await ConsoleRunner.RunAsync(new[] { ModelPullSourceSuite.Build(), TuiSuite.Build(), TuiStateSuite.Build(), TuiLiveSuite.Build(), TuiOperatorSuite.Build() }, resultsPath: results).ConfigureAwait(false);
+            return await ConsoleRunner.RunAsync(new[] { ModelPullSourceSuite.Build(), TuiSuite.Build(), TuiThemeSuite.Build(), TuiChatCommandSuite.Build(), TuiHistoryChartSuite.Build(), TuiStateSuite.Build(), TuiLiveSuite.Build(), TuiOperatorSuite.Build() }, resultsPath: results).ConfigureAwait(false);
         }
     }
 }

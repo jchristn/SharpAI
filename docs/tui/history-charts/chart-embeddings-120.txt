@@ -1,0 +1,40 @@
+HTTP localhost:49952 | H200/R200 | ADMIN | t:tena..ixture | u: | Connected
+┌──── SharpAI ─────┬──────────────────────────────────── Embeddings History | UTC ─────────────────────────────────────┐
+│Overview          │┌──────────────────────────────────────────── Filters ────────────────────────────────────────────┐│
+│                  ││> Method                                                                                         ││
+│Models            ││                                                                                                 ││
+│System Prompts    ││  Status                                                                                         ││
+│Model Configuratio││                                                                                                 ││
+│Playground        ││  Path contains                                                                                  ││
+│                  ││                                                                                                 ││
+│Request History   ││  Endpoint                                                                                       ││
+│Inference History ││                                                                                                 ││
+│Embeddings History││                                                                                                 ││
+│API Explorer      │├─────────────────────────────────────────────────────────────────────────────────────────────────┤│
+│Observability     ││[ Hour ] [ Day ] [ Week ] [ Month ] [ Apply ] [ Clear range ] [ Filters ] [ Activity intervals ] ││
+│                  ││[ Activity chart ]                                                                               ││
+│Tenants           ││                                                                                                 ││
+│Users             │├────────────────────────────────── Request activity over time ───────────────────────────────────┤│
+│Credentials       ││Requests 9 | Success rate 78% | Avg duration 12.5 ms                                             ││
+│Roles             ││█ Success  ▒ Failure | UTC                                                                       ││
+│Permissions       ││5      |                                             ▒                                           ││
+│Assignments       ││       |                                             ▒                                           ││
+│Sessions          ││       |                                             ▒                                     ██    ││
+│Security audit    ││       |                                             █                                     ██    ││
+│Settings          ││2      |                                             █                                     ██    ││
+│                  ││       |                                             █                                     ██    ││
+│                  ││       |                                             █                                     ██    ││
+│                  ││0      |                                             █                                     ██    ││
+│                  ││                                                                                                 ││
+│                  ││         10-22 23:29                                                                  10-23 00:29││
+│                  ││Left/Right: inspect; Enter/click: filter. Adjacent intervals merge to fit.                       ││
+│                  │├─────────────────────────────────────────────────────────────────────────────────────────────────┤│
+│                  ││ID: req_fixture                                                                                  ││
+│                  ││Filter this page (1/1)                                                                           ││
+│                  ││Created (UTC)            Method          Path            Status          Duration (ms)   Source I││
+│                  ││2026-01-01T00:00:00Z     POST            /api/chat       200             50                      ││
+│                  ││Showing 1-1 of 1. Page 1 of 1.                                                                   ││
+│                  ││████████████████████████████████─────────────────────────────────────────────────────────────────││
+│                  │└─────────────────────────────────────────────────────────────────────────────────────────────────┘│
+└──────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────┘
+Left/Right Select interval   Enter Filter requests   Tab Next control   F1 Help   F2 Navigation   Ctrl+P Commands

@@ -25,7 +25,7 @@ namespace SharpAI.Tui.Widgets
         private readonly string[] _Scopes;
         private readonly Localizer _Localizer;
         internal Form Form { get; } = new Form();
-        internal ScrollView View { get; }
+        internal PaddedScrollView View { get; }
         internal bool IsDirty { get { return Form.IsDirty || _StructureChanged && _Draft.ToJsonString() != _CleanJson; } }
         internal JsonObject Draft { get { foreach (Action read in _Read.ToArray()) read(); return _Draft; } }
         internal JsonForm(JsonObject value, Action<JsonObject> save, Action cancel, string[]? scopes = null, Localizer? localizer = null)
@@ -38,7 +38,7 @@ namespace SharpAI.Tui.Widgets
             Form.SubmitKey = KeyChord.Parse("ctrl+s"); Form.CancelKey = KeyChord.Parse("escape");
             Form.SubmitRequested += (sender, args) => _Save(Draft);
             Form.CancelRequested += (sender, args) => _Cancel();
-            View = new ScrollView(Form, 70, 30) { ForwardKeys = true };
+            View = new PaddedScrollView(Form, 70, 30) { ForwardKeys = true };
             Build(); _CleanJson = _Draft.ToJsonString();
         }
         internal void MarkClean() { _StructureChanged = false; _CleanJson = _Draft.ToJsonString(); Form.MarkClean(); }

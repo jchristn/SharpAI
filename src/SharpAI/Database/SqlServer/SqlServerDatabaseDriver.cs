@@ -164,6 +164,10 @@ namespace SharpAI.Database.SqlServer
                         "IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_library_visibility') CREATE INDEX idx_library_visibility ON library_items (kind, scope, tenantid, userid)",
                         "INSERT INTO library_items (id,kind,name,description,scope,content,configurationjson,createdutc,updatedutc) VALUES ('system-starter-prompt','SystemPrompt','Helpful assistant','General-purpose starter instructions.','System','You are a helpful assistant. Answer clearly and accurately.',NULL,'2026-10-22T00:00:00.0000000Z','2026-10-22T00:00:00.0000000Z')",
                         "INSERT INTO library_items (id,kind,name,description,scope,content,configurationjson,createdutc,updatedutc) VALUES ('system-starter-configuration','ModelConfiguration','Balanced','A compact starting point for interactive chat.','System',NULL,'{\"Temperature\":0.6,\"MaxTokens\":128,\"StreamResponse\":true,\"Stop\":[]}', '2026-10-22T00:00:00.0000000Z','2026-10-22T00:00:00.0000000Z')"
+                    }),
+                    new SchemaMigration(8, "Increase untouched starter chat output budget", new List<string>
+                    {
+                        "UPDATE library_items SET configurationjson = '{\"Temperature\":0.6,\"MaxTokens\":2048,\"StreamResponse\":true,\"Stop\":[]}', updatedutc = '2026-10-23T00:00:00.0000000Z' WHERE id = 'system-starter-configuration' AND kind = 'ModelConfiguration' AND scope = 'System' AND updatedutc = '2026-10-22T00:00:00.0000000Z' AND configurationjson = '{\"Temperature\":0.6,\"MaxTokens\":128,\"StreamResponse\":true,\"Stop\":[]}'"
                     })
                 };
             }

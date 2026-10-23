@@ -1,6 +1,7 @@
 namespace SharpAI.Tui
 {
     using System;
+    using SharpAI.Tui.Widgets;
     using System.Collections.Generic;
     using System.Threading;
     using SharpAI.Client;
@@ -13,7 +14,7 @@ namespace SharpAI.Tui
         private Timer? _ScreenTimer;
         private void Observability()
         {
-            DefinitionList data = new DefinitionList(); ButtonRow links = new ButtonRow();
+            DefinitionList data = Definitions(); ButtonRow links = new ButtonRow();
             Uri server = new Uri(_Profile.Server);
             foreach (string service in new[] { "Grafana", "Prometheus", "Loki", "Tempo" })
             {
@@ -21,7 +22,7 @@ namespace SharpAI.Tui
                 string url = _Profile.ServiceLinks.TryGetValue(service, out string? link) ? link : new UriBuilder(server.Scheme, server.Host, port, service == "Grafana" ? "/dashboards/f/sharpai" : service == "Prometheus" ? "/graph" : "/ready").Uri.AbsoluteUri;
                 data.Set(service, SafeText.Clean(url)); links.Add(ButtonFor("Copy " + service + " URL", () => { _CopyText = url; Track(CopyAsync()); }));
             }
-            Show(new FramedStack().Add(new ScrollView(data, 100, 150), StackSize.Weighted(1)).Add(links, StackSize.Fixed(4)), "Observability"); long revision = _Revision;
+            Show(new PaddedStack().Add(new PaddedScrollView(data, 100, 150), StackSize.Weighted(1)).Add(links, StackSize.Fixed(4)), "Observability"); long revision = _Revision;
             MetricsSample? previous = null; bool polling = false;
             _Refresh = () =>
             {

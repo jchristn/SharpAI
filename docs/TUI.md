@@ -96,3 +96,69 @@ existing identity and performs no upload. CI uses an explicitly disposable key f
 Publication, persistent repository signing keys and external moderation are separate from
 local builds. The CI workflow builds and tests before producing package artifacts; it does not publish
 a release or push a Postman workspace.
+
+## History charts
+
+API Request History, Inference History and Embeddings History each show a stacked activity chart with
+successful and failed request counts, UTC time/count axes, total requests, success rate and average
+duration. Inference History uses the same generation-only filter as the web dashboard; embeddings have
+their own view. Hour/day/week/month presets retain the shared 1/15/120/1440-minute server buckets.
+
+Tab to the chart and use Left/Right (or Home/End) to inspect a bar. Press Enter or click a bar to filter
+the request table to its UTC interval; **Clear range** returns to the full preset window. Hovering shows
+the interval and exact counts. **Activity chart** opens a larger view. On narrow terminals, neighboring
+buckets merge into wider intervals so counts remain visible without dropping requests; drilldown uses
+the entire displayed interval. Success/failure have separate glyphs as well as colors, with S/F in ASCII
+mode. Empty, loading and unavailable summaries are distinct and never reuse stale chart bars.
+
+### Chat completion visibility
+
+The conversation follows incoming text while positioned at the bottom. Scrolling up pauses
+following; return to the end to resume. Final-frame content is retained even when the HTTP
+stream ends without a trailing newline. A stream without a completion marker is reported
+as failed while retaining its partial text. `Token limit reached` means the server ended
+generation at its token budget; increase `MaxTokens` in the selected model configuration
+for longer answers. The web Playground also reports this limit and follows layout changes
+when its Markdown renderer loads.
+
+Playground automatically chooses the first model advertising completion support, falling
+back to the first listed model when no completion-capable model is identified. You can
+select another model at any time. The web Playground uses the same selection rule.
+The Balanced starter now reserves 2,048 tokens, including hidden thinking; server upgrades
+update only the untouched original starter. Restart the server to apply that upgrade.
+
+### Midnight Violet
+
+The default `dark` theme uses the logo-derived Midnight Violet palette: ink `#11101A`,
+panel `#191624`, text `#F4F0FA`, muted `#B3A6C4`, border `#65557E`, lavender focus
+`#BDA9F3`, selected surface `#35254F`, and pink errors `#EF85B9`. Success (`#8ACDB3`)
+and warning (`#E4C18A`) are reserved for semantic states. History charts use lavender
+success bars and pink failure bars, with separate glyphs and labels. Navigation, forms,
+Markdown, focused borders, dialogs, notifications, and keyboard hints share these roles.
+ASCII mode preserves the palette; explicit light and high-contrast profiles remain available.
+
+### Chat commands and rendering
+
+Both Playground interfaces recognize the same composer commands. Type `/?`, `/help`,
+`/commands`, or `/` for help. Commands are handled by the client; use `//` to send a
+literal leading slash to the model.
+
+| Command | Action |
+| --- | --- |
+| `/clear` (`/new`, `/reset`) | Clear the visible conversation, summary, retained model context, and turn details. |
+| `/compact` | Ask the selected model to summarize earlier turns; keep the latest exchange when there is more than one. |
+| `/model [name]` (`/models`) | List available models, or select a named model while retaining the conversation. |
+| `/status` | Show the selected model, output budget, and retained context state. |
+| `/stop` (`/cancel`) | Cancel generation or compaction. |
+
+Compaction uses a nonstreaming `/api/chat` request with a summary instruction and a
+1,024-token output budget. It preserves the visible transcript. Only a nonempty, completed,
+uncancelled summary that did not hit its token limit replaces earlier model context.
+Failures and cancellation leave the original context intact. Repeated compaction includes
+the previous summary. The selected system prompt still accompanies subsequent chat requests.
+Compaction is a model inference and appears in server request/inference history. Use `/stop`
+before starting another command while generation is active.
+
+TUI chat output is rendered by TUIKit `MarkdownView`, including headings, emphasis, links,
+lists, tables, and fenced code. Framed content has at least one blank column on each side;
+scrollbars, navigation drawers, and credential dialogs keep the same horizontal separation.

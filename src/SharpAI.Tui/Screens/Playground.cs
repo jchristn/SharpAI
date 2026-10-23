@@ -23,6 +23,7 @@ namespace SharpAI.Tui
         private JsonNode? _SelectedConfiguration;
         private string _SelectedModel = string.Empty;
         private string _Transcript = string.Empty;
+        private string _ContextSummary = string.Empty;
         private bool _PlaygroundInitialized;
         private string _ComposerDraft = string.Empty;
         private JsonNode? _LastTurnRecord;
@@ -33,15 +34,21 @@ namespace SharpAI.Tui
                 ShowText("Playground", "Loading saved libraries"); long revision = _Revision;
                 Work(async ct =>
                 {
+                    JsonNode? models = await _Client.JsonAsync("GET", "/api/tags", null, ct).ConfigureAwait(false);
+                    IReadOnlyList<JsonNode> choices = JsonData.Rows(models).Where(row => !string.IsNullOrWhiteSpace(JsonData.Text(row, "name", "model"))).ToList();
+                    JsonNode? preferred = choices.FirstOrDefault(row => JsonData.Flag(row["capabilities"], "completions")) ?? choices.FirstOrDefault();
+                    string selectedModel = JsonData.Text(preferred, "name", "model");
                     JsonNode? prompts = await _Client.JsonAsync("GET", Scoped("/v1.0/system-prompts?pageSize=25"), null, ct).ConfigureAwait(false);
                     JsonNode? configurations = await _Client.JsonAsync("GET", Scoped("/v1.0/model-configurations?pageSize=25"), null, ct).ConfigureAwait(false);
-                    Apply(revision, () => { _SelectedPrompt = JsonData.Rows(prompts).FirstOrDefault()?.DeepClone(); _SelectedConfiguration = JsonData.Rows(configurations).FirstOrDefault()?.DeepClone(); _PlaygroundInitialized = true; Playground(); });
+                    Apply(revision, () => { _SelectedModel = selectedModel; _SelectedPrompt = JsonData.Rows(prompts).FirstOrDefault()?.DeepClone(); _SelectedConfiguration = JsonData.Rows(configurations).FirstOrDefault()?.DeepClone(); _PlaygroundInitialized = true; Playground(); });
                 });
                 return;
             }
             MarkdownView transcript = new MarkdownView(SafeText.Clean(_Transcript));
+            transcript.TailFollow.Mode = TailFollowMode.FollowAtBottom;
+            transcript.ScrollToEnd();
             Composer composer = new Composer(); composer.Editor.Text = _ComposerDraft; composer.Editor.TextChanged += (sender, args) => _ComposerDraft = composer.Editor.Text;
-            DefinitionList telemetry = new DefinitionList();
+            DefinitionList telemetry = Definitions();
             composer.Send = () => SendChat(composer.Editor, transcript, telemetry);
             ButtonRow controls = new ButtonRow();
             controls.Add(ButtonFor("Model: " + _SelectedModel, () => Pick("/api/tags", "Model", row => { ResetGenerationScope(); _SelectedModel = JsonData.Text(row, "name", "model"); Playground(); })));
@@ -52,13 +59,13 @@ namespace SharpAI.Tui
             ButtonRow actions = new ButtonRow();
             actions.Add(ButtonFor("Send", () => SendChat(composer.Editor, transcript, telemetry)));
             actions.Add(ButtonFor("Cancel", CancelActive));
-            actions.Add(ButtonFor("New conversation", () => { if (_Busy) { _Host.Notify(_Localizer.Phrase("Cancel the active generation first.")); return; } _Messages.Clear(); _Turns.Clear(); _LastTurnRecord = null; _Transcript = string.Empty; Playground(); }));
+            actions.Add(ButtonFor("New conversation", () => { if (_Busy) { _Host.Notify(_Localizer.Phrase("Cancel the active generation first.")); return; } _Messages.Clear(); _ContextSummary = string.Empty; _Turns.Clear(); _LastTurnRecord = null; _Transcript = string.Empty; Playground(); }));
             actions.Add(ButtonFor("Embeddings", Embeddings));
             actions.Add(ButtonFor("Copy code", CopyCode));
             if (_LastTurnRecord != null) actions.Add(ButtonFor("Turn details", TurnHistory));
             Pane warning = new Pane("warning"); warning.Write(_Localizer.Text("chat.warning"));
-            FramedStack wide = new FramedStack().Add(controls, StackSize.Fixed(4), "Saved libraries").Add(transcript, StackSize.Weighted(1), "Conversation").Add(telemetry, StackSize.Fixed(4), "Turn telemetry").Add(composer, StackSize.Fixed(2), "Composer | Ctrl+J newline").Add(actions, StackSize.Fixed(2)).Add(warning, StackSize.Fixed(1));
-            FramedStack narrow = new FramedStack().Add(transcript, StackSize.Weighted(1), "Conversation | Ctrl+P model and saved libraries").Add(composer, StackSize.Fixed(2), "Composer | Enter sends, Ctrl+J newline").Add(actions, StackSize.Fixed(2)).Add(warning, StackSize.Fixed(1));
+            PaddedStack wide = new PaddedStack().Add(controls, StackSize.Fixed(4), "Saved libraries").Add(transcript, StackSize.Weighted(1), "Conversation").Add(telemetry, StackSize.Fixed(4), "Turn telemetry").Add(composer, StackSize.Fixed(2), "Composer | /? commands | Ctrl+J newline").Add(actions, StackSize.Fixed(2)).Add(warning, StackSize.Fixed(1));
+            PaddedStack narrow = new PaddedStack().Add(transcript, StackSize.Weighted(1), "Conversation | Ctrl+P model and saved libraries").Add(composer, StackSize.Fixed(2), "Composer | /? commands | Enter sends").Add(actions, StackSize.Fixed(2)).Add(warning, StackSize.Fixed(1));
             Show(new ResponsiveScreen(wide, narrow), "Playground");
         }
         private void Pick(string path, string title, Action<JsonNode> selected)
@@ -71,20 +78,23 @@ namespace SharpAI.Tui
         }
         private void SendChat(TextEditor composer, MarkdownView transcript, DefinitionList telemetry)
         {
+            ChatCommand command = ChatCommands.Parse(composer.Text);
+            if (command.IsCommand) { RunChatCommand(command, composer, transcript, telemetry); return; }
             if (_Busy) { _Host.Notify(_Localizer.Phrase("One generation is already active.")); return; }
             if (string.IsNullOrWhiteSpace(composer.Text)) return;
             if (string.IsNullOrEmpty(_SelectedModel)) { _Host.Notify(_Localizer.Phrase("Select a model.")); return; }
             if (_Route.IsCancellationRequested) { _Route.Dispose(); _Route = System.Threading.CancellationTokenSource.CreateLinkedTokenSource(_Lifetime.Token); }
-            string prompt = composer.Text;
+            string prompt = command.Prompt;
             if (_SelectedConfiguration?["Configuration"] is not JsonObject configuration) { _Host.Notify(_Localizer.Phrase("Select a saved model configuration.")); return; }
             JsonObject options = GenerationOptions(configuration);
             JsonArray messages = (JsonArray)_Messages.DeepClone();
             if (_SelectedPrompt?["Content"] != null) messages.Insert(0, new JsonObject { ["role"] = "system", ["content"] = _SelectedPrompt["Content"]!.ToString() });
+            if (_ContextSummary.Length > 0) messages.Insert(_SelectedPrompt?["Content"] != null ? 1 : 0, new JsonObject { ["role"] = "system", ["content"] = ChatCommands.SummaryPrefix + _ContextSummary });
             messages.Add(new JsonObject { ["role"] = "user", ["content"] = prompt });
             JsonObject payload = new JsonObject { ["model"] = _SelectedModel, ["messages"] = messages, ["options"] = options, ["stream"] = JsonData.Flag(configuration, "StreamResponse") };
             if (JsonData.Flag(configuration, "JsonOutput")) payload["format"] = "json";
             string prefix = _Transcript + "\n\n## User\n" + SafeText.Clean(prompt) + "\n\n## Assistant\n";
-            transcript.Markdown = prefix; composer.Text = string.Empty; _Busy = true; Status(_Localizer.Text("apiExplorer.sending"));
+            transcript.Markdown = prefix; transcript.ScrollToEnd(); composer.Text = string.Empty; _Busy = true; Status(_Localizer.Text("apiExplorer.sending"));
             long revision = _Revision; bool waiting = true; int quip = 0;
             _ScreenTimer?.Dispose();
             _ScreenTimer = new System.Threading.Timer(state => Apply(revision, () => { if (_Busy && waiting) { telemetry.Set("Status", _Localizer.Text("quips." + (quip++ % 6))); } }), null, 0, 2500);
@@ -111,11 +121,12 @@ namespace SharpAI.Tui
                         answer.Append(JsonData.Text(final?["message"], "content"));
                     }
                     if (final?["done"]?.GetValue<bool>() != true) throw new System.IO.InvalidDataException("Generation ended without a completion marker. Inspect history before retrying.");
+                    if (JsonData.Text(final, "done_reason") == "length") outcome = "Token limit reached";
                 }
                 catch (OperationCanceledException) { outcome = "Stopped"; }
                 catch (Exception error) when (IsExpected(error)) { outcome = "Failed: " + ErrorText(error); }
                 double elapsed = clock.Elapsed.TotalMilliseconds;
-                string completed = prefix + SafeText.Clean(answer.ToString()) + "\n\n[" + outcome + "]";
+                string completed = prefix + SafeText.Clean(answer.ToString()) + "\n\n[" + _Localizer.Phrase(outcome) + "]";
                 Apply(revision, () =>
                 {
                     _Busy = false; waiting = false; _ScreenTimer?.Dispose(); _ScreenTimer = null;
@@ -124,7 +135,7 @@ namespace SharpAI.Tui
                     if (_Turns.Count > 50) _Turns.RemoveAt(0);
                     _LastTurnRecord = turnData; _CopyText = answer.ToString(); _Transcript = completed.Length > 2 * 1024 * 1024 ? completed.Substring(completed.Length - 2 * 1024 * 1024) : completed;
                     transcript.Markdown = _Transcript;
-                    if (outcome == "Complete")
+                    if (outcome == "Complete" || outcome == "Token limit reached")
                     {
                         _Messages.Add(new JsonObject { ["role"] = "user", ["content"] = prompt }); _Messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = answer.ToString() });
                         while (_Messages.Count > 100) { _Messages.RemoveAt(0); _Messages.RemoveAt(0); }
@@ -185,7 +196,7 @@ namespace SharpAI.Tui
         }
         private void EmbeddingsInspector(JsonNode result)
         {
-            DefinitionList metadata = new DefinitionList();
+            DefinitionList metadata = Definitions();
             JsonArray vectors = result["embeddings"] as JsonArray ?? throw new InvalidOperationException("The response contains no embedding vectors.");
             metadata.Set("Vectors", vectors.Count.ToString(_Localizer.Culture));
             StringBuilder preview = new StringBuilder();
@@ -197,7 +208,7 @@ namespace SharpAI.Tui
             }
             TextEditor values = new TextEditor { ConsumeUnboundControlKeys = false, Text = preview.ToString(), IsReadOnly = true, WordWrap = true };
             ButtonRow actions = new ButtonRow(); actions.Add(ButtonFor("Copy result", () => { _CopyText = result.ToJsonString(); Track(CopyAsync()); })); actions.Add(ButtonFor("Back", Playground));
-            Show(new FramedStack().Add(metadata, StackSize.Fixed(Math.Min(8, 2 + vectors.Count))).Add(values, StackSize.Weighted(1), "Vector preview").Add(actions, StackSize.Fixed(3)), "Embeddings");
+            Show(new PaddedStack().Add(metadata, StackSize.Fixed(Math.Min(8, 2 + vectors.Count))).Add(values, StackSize.Weighted(1), "Vector preview").Add(actions, StackSize.Fixed(3)), "Embeddings");
         }
     }
 }

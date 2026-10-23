@@ -1,6 +1,6 @@
 # SharpAI terminal dashboard implementation plan
 
-Status: proposed implementation, not shipped. Baseline: the v4.0.1 web dashboard and its checked-in operation catalog. The executable will be `sharpai-tui`, written in C#, with a NuGet dependency on TUIKit. It will operate the existing server over HTTP, so running a terminal client does not load model weights, open the server database, or bypass authorization.
+Status: implemented and available from source; full acceptance and release gates remain open. Baseline: the v4.0.1 web dashboard and its checked-in operation catalog. The executable is `sharpai-tui`, written in C#, with a NuGet dependency on TUIKit. It operates the existing server over HTTP, so running a terminal client does not load model weights, open the server database, or bypass authorization.
 
 ## Accepted execution scope and current evidence
 

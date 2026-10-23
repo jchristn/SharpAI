@@ -630,7 +630,8 @@
     "incomplete": "A transmissão terminou antes de ser concluída. Inicie uma nova conversa e tente novamente.",
     "warning": "A IA pode cometer erros. Verifique as respostas.",
     "telemetry": "Telemetria da resposta",
-    "streamToggle": "Transmitir resposta"
+    "streamToggle": "Transmitir resposta",
+    "tokenLimit": "Limite de tokens atingido. Aumente MaxTokens na configuração do modelo para uma resposta mais longa."
   },
   "sampling": {
     "temperature": "Temperatura",
@@ -1004,5 +1005,25 @@
     "apiHelp": "Revise todas as solicitações HTTP registradas, incluindo operações de modelos.",
     "inferenceHelp": "Revise solicitações de chat e conclusão de texto sem chamadas de embeddings.",
     "embeddingsHelp": "Revise solicitações de embeddings das APIs Ollama e OpenAI."
+  },
+  "chatCommands": {
+    "help": "Mostrar comandos do chat",
+    "clear": "Limpar a conversa e o contexto",
+    "compact": "Resumir turnos anteriores com o modelo selecionado",
+    "model": "Listar modelos ou selecionar pelo nome",
+    "status": "Mostrar modelo e estado do contexto",
+    "stop": "Parar a geração ou o resumo",
+    "busy": "Use /stop antes de outro comando.",
+    "unknown": "Comando ou argumentos desconhecidos. Use /?.",
+    "literal": "Use // para enviar uma barra inicial literal.",
+    "cleared": "Conversa limpa.",
+    "idle": "Nenhuma geração ativa.",
+    "context": "Mensagens de contexto",
+    "summary": "resumo",
+    "noConversation": "Não há turnos anteriores para resumir.",
+    "compacting": "Resumindo a conversa…",
+    "compacted": "Contexto compactado. A conversa visível foi preservada.",
+    "modelUnknown": "Modelo não encontrado. Use /model para listar.",
+    "summaryFailed": "O resumo não foi concluído. O contexto original não mudou."
   }
 }

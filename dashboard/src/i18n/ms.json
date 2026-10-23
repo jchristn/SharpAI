@@ -630,7 +630,8 @@
     "incomplete": "Aliran respons tamat sebelum selesai. Mulakan perbualan baharu dan cuba lagi.",
     "warning": "AI boleh membuat kesilapan. Sila semak jawapan.",
     "telemetry": "Telemetri respons",
-    "streamToggle": "Strim respons"
+    "streamToggle": "Strim respons",
+    "tokenLimit": "Had token dicapai. Tingkatkan MaxTokens dalam konfigurasi model untuk respons yang lebih panjang."
   },
   "sampling": {
     "temperature": "Suhu",
@@ -1004,5 +1005,25 @@
     "apiHelp": "Semak semua permintaan HTTP yang direkodkan, termasuk operasi model.",
     "inferenceHelp": "Semak permintaan sembang dan pelengkapan teks tanpa panggilan pembenaman.",
     "embeddingsHelp": "Semak permintaan pembenaman daripada API Ollama dan OpenAI."
+  },
+  "chatCommands": {
+    "help": "Papar arahan sembang",
+    "clear": "Kosongkan perbualan dan konteks model",
+    "compact": "Ringkaskan giliran terdahulu dengan model dipilih",
+    "model": "Senaraikan model atau pilih mengikut nama",
+    "status": "Papar model dan status konteks",
+    "stop": "Hentikan penjanaan atau ringkasan",
+    "busy": "Gunakan /stop sebelum arahan lain.",
+    "unknown": "Arahan atau argumen tidak dikenali. Gunakan /?.",
+    "literal": "Gunakan // untuk menghantar garis miring awal secara literal.",
+    "cleared": "Perbualan dikosongkan.",
+    "idle": "Tiada penjanaan aktif.",
+    "context": "Mesej konteks",
+    "summary": "ringkasan",
+    "noConversation": "Tiada giliran terdahulu untuk diringkaskan.",
+    "compacting": "Meringkaskan perbualan…",
+    "compacted": "Konteks dipadatkan. Perbualan yang dipaparkan dikekalkan.",
+    "modelUnknown": "Model tidak ditemui. Gunakan /model untuk senarai.",
+    "summaryFailed": "Ringkasan tidak selesai. Konteks asal tidak berubah."
   }
 }

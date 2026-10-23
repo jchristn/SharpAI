@@ -630,7 +630,8 @@
     "incomplete": "响应流在完成前已结束。请开始新对话并重试。",
     "warning": "AI 可能会出错。请核实回答。",
     "telemetry": "响应遥测",
-    "streamToggle": "流式响应"
+    "streamToggle": "流式响应",
+    "tokenLimit": "已达到令牌上限。请在模型配置中增大 MaxTokens，以获得更长的回复。"
   },
   "sampling": {
     "temperature": "温度",
@@ -1004,5 +1005,25 @@
     "apiHelp": "查看所有已记录的 HTTP 请求，包括模型操作。",
     "inferenceHelp": "查看聊天和文本补全请求，不包含嵌入调用。",
     "embeddingsHelp": "查看 Ollama 和 OpenAI API 的嵌入请求。"
+  },
+  "chatCommands": {
+    "help": "显示聊天命令",
+    "clear": "清除对话和模型上下文",
+    "compact": "使用所选模型总结较早的对话",
+    "model": "列出模型或按名称选择",
+    "status": "显示模型和上下文状态",
+    "stop": "停止生成或总结",
+    "busy": "请先使用 /stop，再运行其他命令。",
+    "unknown": "未知命令或参数。使用 /? 查看帮助。",
+    "literal": "使用 // 发送以斜杠开头的原文。",
+    "cleared": "已清除对话。",
+    "idle": "当前没有正在生成的内容。",
+    "context": "上下文消息",
+    "summary": "摘要",
+    "noConversation": "没有可总结的早期对话。",
+    "compacting": "正在总结对话…",
+    "compacted": "已压缩上下文，显示的对话保持不变。",
+    "modelUnknown": "未找到模型。使用 /model 查看列表。",
+    "summaryFailed": "总结未完成，原始上下文保持不变。"
   }
 }

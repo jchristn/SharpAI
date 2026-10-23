@@ -80,6 +80,7 @@ namespace Test.Shared.Tui
                     return Task.CompletedTask;
                 }),
                 Case("ShellFrames", ShellFramesAsync),
+                Case("StarterBudget", StarterBudgetAsync),
                 Case("RestoreAfterFailure", ct =>
                 {
                     using FailingTerminal backend = new FailingTerminal(); using ServerClient client = new ServerClient("http://127.0.0.1:1");
@@ -98,6 +99,8 @@ namespace Test.Shared.Tui
                 HttpCase("ClipboardFallback", ClipboardFallbackAsync),
                 HttpCase("ClipboardRace", ClipboardRaceAsync),
                 HttpCase("Streams", StreamsAsync),
+                HttpCase("ChatFinalContent", ChatFinalContentAsync),
+                HttpCase("DefaultModel", DefaultModelAsync),
                 HttpCase("Errors", ErrorsAsync),
                 HttpCase("SessionRace", SessionRaceAsync),
                 HttpCase("Bounded", BoundedAsync),
@@ -123,6 +126,22 @@ namespace Test.Shared.Tui
                 app.Host.Start(); app.Navigate("/api-explorer"); app.Host.RenderOnce();
                 TestAssert.Contains(Frame(app), "API Explorer");
                 backend.FeedKey("F2"); app.Host.PumpInputOnce(); app.Host.RenderOnce(); TestAssert.Contains(Frame(app), "Models");
+                string[] navigationLines = Frame(app).Split('\n');
+                int overviewLine = Array.FindIndex(navigationLines, line => line.Contains("Overview", StringComparison.Ordinal));
+                int modelsLine = Array.FindIndex(navigationLines, line => line.Contains("Models", StringComparison.Ordinal));
+                TestAssert.Equal(overviewLine + 2, modelsLine);
+                int playgroundLine = Array.FindIndex(navigationLines, line => line.Contains("Playground", StringComparison.Ordinal));
+                int historyLine = Array.FindIndex(navigationLines, line => line.Contains("Request History", StringComparison.Ordinal));
+                int observabilityLine = Array.FindIndex(navigationLines, line => line.Contains("Observability", StringComparison.Ordinal));
+                int tenantsLine = Array.FindIndex(navigationLines, line => line.Contains("Tenants", StringComparison.Ordinal));
+                int usersLine = Array.FindIndex(navigationLines, line => line.Contains("Users", StringComparison.Ordinal));
+                int credentialsLine = Array.FindIndex(navigationLines, line => line.Contains("Credentials", StringComparison.Ordinal));
+                TestAssert.Equal(modelsLine + 3, playgroundLine);
+                TestAssert.Equal(playgroundLine + 2, historyLine);
+                TestAssert.Equal(historyLine + 4, observabilityLine);
+                TestAssert.Equal(observabilityLine + 2, tenantsLine);
+                TestAssert.Equal(tenantsLine + 1, usersLine);
+                TestAssert.Equal(usersLine + 1, credentialsLine);
                 backend.FeedKey("Escape"); app.Host.PumpInputOnce(); app.Host.PumpInputOnce();
                 backend.Resize(60, 20); app.Host.RenderOnce(); TestAssert.Contains(Frame(app), "Resize");
             }
@@ -147,6 +166,90 @@ namespace Test.Shared.Tui
             TestAssert.Contains(clipboard.Text, "Helpful assistant");
             app.Navigate("/api-explorer"); clipboard.Pending.SetResult(false); await app.DrainAsync(ct).ConfigureAwait(false);
             TestAssert.Contains(Frame(app), "API Explorer"); TestAssert.DoesNotContain(Frame(app), "Copy result"); TestAssert.DoesNotContain(Frame(app), "Be helpful.");
+        }
+        private static async Task StarterBudgetAsync(CancellationToken ct)
+        {
+            foreach (bool edited in new[] { false, true })
+            {
+                string path = Path.Combine(Path.GetTempPath(), "sharpai-starter-" + Guid.NewGuid().ToString("N") + ".db");
+                try
+                {
+                    using SharpAI.Database.Sqlite.SqliteDatabaseDriver driver = new SharpAI.Database.Sqlite.SqliteDatabaseDriver(new SharpAI.Database.DatabaseSettings(path), new SyslogLogging.LoggingModule());
+                    await driver.InitializeAsync(ct).ConfigureAwait(false);
+                    using Microsoft.Data.Sqlite.SqliteConnection connection = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=" + path);
+                    await connection.OpenAsync(ct).ConfigureAwait(false);
+                    using Microsoft.Data.Sqlite.SqliteCommand command = connection.CreateCommand();
+                    command.CommandText = "SELECT configurationjson FROM library_items WHERE id = 'system-starter-configuration'";
+                    JsonNode fresh = JsonNode.Parse((string)(await command.ExecuteScalarAsync(ct).ConfigureAwait(false))!)!;
+                    TestAssert.Equal(2048, fresh["MaxTokens"]!.GetValue<int>());
+                    command.CommandText = "DELETE FROM schema_migrations WHERE version = 8"; await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                    command.CommandText = "UPDATE library_items SET configurationjson = @config, updatedutc = @updated WHERE id = 'system-starter-configuration'";
+                    command.Parameters.AddWithValue("@config", "{\"Temperature\":0.6,\"MaxTokens\":128,\"StreamResponse\":true,\"Stop\":[]}");
+                    command.Parameters.AddWithValue("@updated", edited ? "2026-10-22T01:00:00.0000000Z" : "2026-10-22T00:00:00.0000000Z");
+                    await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false); command.Parameters.Clear();
+                    command.CommandText = "INSERT INTO library_items SELECT 'custom-configuration',kind,name,description,scope,tenantid,userid,content,configurationjson,createdutc,updatedutc FROM library_items WHERE id = 'system-starter-configuration'";
+                    await command.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+                    await driver.InitializeAsync(ct).ConfigureAwait(false); await driver.InitializeAsync(ct).ConfigureAwait(false);
+                    command.CommandText = "SELECT configurationjson FROM library_items WHERE id = 'system-starter-configuration'";
+                    JsonNode upgraded = JsonNode.Parse((string)(await command.ExecuteScalarAsync(ct).ConfigureAwait(false))!)!;
+                    TestAssert.Equal(edited ? 128 : 2048, upgraded["MaxTokens"]!.GetValue<int>());
+                    command.CommandText = "SELECT configurationjson FROM library_items WHERE id = 'custom-configuration'";
+                    JsonNode custom = JsonNode.Parse((string)(await command.ExecuteScalarAsync(ct).ConfigureAwait(false))!)!;
+                    TestAssert.Equal(128, custom["MaxTokens"]!.GetValue<int>());
+                }
+                finally { Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools(); File.Delete(path); }
+            }
+        }
+        private static async Task DefaultModelAsync(CancellationToken ct)
+        {
+            foreach (string mode in new[] { "models-inference", "models-fallback", "models-unknown", "models-empty" })
+            {
+                using ServerClient client = Client(); client.Token = "fixture-" + mode;
+                using HeadlessBackend backend = new HeadlessBackend(120, 40) { ClaimsTerminal = false };
+                using TestProfileStore store = new TestProfileStore();
+                using SharpAITuiApp app = new SharpAITuiApp(client, backend, new ConnectionProfile(), store.Store);
+                app.Host.Start(); await app.ConnectAsync().ConfigureAwait(false); await app.DrainAsync(ct).ConfigureAwait(false);
+                app.Navigate("/playground"); await app.DrainAsync(ct).ConfigureAwait(false);
+                string expected = mode == "models-inference" ? "first-inference" : mode == "models-fallback" ? "first-embedding" : mode == "models-unknown" ? "first-unknown" : string.Empty;
+                TestAssert.Contains(Frame(app), mode == "models-empty" ? "[ Model  ]" : "Model: " + expected + " ]");
+            }
+        }
+        private static async Task ChatFinalContentAsync(CancellationToken ct)
+        {
+            foreach (string mode in new[] { "chat-final", "chat-limit", "chat-incomplete" })
+            {
+                using ServerClient client = Client(); client.Token = "fixture-" + mode;
+                using HeadlessBackend backend = new HeadlessBackend(120, 40) { ClaimsTerminal = false };
+                TestClipboard clipboard = new TestClipboard { Success = true };
+                using TestProfileStore store = new TestProfileStore();
+                using SharpAITuiApp app = new SharpAITuiApp(client, backend, new ConnectionProfile(), store.Store, clipboard: clipboard);
+                app.Host.Start(); await app.ConnectAsync().ConfigureAwait(false); await app.DrainAsync(ct).ConfigureAwait(false);
+                app.Navigate("/playground"); await app.DrainAsync(ct).ConfigureAwait(false);
+                TestAssert.Contains(Frame(app), "Model: fixture-model");
+                ChatClick(app, backend, "Composer", 1); backend.FeedInput("Tell a story"); app.Host.PumpInputOnce(); backend.FeedKey("Enter"); app.Host.PumpInputOnce();
+                await app.DrainAsync(ct).ConfigureAwait(false);
+                string frame = Frame(app);
+                TestAssert.Contains(frame, mode == "chat-incomplete" ? "completion marker" : "Final sentence is complete.");
+                if (mode == "chat-limit") TestAssert.Contains(frame, "Token limit reached");
+                ChatClick(app, backend, "Conversation", 1);
+                backend.FeedKey("ctrl+y"); app.Host.PumpInputOnce(); await app.DrainAsync(ct).ConfigureAwait(false);
+                string expected = string.Concat(Enumerable.Range(1, 48).Select(index => "Sentence " + index + " is present.\n\n"));
+                if (mode != "chat-incomplete") expected += "Final sentence is complete. 你好 🌍";
+                TestAssert.Equal(expected, clipboard.Text);
+                backend.Resize(80, 24); app.Host.RenderOnce();
+                TestAssert.Contains(Frame(app), mode == "chat-incomplete" ? "completion marker" : "Final sentence is complete.");
+            }
+        }
+        private static void ChatClick(SharpAITuiApp app, HeadlessBackend backend, string label, int below)
+        {
+            string[] lines = Frame(app).Split('\n');
+            for (int row = 0; row < lines.Length; row++)
+            {
+                int column = lines[row].IndexOf(label, StringComparison.Ordinal);
+                if (column < 0) continue;
+                backend.FeedClick(column + 1, row + below); app.Host.PumpInputOnce(); return;
+            }
+            throw new InvalidOperationException("Missing chat control: " + label);
         }
         private static async Task StreamsAsync(CancellationToken ct)
         {

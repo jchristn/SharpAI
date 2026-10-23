@@ -14,8 +14,9 @@ namespace SharpAI.Tui.Widgets
     internal sealed class TableViewport : IWidget, IFocusContainer, IFocusAware, IFocusPathNode, IMouseAware, IThemeable, IKeyHintSource
     {
         private static readonly System.Text.Json.JsonSerializerOptions _SearchJson = new System.Text.Json.JsonSerializerOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+        private Theme _Theme = TuiTheme.Create();
         private readonly DataTable<JsonNode> _Table;
-        private readonly ScrollView _Scroll;
+        private readonly PaddedScrollView _Scroll;
         private readonly TextField _Filter = new TextField { MaxLength = 256 };
         private readonly Localizer _Localizer;
         private readonly Action _Activate;
@@ -30,7 +31,7 @@ namespace SharpAI.Tui.Widgets
         internal TableViewport(DataTable<JsonNode> table, Localizer localizer, Action activate)
         {
             _Table = table; _Localizer = localizer; _Activate = activate;
-            _Scroll = new ScrollView(table, 100, 20) { ForwardKeys = true, ShowVerticalScrollbar = false, AutoScrollToFocus = false };
+            _Scroll = new PaddedScrollView(table, 100, 20) { ForwardKeys = true, ShowVerticalScrollbar = false, AutoScrollToFocus = false };
         }
         private void FocusFilter(bool filter)
         {
@@ -63,7 +64,7 @@ namespace SharpAI.Tui.Widgets
         /// <inheritdoc/>
         public Size Measure(Size available) { return available; }
         /// <inheritdoc/>
-        public void ApplyTheme(Theme theme) { _Scroll.ApplyTheme(theme); _Filter.ApplyTheme(theme); }
+        public void ApplyTheme(Theme theme) { _Theme = theme; _Scroll.ApplyTheme(theme); _Filter.ApplyTheme(theme); }
         /// <inheritdoc/>
         public IReadOnlyList<KeyHint>? GetKeyHints() { return new[] { new KeyHint("Left/Right", "Scroll columns"), new KeyHint("Tab", "Table / page filter") }; }
         private void FilterPage()
@@ -86,9 +87,9 @@ namespace SharpAI.Tui.Widgets
             int width = Math.Max(surface.Size.Width, Math.Min(8192, _Table.VisibleColumns.Sum(column => Math.Max(column.Width ?? column.MinWidth, column.MinWidth) + 2)));
             _Scroll.SetContentSize(width, surface.Size.Height - 3);
             string identity = _Table.SelectedRow == null ? string.Empty : JsonData.Id(_Table.SelectedRow);
-            surface.DrawText(0, 0, "ID: " + identity, CellStyle.Default);
+            surface.DrawText(0, 0, "ID: " + identity, _Theme.Muted);
             _FilterX = Math.Min(35, surface.Size.Width / 2);
-            surface.DrawText(0, 1, _Localizer.Text("admin.filterPage") + " (" + _Visible.Count.ToString(_Localizer.Culture) + "/" + _Source.Count.ToString(_Localizer.Culture) + ")", CellStyle.Default);
+            surface.DrawText(0, 1, _Localizer.Text("admin.filterPage") + " (" + _Visible.Count.ToString(_Localizer.Culture) + "/" + _Source.Count.ToString(_Localizer.Culture) + ")", _Theme.Muted);
             _Filter.Render(new SurfaceView(surface, new Rect(_FilterX, 1, surface.Size.Width - _FilterX, 1)));
             _Scroll.Render(new SurfaceView(surface, new Rect(0, 2, surface.Size.Width, surface.Size.Height - 2)));
         }

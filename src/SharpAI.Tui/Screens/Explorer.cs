@@ -92,12 +92,12 @@ namespace SharpAI.Tui
             actions.Add(ButtonFor("Cancel", CancelActive));
             IWidget operationPicker = OperationPicker();
             IWidget[] panes = { operationPicker, parameters, body, response };
-            FramedStack selected = new FramedStack().Add(panes[1], StackSize.Weighted(1));
+            PaddedStack selected = new PaddedStack().Add(panes[1], StackSize.Weighted(1));
             TabStrip tabs = new TabStrip().Add("Operations").Add("Parameters").Add("Request").Add("Response");
             tabs.ActiveIndex = 1;
             tabs.ActiveTabChanged += (sender, args) => { foreach (IWidget child in selected.Children.ToArray()) selected.Remove(child); selected.Add(panes[tabs.ActiveIndex], StackSize.Weighted(1)); };
-            FramedStack wide = new FramedStack().Add(operationPicker, StackSize.Fixed(5), "Operations").Add(parameters, StackSize.Fixed(Math.Min(8, 2 + placeholders.Count * 2)), method + " " + template).Add(body, StackSize.Weighted(1), "Request JSON").Add(actions, StackSize.Fixed(3)).Add(response, StackSize.Weighted(2), "Response");
-            FramedStack narrow = new FramedStack().Add(tabs, StackSize.Fixed(1)).Add(selected, StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3));
+            PaddedStack wide = new PaddedStack().Add(operationPicker, StackSize.Fixed(5), "Operations").Add(parameters, StackSize.Fixed(Math.Min(8, 2 + placeholders.Count * 2)), method + " " + template).Add(body, StackSize.Weighted(1), "Request JSON").Add(actions, StackSize.Fixed(3)).Add(response, StackSize.Weighted(2), "Response");
+            PaddedStack narrow = new PaddedStack().Add(tabs, StackSize.Fixed(1)).Add(selected, StackSize.Weighted(1)).Add(actions, StackSize.Fixed(3));
             Show(new ResponsiveScreen(wide, narrow), "API Explorer | " + method + " " + template);
         }
     }

@@ -630,7 +630,8 @@
     "incomplete": "Le flux s’est interrompu avant la fin. Démarrez une nouvelle conversation et réessayez.",
     "warning": "L’IA peut faire des erreurs. Vérifiez les réponses.",
     "telemetry": "Télémétrie de la réponse",
-    "streamToggle": "Diffuser la réponse"
+    "streamToggle": "Diffuser la réponse",
+    "tokenLimit": "Limite de jetons atteinte. Augmentez MaxTokens dans la configuration du modèle pour une réponse plus longue."
   },
   "sampling": {
     "temperature": "Température",
@@ -1004,5 +1005,25 @@
     "apiHelp": "Consultez toutes les requêtes HTTP enregistrées, y compris les opérations sur les modèles.",
     "inferenceHelp": "Consultez les requêtes de chat et de complétion de texte, sans les appels d’embeddings.",
     "embeddingsHelp": "Consultez les requêtes d’embeddings des API Ollama et OpenAI."
+  },
+  "chatCommands": {
+    "help": "Afficher les commandes du chat",
+    "clear": "Effacer la conversation et le contexte",
+    "compact": "Résumer les échanges précédents avec le modèle choisi",
+    "model": "Lister les modèles ou choisir par nom",
+    "status": "Afficher le modèle et l’état du contexte",
+    "stop": "Arrêter la génération ou le résumé",
+    "busy": "Utilisez /stop avant une autre commande.",
+    "unknown": "Commande ou arguments inconnus. Utilisez /?.",
+    "literal": "Utilisez // pour envoyer une barre oblique initiale.",
+    "cleared": "Conversation effacée.",
+    "idle": "Aucune génération active.",
+    "context": "Messages du contexte",
+    "summary": "résumé",
+    "noConversation": "Aucun échange précédent à résumer.",
+    "compacting": "Résumé de la conversation…",
+    "compacted": "Contexte condensé. La conversation visible est conservée.",
+    "modelUnknown": "Modèle introuvable. Utilisez /model pour les lister.",
+    "summaryFailed": "Le résumé a échoué. Le contexte initial est inchangé."
   }
 }

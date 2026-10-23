@@ -17,6 +17,10 @@ namespace SharpAI.Tui
 
     internal sealed partial class SharpAITuiApp
     {
+        private DefinitionList Definitions()
+        {
+            return new DefinitionList { LabelStyle = _Host.Theme.Muted, ValueStyle = _Host.Theme.Text, SectionStyle = _Host.Theme.Accent.WithAttribute(CellAttributes.Bold, true) };
+        }
         private IWidget ViewTable(DataTable<JsonNode> table) { return new TableViewport(table, _Localizer, () => _ActiveTable = table); }
         private DataTable<JsonNode> Table(IEnumerable<string> columns)
         {
@@ -67,18 +71,18 @@ namespace SharpAI.Tui
         private void Inspect(JsonNode value, string title)
         {
             
-            DefinitionList metadata = new DefinitionList();
+            DefinitionList metadata = Definitions();
             if (value is JsonObject obj) foreach (KeyValuePair<string, JsonNode?> property in obj)
                 metadata.Set(SafeText.Clean(property.Key), SafeText.Clean(property.Value is JsonObject or JsonArray ? property.Value.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) : property.Value?.ToString() ?? "Unavailable"));
-            Show(new ScrollView(metadata, 100, Math.Max(40, (value as JsonObject)?.Count * 5 ?? 40)), title);
+            Show(new PaddedScrollView(metadata, 100, Math.Max(40, (value as JsonObject)?.Count * 5 ?? 40)), title);
             _CopyText = value.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
         }
         private void Overview()
         {
-            DefinitionList values = new DefinitionList();
+            DefinitionList values = Definitions();
             ButtonRow actions = new ButtonRow();
             foreach (string route in new[] { "/models", "/playground", "/observability", "/api-explorer", "/system-prompts", "/model-configurations" }) actions.Add(ButtonFor(RouteTitle(route), () => Navigate(route)));
-            Show(new FramedStack().Add(values, StackSize.Weighted(1), RouteTitle("/")).Add(actions, StackSize.Fixed(5)), RouteTitle("/"));
+            Show(new PaddedStack().Add(values, StackSize.Weighted(1), RouteTitle("/")).Add(actions, StackSize.Fixed(5)), RouteTitle("/"));
             long revision = _Revision;
             Dictionary<string, string> endpoints = new Dictionary<string, string> { ["home.modelsOnDisk"] = "/api/tags", ["home.residentModels"] = "/api/ps", ["home.requests"] = "/v1.0/api/request-history/summary", ["library.promptsTitle"] = "/v1.0/system-prompts?pageSize=1", ["library.configurationsTitle"] = "/v1.0/model-configurations?pageSize=1" };
             _Refresh = () =>
@@ -113,9 +117,9 @@ namespace SharpAI.Tui
                         Apply(revision, () => { _Form?.MarkClean(); _Host.Notify(_Localizer.Phrase("Saved. Some changes require a server restart.")); });
                     }));
                     _Form!.Form.Add("", ButtonFor("Reload", () => Navigate("/settings")));
-                    DefinitionList information = new DefinitionList();
+                    DefinitionList information = Definitions();
                     foreach (string key in new[] { "version", "backend", "native_initialized" }) information.Set(_Localizer.Phrase(key), JsonData.Text(health, key));
-                    Show(new FramedStack().Add(information, StackSize.Fixed(3), _Localizer.Text("settings.serverInfo")).Add(_Form.View, StackSize.Weighted(1)), _Localizer.Text("settings.title"));
+                    Show(new PaddedStack().Add(information, StackSize.Fixed(3), _Localizer.Text("settings.serverInfo")).Add(_Form.View, StackSize.Weighted(1)), _Localizer.Text("settings.title"));
                 });
             });
         }

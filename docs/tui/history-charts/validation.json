@@ -1,0 +1,40 @@
+{
+  "liveHarness": {
+    "net8.0": {
+      "passed": 98,
+      "failed": 0,
+      "skipped": 0
+    },
+    "net10.0": {
+      "passed": 98,
+      "failed": 0,
+      "skipped": 0
+    }
+  },
+  "publicContract": "/v1.0/api/request-history/summary",
+  "inferenceCategory": "generation",
+  "presetsMinutes": [
+    1,
+    15,
+    120,
+    1440
+  ],
+  "terminalSizes": [
+    "80x24",
+    "120x40"
+  ],
+  "behavior": [
+    "stacked success/failure",
+    "counts and UTC axes",
+    "summary KPIs",
+    "keyboard and pointer drilldown",
+    "clear range",
+    "F5 summary refresh",
+    "expanded chart",
+    "lossless adjacent bucket merging",
+    "ASCII and Unicode",
+    "loading/empty/error states"
+  ],
+  "inlineChartRows": 13,
+  "compactChartRows": 8
+}

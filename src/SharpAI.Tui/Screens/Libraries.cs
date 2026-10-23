@@ -1,6 +1,7 @@
 namespace SharpAI.Tui
 {
     using System;
+    using SharpAI.Tui.Widgets;
     using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using SharpAI.Client;
@@ -19,7 +20,7 @@ namespace SharpAI.Tui
             actions.Add(ButtonFor("Edit", () => { if (table.SelectedRow != null) LibraryEditor(kind, table.SelectedRow, !JsonData.Flag(table.SelectedRow, "CanEdit")); }));
             actions.Add(ButtonFor("Duplicate", () => { if (table.SelectedRow != null) LibraryEditor(kind, table.SelectedRow, true); }));
             actions.Add(ButtonFor("Delete", () => { if (table.SelectedRow != null && JsonData.Flag(table.SelectedRow, "CanDelete")) Track(DeleteLibraryAsync(kind, table.SelectedRow)); }));
-            Show(new FramedStack().Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(4)), RouteTitle("/" + kind));
+            Show(new PaddedStack().Add(ViewTable(table), StackSize.Weighted(1)).Add(actions, StackSize.Fixed(4)), RouteTitle("/" + kind));
         }
         private static JsonObject DefaultConfiguration()
         {
