@@ -1,0 +1,146 @@
+<style>
+#sharpai-palettes .logo-colors {display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:18px}
+#sharpai-palettes .source-color {display:inline-flex;align-items:center;gap:6px}
+#sharpai-palettes .source-chip {width:20px;height:20px;display:inline-block;background:var(--source)}
+#sharpai-palettes .palette-comparison {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+#sharpai-palettes .stage {min-width:0}
+#sharpai-palettes .terminal {background:var(--t-bg);color:var(--t-text);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;line-height:1.5;overflow:hidden;border:1px solid var(--t-border)}
+#sharpai-palettes .terminal * {box-sizing:border-box}
+#sharpai-palettes .terminal-top {display:flex;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--t-panel);border-bottom:1px solid var(--t-border);flex-wrap:wrap}
+#sharpai-palettes .brand {color:var(--t-primary);font-weight:500}
+#sharpai-palettes .connection {color:var(--t-muted)}
+#sharpai-palettes .workspace {display:grid;grid-template-columns:175px minmax(0,1fr)}
+#sharpai-palettes .navigation {border-right:1px solid var(--t-border);padding:12px 8px;background:var(--t-panel)}
+#sharpai-palettes .group {margin-bottom:10px}
+#sharpai-palettes .group:last-child {margin-bottom:0}
+#sharpai-palettes .group-label {color:var(--t-muted);padding:2px 8px}
+#sharpai-palettes .route {padding:2px 4px;white-space:normal;overflow-wrap:anywhere}
+#sharpai-palettes .route.selected {background:var(--t-selected);color:var(--t-primary);font-weight:500}
+#sharpai-palettes .main {min-width:0;padding:10px}
+#sharpai-palettes .heading {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+#sharpai-palettes .heading-label {font-weight:500;color:var(--t-primary)}
+#sharpai-palettes .quiet {color:var(--t-muted)}
+#sharpai-palettes .stats {display:flex;flex-wrap:wrap;gap:8px 24px;padding-bottom:12px;border-bottom:1px solid var(--t-border)}
+#sharpai-palettes .stat-label {display:block;color:var(--t-muted)}
+#sharpai-palettes .frame {border:1px solid var(--t-border);margin-top:14px;padding:10px 12px}
+#sharpai-palettes .frame-title {color:var(--t-primary);margin-bottom:6px}
+#sharpai-palettes .history {margin:0;color:var(--t-primary);font-family:inherit;line-height:1.2;white-space:pre-wrap;overflow-wrap:anywhere}
+#sharpai-palettes .chart-error {color:var(--t-pink)}
+#sharpai-palettes .legend {display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;color:var(--t-muted)}
+#sharpai-palettes .series-primary {color:var(--t-primary)}
+#sharpai-palettes .series-error {color:var(--t-pink)}
+#sharpai-palettes .turn-label {color:var(--t-muted);margin-bottom:5px}
+#sharpai-palettes .response {margin-bottom:10px}
+#sharpai-palettes .completed {color:var(--t-success)}
+#sharpai-palettes .composer {margin-top:12px;padding:8px;background:var(--t-panel);border:1px solid var(--t-primary)}
+#sharpai-palettes .footer {display:flex;flex-wrap:wrap;gap:8px 20px;border-top:1px solid var(--t-border);padding:8px 14px;color:var(--t-muted);background:var(--t-panel)}
+#sharpai-palettes .footer b {color:var(--t-primary);font-weight:500}
+#sharpai-palettes .status-line {display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+#sharpai-palettes .warning {color:var(--t-warning)}
+#sharpai-palettes .error {color:var(--t-pink)}
+#sharpai-palettes .swatches {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+#sharpai-palettes .swatch {display:block;height:26px;background:var(--chip);margin-bottom:5px}
+#sharpai-palettes .role {display:block}
+#sharpai-palettes .palette-action {display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0 14px}
+#sharpai-palettes .palette-summary {margin-bottom:10px}
+@media(max-width:850px){
+ #sharpai-palettes .palette-comparison {grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:600px){
+ #sharpai-palettes .workspace {grid-template-columns:125px minmax(0,1fr)}
+ #sharpai-palettes .navigation {padding:8px 3px}
+ #sharpai-palettes .route {padding:3px 4px;white-space:normal;overflow-wrap:anywhere}
+ #sharpai-palettes .main {padding:10px 8px}
+ #sharpai-palettes .frame {padding:8px}
+ #sharpai-palettes .heading {flex-wrap:wrap}
+ #sharpai-palettes .swatches {grid-template-columns:repeat(3,minmax(0,1fr))}
+ #sharpai-palettes .history {white-space:pre-wrap;overflow-wrap:anywhere}
+}
+</style>
+<div id="sharpai-palettes">
+ <div class="logo-colors" aria-label="Source logo colors">
+  <span>Logo colors</span>
+  <span class="source-color"><span class="source-chip" style="--source:#44337e"></span><code>#44337E</code></span>
+  <span class="source-color"><span class="source-chip" style="--source:#823c96"></span><code>#823C96</code></span>
+  <span class="source-color"><span class="source-chip" style="--source:#ee3b93"></span><code>#EE3B93</code></span>
+ </div>
+ <div class="palette-comparison" aria-label="All four SharpAI TUI color palettes">
+  <section class="stage" data-palette="Midnight Violet" aria-label="Midnight Violet palette"></section>
+  <section class="stage" data-palette="Deep Plum" aria-label="Deep Plum palette"></section>
+  <section class="stage" data-palette="Graphite Rose" aria-label="Graphite Rose palette"></section>
+  <section class="stage" data-palette="Orchid Light" aria-label="Orchid Light palette"></section>
+ </div>
+ <div class="text-small" id="sharpai-palette-selection" aria-live="polite"></div>
+ <template id="sharpai-terminal-template">
+  <div class="palette-action"><strong class="palette-name"></strong><button class="btn btn-primary choose" type="button"></button></div>
+  <div class="palette-summary text-small"></div>
+  <div class="terminal" role="img" aria-label="TUI palette preview showing navigation, history chart, chat, focus, and status colors">
+   <div class="terminal-top"><span class="brand">SharpAI</span><span class="connection">localhost:8000 · ADMIN · Connected</span></div>
+   <div class="workspace">
+    <nav class="navigation" aria-label="Preview navigation">
+     <div class="group"><div class="group-label">OVERVIEW</div><div class="route">Overview</div></div>
+     <div class="group"><div class="group-label">MODELS</div><div class="route">Models</div><div class="route">System Prompts</div><div class="route">Configurations</div><div class="route selected">› Playground</div></div>
+     <div class="group"><div class="group-label">OPERATIONS</div><div class="route">Request History</div><div class="route">Inference History</div><div class="route">Embeddings History</div><div class="route">Observability</div></div>
+     <div class="group"><div class="group-label">SYSTEM</div><div class="route">Tenants</div><div class="route">Users</div><div class="route">Credentials</div><div class="route">Settings</div></div>
+    </nav>
+    <main class="main">
+     <div class="heading"><span class="heading-label">Playground</span><span class="quiet">Balanced · 2,048 tokens</span></div>
+     <div class="stats"><span><span class="stat-label">Requests</span>1,248</span><span><span class="stat-label">Success rate</span>99.2%</span><span><span class="stat-label">Avg latency</span>124 ms</span></div>
+     <div class="frame"><div class="frame-title">Request activity · UTC</div>
+      <pre class="history" aria-label="Illustrative request history, successful requests in violet or rose and errors in pink">       <span class="chart-error">▒</span>            <span class="chart-error">▒</span>
+    █  █      █     █
+ ▄  █  █   █  █  ▄  █
+ █  █  █ ▄ █  █  █  █
+ ──────────────────────</pre>
+      <div class="legend"><span class="series-primary">█ Success</span><span class="series-error">▒ Failure</span><span>09:00 → 10:00</span></div>
+     </div>
+     <div class="frame"><div class="frame-title">Conversation</div><div class="turn-label">You</div><div class="response">How are you?</div><div class="turn-label">Assistant</div><div class="response">I'm ready to help. What would you like to work on?</div><span class="completed">✓ Complete</span><span class="quiet"> · 48 tokens · 32 tok/s</span></div>
+     <div class="composer"><span class="quiet">›</span> Ask a question…</div>
+     <div class="status-line"><span class="completed">✓ Ready</span><span class="warning">! Warning</span><span class="error">× Error</span></div>
+    </main>
+   </div>
+   <div class="footer"><span><b>Enter</b> Send</span><span><b>Tab</b> Next</span><span><b>Ctrl+P</b> Commands</span><span><b>F1</b> Help</span></div>
+  </div>
+  <div class="swatches" aria-label="Palette role colors"></div>
+ </template>
+</div>
+<script>
+(()=>{
+ const root=document.getElementById('sharpai-palettes');
+ const template=document.getElementById('sharpai-terminal-template');
+ const paletteList=[
+  {name:'Midnight Violet',summary:'Recommended · neutral ink, lavender focus, restrained logo-pink accents.',bg:'#11101A',panel:'#191624',text:'#F4F0FA',muted:'#B3A6C4',border:'#65557E',primary:'#BDA9F3',pink:'#EF85B9',selected:'#35254F',success:'#8ACDB3',warning:'#E4C18A'},
+  {name:'Deep Plum',summary:'Warmer · plum surfaces and orchid highlights, closest to the center of the logo.',bg:'#1C1221',panel:'#291A30',text:'#F9F0FA',muted:'#C7ACCD',border:'#80608B',primary:'#D5ACE3',pink:'#F48CBD',selected:'#593265',success:'#9ACDB9',warning:'#E8C28F'},
+  {name:'Graphite Rose',summary:'Bolder · charcoal surfaces, rose focus, lavender secondary accents.',bg:'#151419',panel:'#201D25',text:'#F3EFF6',muted:'#B9B0C3',border:'#72657E',primary:'#F18ABC',pink:'#FFB0D4',selected:'#4A283E',success:'#8ACDB3',warning:'#E4C18A'},
+  {name:'Orchid Light',summary:'Light · pale orchid surfaces, original logo violet for navigation and focus.',bg:'#FAF7FD',panel:'#F0EAF6',text:'#2D2340',muted:'#665774',border:'#9C8BAC',primary:'#44337E',pink:'#A32E70',selected:'#E3D6F0',success:'#26714B',warning:'#886014'}
+ ];
+ const saved=window.openai?.widgetState?.modelContent?.palette;
+ function restore(name){root.querySelectorAll('.choose').forEach(button=>{button.textContent=button.dataset.palette===name?'Chosen: '+name:'Choose '+button.dataset.palette;});}
+ root.querySelectorAll('section[data-palette]').forEach(section=>{
+  const palette=paletteList.find(item=>item.name===section.dataset.palette);
+  section.append(template.content.cloneNode(true));
+  section.querySelector('.palette-name').textContent=palette.name;
+  section.querySelector('.palette-summary').textContent=palette.summary;
+  const terminal=section.querySelector('.terminal');
+  Object.keys(palette).filter(key=>key!=='name'&&key!=='summary').forEach(key=>terminal.style.setProperty('--t-'+key,palette[key]));
+  const roles=[{name:'Background',color:palette.bg},{name:'Text',color:palette.text},{name:'Muted',color:palette.muted},{name:'Borders',color:palette.border},{name:'Focus / chart',color:palette.primary},{name:'Pink / errors',color:palette.pink}];
+  const swatches=section.querySelector('.swatches');
+  roles.forEach(role=>{
+   const item=document.createElement('div');
+   const chip=document.createElement('span');chip.className='swatch';chip.style.setProperty('--chip',role.color);
+   const label=document.createElement('span');label.className='role text-small';label.textContent=role.name;
+   const value=document.createElement('code');value.className='text-small';value.textContent=role.color;
+   item.append(chip,label,value);swatches.append(item);
+  });
+  const choose=section.querySelector('.choose');choose.dataset.palette=palette.name;choose.textContent='Choose '+palette.name;
+  choose.addEventListener('click',async()=>{
+   restore(palette.name);
+   document.getElementById('sharpai-palette-selection').textContent=palette.name+' selected.';
+   if(window.openai?.setWidgetState)window.openai.setWidgetState({modelContent:{palette:palette.name,colors:palette},privateContent:null}).catch(()=>{});
+   if(window.openai?.sendFollowUpMessage)await window.openai.sendFollowUpMessage({prompt:'Use the '+palette.name+' color palette for the SharpAI TUI, consistently across navigation, borders, controls, charts, chat, and status indicators.',title:'Choose '+palette.name});
+  });
+ });
+ if(saved)restore(saved);
+ window.addEventListener('openai:set_globals',event=>{const name=event.detail?.globals?.widgetState?.modelContent?.palette;if(name)restore(name);});
+})();
+</script>
